@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+	<key>UIAppFonts</key>
+	<array>
+		<string>InstrumentSans-VariableFont_wdth,wght.ttf</string>
+		<string>InstrumentSans-Italic-VariableFont_wdth,wght.ttf</string>
+		<string>CrimsonPro-VariableFont_wght.ttf</string>
+		<string>CrimsonPro-Italic-VariableFont_wght.ttf</string>
+	</array>
+</dict>
+</plist>
