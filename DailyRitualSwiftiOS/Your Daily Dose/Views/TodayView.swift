@@ -23,7 +23,7 @@ struct TodayView: View {
                 VStack(spacing: DesignSystem.Spacing.sectionSpacing) {
                     // Premium Header with time-based theming
                     VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                        Text("Daily Dose")
+                        Text("Daily Ritual")
                             .font(DesignSystem.Typography.displayMediumSafe)
                             .foregroundColor(DesignSystem.Colors.primaryText)
                         
@@ -190,7 +190,74 @@ struct TodayView: View {
                             }
                         }
                     }
-                    
+
+                    // Today's Goals (read-only summary)
+                    if let goals = viewModel.entry.goals, !goals.isEmpty {
+                        PremiumCard(timeContext: timeContext) {
+                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                                Text("Today's Goals")
+                                    .font(DesignSystem.Typography.journalTitleSafe)
+                                    .foregroundColor(DesignSystem.Colors.primaryText)
+
+                                VStack(spacing: DesignSystem.Spacing.md) {
+                                    ForEach(Array(goals.prefix(3).enumerated()), id: \.offset) { idx, goal in
+                                        HStack(spacing: DesignSystem.Spacing.md) {
+                                            ZStack {
+                                                Circle()
+                                                    .fill(DesignSystem.Colors.evening.opacity(0.6))
+                                                    .frame(width: 36, height: 36)
+                                                Text("\(idx + 1)")
+                                                    .font(DesignSystem.Typography.buttonMedium)
+                                                    .foregroundColor(DesignSystem.Colors.primaryText)
+                                            }
+                                            Text(goal)
+                                                .font(DesignSystem.Typography.bodyLargeSafe)
+                                                .foregroundColor(DesignSystem.Colors.primaryText)
+                                            Spacer()
+                                            Image(systemName: "checkmark.square.fill")
+                                                .foregroundColor(DesignSystem.Colors.morningAccent)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Today's Training Plan
+                    PremiumCard(timeContext: timeContext) {
+                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                            Text("Today's Training Plan")
+                                .font(DesignSystem.Typography.journalTitleSafe)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
+
+                            if viewModel.hasTrainingPlan {
+                                VStack(spacing: DesignSystem.Spacing.sm) {
+                                    planRow(icon: "dumbbell.fill", label: "Type", value: viewModel.entry.plannedTrainingType ?? "-")
+                                    planRow(icon: "clock.fill", label: "Time", value: viewModel.entry.plannedTrainingTime ?? "-")
+                                    planRow(icon: "flame.fill", label: "Intensity", value: viewModel.entry.plannedIntensity ?? "-")
+                                    planRow(icon: "hourglass", label: "Duration", value: viewModel.durationText)
+                                }
+                            } else {
+                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                                    Text("No plan set yet")
+                                        .font(DesignSystem.Typography.bodyMedium)
+                                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                                    Button {
+                                        showingMorningRitual = true
+                                    } label: {
+                                        HStack(spacing: DesignSystem.Spacing.xs) {
+                                            Image(systemName: "plus.circle.fill")
+                                            Text("Set training plan")
+                                        }
+                                        .font(DesignSystem.Typography.buttonMedium)
+                                        .foregroundColor(timeContext.primaryColor)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                    }
+
                     // Premium celebration card for full completion
                     if viewModel.entry.isFullyComplete {
                         PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.xl) {
@@ -237,6 +304,24 @@ struct TodayView: View {
     }
 }
 
+// MARK: - Helpers
+extension TodayView {
+    @ViewBuilder
+    func planRow(icon: String, label: String, value: String) -> some View {
+        HStack(spacing: DesignSystem.Spacing.md) {
+            Image(systemName: icon)
+                .foregroundColor(timeContext.primaryColor)
+            Text(label)
+                .font(DesignSystem.Typography.bodyMedium)
+                .foregroundColor(DesignSystem.Colors.secondaryText)
+            Spacer()
+            Text(value)
+                .font(DesignSystem.Typography.bodyLargeSafe)
+                .foregroundColor(DesignSystem.Colors.primaryText)
+        }
+    }
+}
+
 // MARK: - Today View Model
 @MainActor
 class TodayViewModel: ObservableObject {
@@ -270,6 +355,18 @@ class TodayViewModel: ObservableObject {
     
     func refresh() async {
         await loadToday()
+    }
+    
+    var hasTrainingPlan: Bool {
+        (entry.plannedTrainingType?.isEmpty == false) ||
+        (entry.plannedTrainingTime?.isEmpty == false) ||
+        (entry.plannedIntensity?.isEmpty == false) ||
+        (entry.plannedDuration ?? 0) > 0
+    }
+    
+    var durationText: String {
+        guard let d = entry.plannedDuration, d > 0 else { return "-" }
+        return "\(d) min"
     }
 }
 

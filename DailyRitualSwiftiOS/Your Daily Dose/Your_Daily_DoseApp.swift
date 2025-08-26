@@ -30,13 +30,14 @@ struct Your_Daily_DoseApp: App {
 struct OnboardingView: View {
     @EnvironmentObject private var supabase: SupabaseManager
     @State private var isSigningIn = false
+    @State private var showProfileSheet = false
     
     var body: some View {
         VStack(spacing: 40) {
             Spacer()
             
             VStack(spacing: 20) {
-                Text("Daily Dose")
+                Text("Daily Ritual")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
@@ -75,22 +76,14 @@ struct OnboardingView: View {
             Spacer()
             
             Button(action: {
-                Task {
-                    isSigningIn = true
-                    do {
-                        try await supabase.signInDemo()
-                    } catch {
-                        print("Demo sign in failed: \(error)")
-                    }
-                    isSigningIn = false
-                }
+                showProfileSheet = true
             }) {
                 HStack {
                     if isSigningIn {
                         ProgressView()
                             .scaleEffect(0.8)
                     }
-                    Text(isSigningIn ? "Loading..." : "Start Your Journey")
+                    Text("Open Profile to Sign In")
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
@@ -98,11 +91,14 @@ struct OnboardingView: View {
                 .foregroundColor(.white)
                 .cornerRadius(12)
             }
-            .disabled(isSigningIn)
+            .disabled(false)
             .padding(.horizontal)
             
             Spacer()
         }
         .background(Color(UIColor.systemBackground))
+        .sheet(isPresented: $showProfileSheet) {
+            NavigationStack { ProfileView() }
+        }
     }
 }

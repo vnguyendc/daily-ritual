@@ -1,13 +1,18 @@
 // Supabase client configuration and utilities
+import dotenv from 'dotenv'
+dotenv.config()
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../types/database.js'
 
-// For development, use placeholder values if env vars are missing
+// For development, allow explicit mock mode or placeholder values if env vars are missing
 const supabaseUrl = process.env.SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key'
+const useMock = process.env.USE_MOCK === 'true' || supabaseUrl === 'https://placeholder.supabase.co'
 
-if (supabaseUrl === 'https://placeholder.supabase.co') {
-  console.warn('⚠️  Using placeholder Supabase credentials - database features will not work')
+if (useMock) {
+  console.warn('⚠️  Running in mock mode - database writes/reads are simulated')
+} else {
+  console.log(`🔗 Using Supabase at ${supabaseUrl}`)
 }
 
 // Service role client for server-side operations
@@ -48,10 +53,22 @@ export async function verifyUserOwnership(userId: string, resourceUserId: string
 
 // Database utility functions
 export class DatabaseService {
+  static async ensureUserRecord(user: { id: string; email?: string | null; user_metadata?: any }) {
+    if (useMock) return
+    const payload: any = {
+      id: user.id,
+      email: user.email || null,
+      updated_at: new Date().toISOString()
+    }
+    const { error } = await supabaseServiceClient
+      .from('users')
+      .upsert(payload, { onConflict: 'id' })
+    if (error) throw error
+  }
   
   static async getDailyEntry(userId: string, date: string) {
     // For development with placeholder credentials, return mock data
-    if (supabaseUrl === 'https://placeholder.supabase.co') {
+    if (useMock) {
       console.log('📝 Returning mock daily entry for development')
       return null // No existing entry, will create new one
     }
@@ -72,7 +89,7 @@ export class DatabaseService {
 
   static async createOrUpdateDailyEntry(userId: string, date: string, updates: any) {
     // For development with placeholder credentials, return mock data
-    if (supabaseUrl === 'https://placeholder.supabase.co') {
+    if (useMock) {
       console.log('📝 Creating mock daily entry for development')
       return {
         id: 'mock-entry-id',
@@ -151,7 +168,7 @@ export class DatabaseService {
 
   static async updateUserStreak(userId: string, streakType: string, date: string = new Date().toISOString().split('T')[0]) {
     // For development with placeholder credentials, just log
-    if (supabaseUrl === 'https://placeholder.supabase.co') {
+    if (useMock) {
       console.log(`📝 Mock streak update: ${streakType} for ${userId} on ${date}`)
       return
     }
@@ -167,7 +184,7 @@ export class DatabaseService {
 
   static async getDailyQuote(userId: string, date: string = new Date().toISOString().split('T')[0]) {
     // For development with placeholder credentials, return mock quote
-    if (supabaseUrl === 'https://placeholder.supabase.co') {
+    if (useMock) {
       console.log('📝 Returning mock daily quote for development')
       const mockQuotes = [
         { quote_text: "The only impossible journey is the one you never begin.", author: "Tony Robbins" },

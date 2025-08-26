@@ -1,6 +1,6 @@
 // Authentication middleware
 import { Request, Response, NextFunction } from 'express'
-import { getUserFromToken } from '../services/supabase.js'
+import { getUserFromToken, DatabaseService } from '../services/supabase.js'
 
 // Extend Express Request type to include user
 declare global {
@@ -29,6 +29,10 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
     }
 
     const user = await getUserFromToken(token)
+    // Ensure profile row exists in public.users
+    try { await DatabaseService.ensureUserRecord(user as any) } catch (e) {
+      console.warn('ensureUserRecord failed:', e)
+    }
     req.user = user
     next()
   } catch (error) {

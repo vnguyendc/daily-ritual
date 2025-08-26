@@ -28,12 +28,21 @@ export class DailyEntriesController {
   static async getDailyEntry(req: Request, res: Response) {
     try {
       const token = req.headers.authorization?.replace('Bearer ', '')
+      const useMock = process.env.USE_MOCK === 'true'
+      const devUserId = process.env.DEV_USER_ID
       
-      // For development, use mock user if no token provided
+      // For development, allow mock or a configured DEV_USER_ID when no token
       let user: any
       if (!token) {
-        console.log('🔓 No auth token provided, using mock user for development')
-        user = { id: 'mock-user-id' }
+        if (useMock) {
+          console.log('🔓 No auth token provided, using mock user for development')
+          user = { id: 'mock-user-id' }
+        } else if (devUserId) {
+          console.log('👤 Using DEV_USER_ID from environment for development without auth')
+          user = { id: devUserId }
+        } else {
+          return res.status(401).json({ error: 'Authorization token required' })
+        }
       } else {
         user = await getUserFromToken(token)
       }
@@ -65,12 +74,21 @@ export class DailyEntriesController {
   static async completeMorningRitual(req: Request, res: Response) {
     try {
       const token = req.headers.authorization?.replace('Bearer ', '')
+      const useMock = process.env.USE_MOCK === 'true'
+      const devUserId = process.env.DEV_USER_ID
       
-      // For development, use mock user if no token provided
+      // For development, allow mock or a configured DEV_USER_ID when no token
       let user: any
       if (!token) {
-        console.log('🔓 No auth token provided, using mock user for development')
-        user = { id: 'mock-user-id' }
+        if (useMock) {
+          console.log('🔓 No auth token provided, using mock user for development')
+          user = { id: 'mock-user-id' }
+        } else if (devUserId) {
+          console.log('👤 Using DEV_USER_ID from environment for development without auth')
+          user = { id: devUserId }
+        } else {
+          return res.status(401).json({ error: 'Authorization token required' })
+        }
       } else {
         user = await getUserFromToken(token)
       }
@@ -177,12 +195,21 @@ export class DailyEntriesController {
   static async completeEveningReflection(req: Request, res: Response) {
     try {
       const token = req.headers.authorization?.replace('Bearer ', '')
+      const useMock = process.env.USE_MOCK === 'true'
+      const devUserId = process.env.DEV_USER_ID
       
-      // For development, use mock user if no token provided
+      // For development, allow mock or a configured DEV_USER_ID when no token
       let user: any
       if (!token) {
-        console.log('🔓 No auth token provided, using mock user for development')
-        user = { id: 'mock-user-id' }
+        if (useMock) {
+          console.log('🔓 No auth token provided, using mock user for development')
+          user = { id: 'mock-user-id' }
+        } else if (devUserId) {
+          console.log('👤 Using DEV_USER_ID from environment for development without auth')
+          user = { id: devUserId }
+        } else {
+          return res.status(401).json({ error: 'Authorization token required' })
+        }
       } else {
         user = await getUserFromToken(token)
       }

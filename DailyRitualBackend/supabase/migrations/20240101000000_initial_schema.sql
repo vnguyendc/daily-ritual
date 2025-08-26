@@ -181,7 +181,7 @@ CREATE TABLE quotes (
     quote_text TEXT NOT NULL,
     author TEXT,
     sport TEXT,
-    category TEXT CHECK (category IN ('motivation', 'perseverance', 'confidence', 'preparation', 'competition', 'recovery', 'teamwork')),
+    category TEXT CHECK (category IN ('motivation', 'perseverance', 'confidence', 'preparation', 'competition', 'recovery', 'teamwork', 'mental_strength', 'determination')),
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

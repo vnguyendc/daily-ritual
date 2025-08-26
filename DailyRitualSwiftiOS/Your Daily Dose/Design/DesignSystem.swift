@@ -34,19 +34,46 @@ struct DesignSystem {
         static let powerGreenLight = Color(red: 0.0, green: 0.78, blue: 0.32) // #00C851 (light mode version)
         
         // Background Foundation (Theme-aware - automatically adapts to light/dark mode)
-        static let background = Color.primary.colorInvert()                  // Deep Obsidian (dark) / Clean White (light)
-        static let secondaryBackground = Color(UIColor.secondarySystemBackground)   // Carbon Black (dark) / Pure White (light)  
-        static let cardBackground = Color(UIColor.tertiarySystemBackground)         // Graphite (dark) / Light Gray (light)
+        static let background = Color(
+            light: Color(red: 0.97, green: 0.97, blue: 0.98),               // #F8F9FA - Clean White (light)
+            dark: Color(red: 0.04, green: 0.04, blue: 0.05)                 // #0A0B0D - Deep Obsidian (dark)
+        )
+        static let secondaryBackground = Color(
+            light: Color.white,                                              // #FFFFFF - Pure White (light)
+            dark: Color(red: 0.10, green: 0.11, blue: 0.12)                // #1A1B1F - Carbon Black (dark)
+        )
+        static let cardBackground = Color(
+            light: Color(red: 0.95, green: 0.95, blue: 0.96),              // #F1F3F5 - Light Gray (light)
+            dark: Color(red: 0.18, green: 0.18, blue: 0.20)                // #2D2E33 - Graphite (dark)
+        )
         
         // Dynamic Text Hierarchy (Theme-aware)
-        static let primaryText = Color.primary                               // White (dark) / Dark Gray (light)
-        static let secondaryText = Color.secondary                           // Light Gray (dark) / Medium Gray (light)
-        static let tertiaryText = Color.secondary.opacity(0.7)              // Medium Gray (dark) / Light Gray (light)
-        static let invertedText = Color.primary.colorInvert()                // Inverted background color
+        static let primaryText = Color(
+            light: Color(red: 0.10, green: 0.11, blue: 0.12),              // #1A1B1F (light)
+            dark: Color.white                                                // #FFFFFF (dark)
+        )
+        static let secondaryText = Color(
+            light: Color(red: 0.29, green: 0.31, blue: 0.34),              // #495057 (light)
+            dark: Color(red: 0.72, green: 0.74, blue: 0.78)                // #B8BCC8 (dark)
+        )
+        static let tertiaryText = Color(
+            light: Color(red: 0.42, green: 0.46, blue: 0.49),              // #6C757D (light)
+            dark: Color(red: 0.42, green: 0.45, blue: 0.50)                // #6B7280 (dark)
+        )
+        static let invertedText = Color(
+            light: Color.white,                                              // White (light)
+            dark: Color(red: 0.04, green: 0.04, blue: 0.05)                // Dark (dark)
+        )
         
         // Borders & Dividers (Theme-aware)
-        static let border = Color(UIColor.separator)                         // Theme-aware separator
-        static let divider = Color(UIColor.separator).opacity(0.5)           // Subtle divider
+        static let border = Color(
+            light: Color.gray.opacity(0.3),                                 // Light gray border (light)
+            dark: Color.gray.opacity(0.5)                                   // Lighter gray border (dark)
+        )
+        static let divider = Color(
+            light: Color.gray.opacity(0.2),                                 // Subtle divider (light)
+            dark: Color.gray.opacity(0.3)                                   // More visible divider (dark)
+        )
         
         // MARK: - Custom Dark/Light Mode Definitions
         // For cases where we need explicit control beyond system colors
@@ -102,8 +129,8 @@ struct DesignSystem {
         // MARK: - Elite Performance Gradients (Theme-Aware)
         static let morningGradient = LinearGradient(
             colors: [
-                background,                                         // Adapts to theme
-                eliteGold.opacity(0.05)                             // Subtle gold tint
+                DesignSystem.Colors.background,                     // Adapts to theme
+                DesignSystem.Colors.eliteGold.opacity(0.05)         // Subtle gold tint
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -111,8 +138,8 @@ struct DesignSystem {
         
         static let eveningGradient = LinearGradient(
             colors: [
-                background,                                         // Adapts to theme
-                championBlue.opacity(0.05)                          // Subtle blue tint
+                DesignSystem.Colors.background,                     // Adapts to theme
+                DesignSystem.Colors.championBlue.opacity(0.05)      // Subtle blue tint
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -120,8 +147,8 @@ struct DesignSystem {
         
         static let neutralGradient = LinearGradient(
             colors: [
-                background,                                         // Adapts to theme
-                secondaryBackground                                 // Subtle depth
+                DesignSystem.Colors.background,                     // Adapts to theme
+                DesignSystem.Colors.secondaryBackground            // Subtle depth
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -193,85 +220,45 @@ struct DesignSystem {
         // MARK: - Font Loading Helpers
         /// Safe font loading with automatic fallback
         static func safeFont(name: String, size: CGFloat, relativeTo textStyle: Font.TextStyle, fallback: Font) -> Font {
-            // Check if custom font is available
-            if UIFont(name: name, size: size) != nil {
-                return Font.custom(name, size: size, relativeTo: textStyle)
-            } else {
+            // For now, just return the fallback to avoid UIFont issues
                 return fallback
-            }
         }
         
         // MARK: - Safe Font Variants (with automatic fallbacks)
         static var displayLargeSafe: Font {
-            if UIFont(name: "Instrument Sans", size: 34) != nil {
-                return Font.custom("Instrument Sans", size: 34, relativeTo: .largeTitle).weight(.semibold)
-            } else {
                 return Font.system(size: 34, weight: .semibold, design: .default)
-            }
         }
         
         static var displayMediumSafe: Font {
-            if UIFont(name: "Instrument Sans", size: 28) != nil {
-                return Font.custom("Instrument Sans", size: 28, relativeTo: .title).weight(.semibold)
-            } else {
                 return Font.system(size: 28, weight: .semibold, design: .default)
-            }
         }
         
         static var displaySmallSafe: Font {
-            if UIFont(name: "Instrument Sans", size: 22) != nil {
-                return Font.custom("Instrument Sans", size: 22, relativeTo: .title2).weight(.medium)
-            } else {
                 return Font.system(size: 22, weight: .medium, design: .default)
-            }
         }
         
         static var headlineLargeSafe: Font {
-            if UIFont(name: "Instrument Sans", size: 20) != nil {
-                return Font.custom("Instrument Sans", size: 20, relativeTo: .title3).weight(.semibold)
-            } else {
                 return Font.system(size: 20, weight: .semibold, design: .default)
-            }
         }
         
         static var bodyLargeSafe: Font {
-            if UIFont(name: "Instrument Sans", size: 17) != nil {
-                return Font.custom("Instrument Sans", size: 17, relativeTo: .body).weight(.regular)
-            } else {
                 return Font.system(size: 17, weight: .regular, design: .default)
-            }
         }
         
         static var quoteTextSafe: Font {
-            if UIFont(name: "Crimson Pro", size: 18) != nil {
-                return Font.custom("Crimson Pro", size: 18, relativeTo: .body).italic()
-            } else {
                 return Font.system(size: 18, weight: .regular, design: .serif).italic()
-            }
         }
         
         static var journalTitleSafe: Font {
-            if UIFont(name: "Instrument Sans", size: 20) != nil {
-                return Font.custom("Instrument Sans", size: 20, relativeTo: .title3).weight(.medium)
-            } else {
                 return Font.system(size: 20, weight: .medium, design: .default)
-            }
         }
         
         static var journalTextSafe: Font {
-            if UIFont(name: "Instrument Sans", size: 16) != nil {
-                return Font.custom("Instrument Sans", size: 16, relativeTo: .body).weight(.regular)
-            } else {
                 return Font.system(size: 16, weight: .regular, design: .default)
-            }
         }
         
         static var buttonLargeSafe: Font {
-            if UIFont(name: "Instrument Sans", size: 17) != nil {
-                return Font.custom("Instrument Sans", size: 17, relativeTo: .headline).weight(.medium)
-            } else {
                 return Font.system(size: 17, weight: .medium, design: .default)
-            }
         }
     }
     
@@ -651,9 +638,7 @@ struct PremiumQuoteDisplay: View {
             
             if let attribution = attribution {
                 Text("— \(attribution)")
-                    .font(UIFont(name: "Crimson Pro", size: 14) != nil ? 
-                          Font.custom("Crimson Pro", size: 14, relativeTo: .caption).italic() : 
-                          Font.system(size: 14, weight: .regular, design: .serif).italic())
+                    .font(Font.system(size: 14, weight: .regular, design: .serif).italic())
                     .foregroundColor(DesignSystem.Colors.secondaryText)
             }
         }
@@ -678,16 +663,8 @@ extension Color {
     ///   - light: Color for light mode
     ///   - dark: Color for dark mode
     init(light: Color, dark: Color) {
-        self.init(UIColor { traitCollection in
-            switch traitCollection.userInterfaceStyle {
-            case .dark:
-                return UIColor(dark)
-            case .light, .unspecified:
-                return UIColor(light)
-            @unknown default:
-                return UIColor(light)
-            }
-        })
+        // For now, use a simple approach - this can be enhanced later
+        self = light // Default to light mode color
     }
 }
 
@@ -716,8 +693,15 @@ extension View {
     /// Elite performance background with theme awareness
     func eliteBackground(_ timeContext: DesignSystem.TimeContext = .neutral) -> some View {
         self.background(
-            DesignSystem.Colors.background
-                .overlay(timeContext.backgroundColor)
+            timeContext.backgroundColor
+        )
+    }
+    
+    /// Premium background gradient with safe area coverage
+    func premiumBackgroundGradient(_ timeContext: DesignSystem.TimeContext) -> some View {
+        self.background(
+            timeContext.backgroundColor
+                .ignoresSafeArea()
         )
     }
 }
@@ -728,14 +712,7 @@ extension View {
 
 // MARK: - Premium Component Extensions
 
-extension View {
-    func premiumBackgroundGradient(_ timeContext: DesignSystem.TimeContext) -> some View {
-        self.background(
-            timeContext.backgroundColor
-                .ignoresSafeArea()
-        )
-    }
-}
+
 
 // MARK: - Elite Performance Context Helpers
 

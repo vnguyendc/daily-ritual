@@ -1,5 +1,38 @@
 # Daily Ritual Backend
 
+## Environment Variables
+
+Create a `.env` in this folder with:
+
+```
+SUPABASE_URL=your_supabase_url
+SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
+PORT=3000
+```
+
+Then restart the dev server.
+
+## Supabase Setup
+
+1. Create a new Supabase project.
+2. In SQL editor, run the migrations in `supabase/migrations` in order:
+   - `20240101000000_initial_schema.sql`
+   - `20240101000001_rls_policies.sql`
+3. In Project Settings → API, copy Project URL, anon, and service role keys to `.env`.
+4. Deploy Edge Functions later (optional for MVP):
+   - `generate-affirmation`
+   - `generate-insights`
+
+## Development
+
+Run dev server:
+
+```
+npm run dev
+```
+
 Backend API for Daily Ritual - Athletic Performance Journaling App with AI insights.
 
 ## Features

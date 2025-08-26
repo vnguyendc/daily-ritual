@@ -20,21 +20,34 @@ class SupabaseManager: ObservableObject {
     private let baseURL = "http://localhost:3000/api/v1" // Change to IP for device testing
     private var authToken: String?
     
-    private init() {
-        // For now, we'll simulate authentication with a mock user
-        loadMockUser()
-    }
+    private init() {}
     
-    // MARK: - Authentication (Mock for now)
-    private func loadMockUser() {
-        // Simulate a logged-in user for development
-        currentUser = User(
-            id: UUID(),
-            email: "vinh@example.com",
-            name: "Vinh",
-            timezone: "America/New_York",
-        )
-        isAuthenticated = true
+    // MARK: - Authentication
+    func signIn(email: String, password: String) async throws {
+        isLoading = true
+        defer { isLoading = false }
+        
+        // Supabase Auth REST (email/password)
+        guard let url = URL(string: "https://bkjfyxfphwhwwonmbulj.supabase.co/auth/v1/token?grant_type=password") else {
+            throw SupabaseError.invalidData
+        }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJramZ5eGZwaHdod3dvbm1idWxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDUxMzMsImV4cCI6MjA3MTc4MTEzM30.UCySNkl1qbBgPtN1TQynImtWdI-LQ5mv8T-SGmYUVJQ", forHTTPHeaderField: "apikey")
+        req.httpBody = try JSONSerialization.data(withJSONObject: [
+            "email": email,
+            "password": password
+        ])
+        let (data, response) = try await URLSession.shared.data(for: req)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { throw SupabaseError.networkError }
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        guard let access = json?["access_token"] as? String else { throw SupabaseError.invalidData }
+        self.authToken = access
+        
+        // Fetch user from backend profile route (or set minimal info)
+        self.currentUser = User(email: email, name: nil)
+        self.isAuthenticated = true
     }
     
     func signInWithApple() async throws -> User {
@@ -79,6 +92,7 @@ class SupabaseManager: ObservableObject {
         
         currentUser = nil
         isAuthenticated = false
+        authToken = nil
     }
     
     // MARK: - Daily Entries
@@ -95,9 +109,7 @@ class SupabaseManager: ObservableObject {
         }
         
         var request = URLRequest(url: url)
-        if let token = authToken {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
+        if let token = authToken { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
@@ -165,9 +177,7 @@ class SupabaseManager: ObservableObject {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if let token = authToken {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
+        if let token = authToken { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         
         let morningData = MorningRitualRequest(
             goals: entry.goals ?? [],
@@ -204,10 +214,54 @@ class SupabaseManager: ObservableObject {
     }
     
     func completeEvening(for entry: DailyEntry) async throws -> DailyEntry {
-        var updatedEntry = entry
-        updatedEntry.eveningCompletedAt = Date()
-        try await updateEntry(updatedEntry)
-        return updatedEntry
+        guard currentUser != nil else {
+            throw SupabaseError.notAuthenticated
+        }
+        
+        isLoading = true
+        defer { isLoading = false }
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let dateString = dateFormatter.string(from: entry.date)
+        
+        let url = URL(string: "\(baseURL)/daily-entries/\(dateString)/evening")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = authToken { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+        
+        let requestBody: [String: Any] = [
+            "quote_application": entry.quoteApplication ?? "",
+            "day_went_well": entry.dayWentWell ?? "",
+            "day_improve": entry.dayImprove ?? "",
+            "overall_mood": entry.overallMood ?? 3
+        ]
+        
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
+                throw SupabaseError.networkError
+            }
+            
+            let apiResponse = try JSONDecoder().decode(APIResponse<DailyEntry>.self, from: data)
+            
+            if let responseData = apiResponse.data {
+                return responseData
+            }
+            
+            var updatedEntry = entry
+            updatedEntry.eveningCompletedAt = Date()
+            return updatedEntry
+        } catch {
+            print("Error completing evening reflection: \(error)")
+            var updatedEntry = entry
+            updatedEntry.eveningCompletedAt = Date()
+            return updatedEntry
+        }
     }
     
     // MARK: - Streak Tracking
