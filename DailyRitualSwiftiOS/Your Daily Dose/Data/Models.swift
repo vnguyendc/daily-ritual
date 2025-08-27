@@ -68,6 +68,7 @@ struct DailyEntry: Codable, Identifiable, Sendable {
     var plannedTrainingTime: String?
     var plannedIntensity: String?
     var plannedDuration: Int?
+    var plannedNotes: String?
     
     // Evening ritual fields
     var quoteApplication: String?    // How did today's quote apply?
@@ -78,12 +79,33 @@ struct DailyEntry: Codable, Identifiable, Sendable {
     // Legacy support for current UI (can be removed later)
     var goalsText: String? {
         get { goals?.joined(separator: "\n") }
-        set { goals = newValue?.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty } }
+        set {
+            let lines = newValue?.components(separatedBy: "\n") ?? []
+            let sanitized = lines.map { line in
+                let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                // Remove leading numbering like "1. ", "2. " etc.
+                if let range = trimmed.range(of: "^\\d+\\.\\s*", options: .regularExpression) {
+                    return String(trimmed[range.upperBound...]).trimmingCharacters(in: .whitespaces)
+                }
+                return trimmed
+            }.filter { !$0.isEmpty }
+            goals = sanitized.isEmpty ? nil : sanitized
+        }
     }
     
     var gratitudeText: String? {
         get { gratitudes?.joined(separator: "\n") }
-        set { gratitudes = newValue?.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty } }
+        set {
+            let lines = newValue?.components(separatedBy: "\n") ?? []
+            let sanitized = lines.map { line in
+                let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                if let range = trimmed.range(of: "^\\d+\\.\\s*", options: .regularExpression) {
+                    return String(trimmed[range.upperBound...]).trimmingCharacters(in: .whitespaces)
+                }
+                return trimmed
+            }.filter { !$0.isEmpty }
+            gratitudes = sanitized.isEmpty ? nil : sanitized
+        }
     }
     
     var otherThoughts: String? {
@@ -120,6 +142,7 @@ struct DailyEntry: Codable, Identifiable, Sendable {
         case plannedTrainingTime = "planned_training_time"
         case plannedIntensity = "planned_intensity"
         case plannedDuration = "planned_duration"
+        case plannedNotes = "planned_notes"
         case quoteApplication = "quote_application"
         case dayWentWell = "day_went_well"
         case dayImprove = "day_improve"

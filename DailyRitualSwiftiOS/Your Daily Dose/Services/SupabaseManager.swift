@@ -20,7 +20,17 @@ class SupabaseManager: ObservableObject {
     private let baseURL = "http://localhost:3000/api/v1" // Change to IP for device testing
     private var authToken: String?
     
-    private init() {}
+    // Toggle for development: when true, a mock user is loaded automatically
+    private let useMockAuth = false
+    
+    private init() {
+        if useMockAuth {
+            // Auto-authenticate with a mock user for rapid testing
+            self.currentUser = User(email: "demo@example.com", name: "Demo User")
+            self.isAuthenticated = true
+            self.authToken = nil
+        }
+    }
     
     // MARK: - Authentication
     func signIn(email: String, password: String) async throws {
@@ -98,6 +108,19 @@ class SupabaseManager: ObservableObject {
     // MARK: - Daily Entries
     func getTodaysEntry() async throws -> DailyEntry? {
         guard let userId = currentUser?.id else { return nil }
+        if useMockAuth {
+            let today = Calendar.current.startOfDay(for: Date())
+            var entry = DailyEntry(userId: userId, date: today)
+            entry.goals = ["Run 5k", "Meal prep", "Spend time with family"]
+            entry.gratitudes = ["My health", "Supportive friends", "Learning opportunities"]
+            entry.dailyQuote = "Hard work beats talent when talent doesn't work hard."
+            entry.affirmation = "I am focused and consistent today."
+            entry.plannedTrainingType = "strength"
+            entry.plannedTrainingTime = "07:00"
+            entry.plannedIntensity = "moderate"
+            entry.plannedDuration = 60
+            return entry
+        }
         
         isLoading = true
         defer { isLoading = false }
@@ -140,8 +163,13 @@ class SupabaseManager: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         
-        // TODO: Replace with actual Supabase insert
-        try await Task.sleep(nanoseconds: 500_000_000)
+        if useMockAuth {
+            let today = Calendar.current.startOfDay(for: Date())
+            return DailyEntry(userId: userId, date: today)
+        }
+        
+        // Placeholder for real insert
+        try await Task.sleep(nanoseconds: 200_000_000)
         
         let today = Calendar.current.startOfDay(for: Date())
         let entry = DailyEntry(userId: userId, date: today)
@@ -153,8 +181,12 @@ class SupabaseManager: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         
-        // TODO: Replace with actual Supabase update
-        try await Task.sleep(nanoseconds: 500_000_000)
+        if useMockAuth {
+            return
+        }
+        
+        // Placeholder for real update
+        try await Task.sleep(nanoseconds: 200_000_000)
         
         // In real implementation, this would update the entry in Supabase
         print("Updated entry: \(entry.id)")
@@ -167,6 +199,14 @@ class SupabaseManager: ObservableObject {
         
         isLoading = true
         defer { isLoading = false }
+        
+        if useMockAuth {
+            var updated = entry
+            updated.morningCompletedAt = Date()
+            if updated.affirmation == nil { updated.affirmation = "I am prepared, focused, and ready to give my best effort today." }
+            if updated.dailyQuote == nil { updated.dailyQuote = "Success is not final, failure is not fatal: it is the courage to continue that counts." }
+            return updated
+        }
         
         let today = ISO8601DateFormatter().string(from: Date()).prefix(10) // YYYY-MM-DD format
         
@@ -220,6 +260,12 @@ class SupabaseManager: ObservableObject {
         
         isLoading = true
         defer { isLoading = false }
+        
+        if useMockAuth {
+            var updated = entry
+            updated.eveningCompletedAt = Date()
+            return updated
+        }
         
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"

@@ -35,7 +35,7 @@ struct EveningReflectionView: View {
                 // Premium step content with evening theming
                 TabView(selection: $currentStep) {
                     PremiumQuoteApplicationView(
-                        application: $entry.quoteApplication, 
+                        application: $entry.quoteApplication,
                         quote: entry.dailyQuote ?? "No quote available",
                         timeContext: timeContext
                     )

@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import UIKit
 
 @main
 struct Your_Daily_DoseApp: App {
@@ -22,6 +21,8 @@ struct Your_Daily_DoseApp: App {
                 }
             }
             .environmentObject(supabaseManager)
+            .preferredColorScheme(.dark)
+            .edgesIgnoringSafeArea(.all)
         }
     }
 }

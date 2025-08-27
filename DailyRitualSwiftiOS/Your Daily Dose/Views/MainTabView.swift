@@ -73,6 +73,31 @@ struct ProfileView: View {
     }
 }
 
+// MARK: - Placeholder Views
+struct EntriesView: View {
+    private var timeContext: DesignSystem.TimeContext { .morning }
+    var body: some View {
+        PremiumPlaceholderView(
+            icon: "list.bullet.rectangle.portrait",
+            title: "Entries",
+            subtitle: "Browse your past morning and evening entries",
+            timeContext: timeContext
+        )
+    }
+}
+
+struct InsightsView: View {
+    private var timeContext: DesignSystem.TimeContext { .evening }
+    var body: some View {
+        PremiumPlaceholderView(
+            icon: "brain.head.profile",
+            title: "Insights",
+            subtitle: "AI-powered insights will appear here",
+            timeContext: timeContext
+        )
+    }
+}
+
 struct MainTabView: View {
     @State private var selectedTab: Int
 
@@ -92,32 +117,25 @@ struct MainTabView: View {
                     Text("Today")
                 }
                 .tag(0)
+                .edgesIgnoringSafeArea(.all)
             
-            // Premium placeholder for Progress tab
-            PremiumPlaceholderView(
-                icon: "chart.line.uptrend.xyaxis",
-                title: "Progress",
-                subtitle: "Track your daily ritual journey and see your growth over time",
-                timeContext: timeContext
-            )
-            .tabItem {
-                Image(systemName: "chart.line.uptrend.xyaxis")
-                Text("Progress")
-            }
-            .tag(1)
+            // Entries tab
+            EntriesView()
+                .tabItem {
+                    Image(systemName: "list.bullet.rectangle.portrait")
+                    Text("Entries")
+                }
+                .tag(1)
+                .edgesIgnoringSafeArea(.all)
             
             // Premium placeholder for Insights tab
-            PremiumPlaceholderView(
-                icon: "brain.head.profile",
-                title: "Insights",
-                subtitle: "Discover patterns and receive personalized recommendations",
-                timeContext: timeContext
-            )
-            .tabItem {
-                Image(systemName: "brain.head.profile")
-                Text("Insights")
-            }
-            .tag(2)
+            InsightsView()
+                .tabItem {
+                    Image(systemName: "brain.head.profile")
+                    Text("Insights")
+                }
+                .tag(2)
+                .edgesIgnoringSafeArea(.all)
 
             // Basic Profile tab
             ProfileView()
@@ -126,6 +144,7 @@ struct MainTabView: View {
                     Text("Profile")
                 }
                 .tag(3)
+                .edgesIgnoringSafeArea(.all)
         }
         .tint(timeContext.primaryColor)
         .onAppear {

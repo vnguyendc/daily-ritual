@@ -36,15 +36,15 @@ struct DesignSystem {
         // Background Foundation (Theme-aware - automatically adapts to light/dark mode)
         static let background = Color(
             light: Color(red: 0.97, green: 0.97, blue: 0.98),               // #F8F9FA - Clean White (light)
-            dark: Color(red: 0.04, green: 0.04, blue: 0.05)                 // #0A0B0D - Deep Obsidian (dark)
+            dark: Color(red: 0.04, green: 0.05, blue: 0.06)                 // #0B0C10 - Deeper Obsidian (dark)
         )
         static let secondaryBackground = Color(
             light: Color.white,                                              // #FFFFFF - Pure White (light)
-            dark: Color(red: 0.10, green: 0.11, blue: 0.12)                // #1A1B1F - Carbon Black (dark)
+            dark: Color(red: 0.08, green: 0.09, blue: 0.10)                // #14161A - Near black (dark)
         )
         static let cardBackground = Color(
             light: Color(red: 0.95, green: 0.95, blue: 0.96),              // #F1F3F5 - Light Gray (light)
-            dark: Color(red: 0.18, green: 0.18, blue: 0.20)                // #2D2E33 - Graphite (dark)
+            dark: Color(red: 0.07, green: 0.07, blue: 0.09)                // #111217 - Deep card (dark)
         )
         
         // Dynamic Text Hierarchy (Theme-aware)
@@ -68,11 +68,11 @@ struct DesignSystem {
         // Borders & Dividers (Theme-aware)
         static let border = Color(
             light: Color.gray.opacity(0.3),                                 // Light gray border (light)
-            dark: Color.gray.opacity(0.5)                                   // Lighter gray border (dark)
+            dark: Color.white.opacity(0.16)                                 // Subtle light border (dark)
         )
         static let divider = Color(
             light: Color.gray.opacity(0.2),                                 // Subtle divider (light)
-            dark: Color.gray.opacity(0.3)                                   // More visible divider (dark)
+            dark: Color.white.opacity(0.12)                                 // Subtle but clear (dark)
         )
         
         // MARK: - Custom Dark/Light Mode Definitions
@@ -129,8 +129,8 @@ struct DesignSystem {
         // MARK: - Elite Performance Gradients (Theme-Aware)
         static let morningGradient = LinearGradient(
             colors: [
-                DesignSystem.Colors.background,                     // Adapts to theme
-                DesignSystem.Colors.eliteGold.opacity(0.05)         // Subtle gold tint
+                DesignSystem.Colors.background,
+                DesignSystem.Colors.eliteGold.opacity(0.08)         // Slightly bolder gold tint
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -138,8 +138,8 @@ struct DesignSystem {
         
         static let eveningGradient = LinearGradient(
             colors: [
-                DesignSystem.Colors.background,                     // Adapts to theme
-                DesignSystem.Colors.championBlue.opacity(0.05)      // Subtle blue tint
+                DesignSystem.Colors.background,
+                DesignSystem.Colors.championBlue.opacity(0.08)      // Slightly bolder blue tint
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -663,8 +663,13 @@ extension Color {
     ///   - light: Color for light mode
     ///   - dark: Color for dark mode
     init(light: Color, dark: Color) {
-        // For now, use a simple approach - this can be enhanced later
-        self = light // Default to light mode color
+        #if canImport(UIKit)
+        self = Color(UIColor { traits in
+            traits.userInterfaceStyle == .dark ? UIColor(dark) : UIColor(light)
+        })
+        #else
+        self = light
+        #endif
     }
 }
 

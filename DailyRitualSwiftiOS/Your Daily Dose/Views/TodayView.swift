@@ -12,6 +12,7 @@ struct TodayView: View {
     @StateObject private var viewModel = TodayViewModel()
     @State private var showingMorningRitual = false
     @State private var showingEveningReflection = false
+    @State private var completedGoals: Set<Int> = []
     
     private var timeContext: DesignSystem.TimeContext {
         DesignSystem.TimeContext.current()
@@ -21,6 +22,7 @@ struct TodayView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: DesignSystem.Spacing.sectionSpacing) {
+                    Spacer(minLength: DesignSystem.Spacing.xl)
                     // Premium Header with time-based theming
                     VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                         Text("Daily Ritual")
@@ -32,6 +34,43 @@ struct TodayView: View {
                             .foregroundColor(DesignSystem.Colors.secondaryText)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    // Daily Quote card
+                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.xl, hasShadow: false) {
+                        VStack(alignment: .center, spacing: DesignSystem.Spacing.md) {
+                            if let quote = viewModel.entry.dailyQuote, !quote.isEmpty {
+                                Text("\(quote)")
+                                    .font(DesignSystem.Typography.quoteText)
+                                    .foregroundColor(DesignSystem.Colors.primaryText)
+                                    .multilineTextAlignment(.center)
+                                    .lineSpacing(DesignSystem.Spacing.lineHeightRelaxed - 1.0)
+                                    .padding(.horizontal, DesignSystem.Spacing.lg)
+                                
+                                if let author = viewModel.quoteAuthor, !author.isEmpty {
+                                    Text("— \(author)")
+                                        .font(DesignSystem.Typography.quoteAttribution)
+                                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                                }
+                            } else {
+                                VStack(spacing: DesignSystem.Spacing.sm) {
+                                    Text("No quote yet for today")
+                                        .font(DesignSystem.Typography.bodyMedium)
+                                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                                    Button {
+                                        Task { await viewModel.generateQuote() }
+                                    } label: {
+                                        HStack(spacing: DesignSystem.Spacing.xs) {
+                                            Image(systemName: "sparkles")
+                                            Text("Get Quote")
+                                        }
+                                        .font(DesignSystem.Typography.buttonMedium)
+                                        .foregroundColor(timeContext.primaryColor)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                    }
                     
                     // Premium Morning ritual card
                     if !viewModel.entry.isMorningComplete {
@@ -201,22 +240,30 @@ struct TodayView: View {
 
                                 VStack(spacing: DesignSystem.Spacing.md) {
                                     ForEach(Array(goals.prefix(3).enumerated()), id: \.offset) { idx, goal in
-                                        HStack(spacing: DesignSystem.Spacing.md) {
-                                            ZStack {
-                                                Circle()
-                                                    .fill(DesignSystem.Colors.evening.opacity(0.6))
-                                                    .frame(width: 36, height: 36)
-                                                Text("\(idx + 1)")
-                                                    .font(DesignSystem.Typography.buttonMedium)
+                                        Button(action: {
+                                            let isChecked = completedGoals.contains(idx)
+                                            if isChecked { completedGoals.remove(idx) } else { completedGoals.insert(idx) }
+                                        }) {
+                                            HStack(spacing: DesignSystem.Spacing.md) {
+                                                ZStack {
+                                                    Circle()
+                                                        .fill(DesignSystem.Colors.evening.opacity(0.6))
+                                                        .frame(width: 36, height: 36)
+                                                    Text("\(idx + 1)")
+                                                        .font(DesignSystem.Typography.buttonMedium)
+                                                        .foregroundColor(DesignSystem.Colors.primaryText)
+                                                }
+                                                Text(goal)
+                                                    .font(DesignSystem.Typography.bodyLargeSafe)
                                                     .foregroundColor(DesignSystem.Colors.primaryText)
+                                                    .strikethrough(completedGoals.contains(idx), color: DesignSystem.Colors.secondaryText)
+                                                Spacer()
+                                                Image(systemName: completedGoals.contains(idx) ? "checkmark.square.fill" : "square")
+                                                    .foregroundColor(completedGoals.contains(idx) ? DesignSystem.Colors.morningAccent : DesignSystem.Colors.secondaryText)
+                                                    .font(DesignSystem.Typography.headlineMedium)
                                             }
-                                            Text(goal)
-                                                .font(DesignSystem.Typography.bodyLargeSafe)
-                                                .foregroundColor(DesignSystem.Colors.primaryText)
-                                            Spacer()
-                                            Image(systemName: "checkmark.square.fill")
-                                                .foregroundColor(DesignSystem.Colors.morningAccent)
                                         }
+                                        .buttonStyle(.plain)
                                     }
                                 }
                             }
@@ -286,6 +333,7 @@ struct TodayView: View {
                 .padding(DesignSystem.Spacing.cardPadding)
             }
             .premiumBackgroundGradient(timeContext)
+            .edgesIgnoringSafeArea(.all)
             .navigationTitle("")
             .navigationBarHidden(true)
             .refreshable {
@@ -296,9 +344,11 @@ struct TodayView: View {
             }
             .sheet(isPresented: $showingMorningRitual) {
                 MorningRitualView(entry: $viewModel.entry)
+                    .edgesIgnoringSafeArea(.all)
             }
             .sheet(isPresented: $showingEveningReflection) {
                 EveningReflectionView(entry: $viewModel.entry)
+                    .edgesIgnoringSafeArea(.all)
             }
         }
     }
@@ -327,12 +377,13 @@ extension TodayView {
 class TodayViewModel: ObservableObject {
     @Published var entry = DailyEntry(userId: UUID())
     @Published var isLoading = false
+    @Published var quoteAuthor: String? = nil
     
     private let supabase = SupabaseManager.shared
     
     var shouldShowEvening: Bool {
-        let hour = Calendar.current.component(.hour, from: Date())
-        return hour >= 17 // 5 PM
+        // Show in the evening by time OR immediately after morning completion
+        return entry.shouldShowEvening
     }
     
     func loadToday() async {
@@ -367,6 +418,20 @@ class TodayViewModel: ObservableObject {
     var durationText: String {
         guard let d = entry.plannedDuration, d > 0 else { return "-" }
         return "\(d) min"
+    }
+    
+    // MARK: - Quote
+    func generateQuote() async {
+        do {
+            let text = try await supabase.generateQuoteText(for: entry.goals ?? [])
+            await MainActor.run {
+                entry.dailyQuote = text
+                // When using mock generateQuoteText, author isn't returned
+                quoteAuthor = nil
+            }
+        } catch {
+            print("Failed to generate quote: \(error)")
+        }
     }
 }
 

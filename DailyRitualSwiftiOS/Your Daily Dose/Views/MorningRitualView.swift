@@ -20,9 +20,9 @@ struct MorningRitualView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Premium progress indicator (5 steps as per product doc)
+                // Premium progress indicator (4 steps)
                 HStack(spacing: DesignSystem.Spacing.sm) {
-                    ForEach(0..<5, id: \.self) { index in
+                    ForEach(0..<4, id: \.self) { index in
                         Circle()
                             .fill(index <= currentStep ? timeContext.primaryColor : DesignSystem.Colors.divider)
                             .frame(width: 12, height: 12)
@@ -31,57 +31,34 @@ struct MorningRitualView: View {
                 }
                 .padding(.top, DesignSystem.Spacing.lg)
                 
-                // Premium step content with time-based theming (5 steps per product doc)
+                // Premium step content with time-based theming (4 steps)
                 TabView(selection: $currentStep) {
                     // Step 1: Today's 3 Goals
                     PremiumGoalsStepView(goalsText: $entry.goalsText, timeContext: timeContext)
                         .tag(0)
                     
-                    // Step 2: AI-Generated Affirmation
-                    PremiumAffirmationStepView(
-                        affirmation: $entry.affirmation,
-                        isGenerating: viewModel.isGeneratingAffirmation,
-                        timeContext: timeContext,
-                        onGenerate: {
-                            Task {
-                                let goalsArray = entry.goals ?? []
-                                if let affirmation = await viewModel.generateAffirmation(goals: goalsArray) {
-                                    entry.affirmation = affirmation
-                                }
-                            }
-                        }
-                    )
-                    .tag(1)
-                    
-                    // Step 3: 3 Things I'm Grateful For
+                    // Step 2: 3 Things I'm Grateful For
                     PremiumGratitudeStepView(gratitudeText: $entry.gratitudeText, timeContext: timeContext)
-                        .tag(2)
+                        .tag(1)
                     
-                    // Step 4: Quote for Today
-                    PremiumQuoteStepView(
-                        quote: $entry.quote,
-                        quoteReflection: $entry.quoteReflection,
-                        isGenerating: viewModel.isGeneratingQuote,
-                        timeContext: timeContext,
-                        onGenerate: {
-                            Task {
-                                if let quote = await viewModel.generateQuote() {
-                                    entry.quote = quote
-                                }
-                            }
-                        }
-                    )
-                    .tag(3)
-                    
-                    // Step 5: Today's Training Plan
+                    // Step 3: Today's Training Plan
                     PremiumTrainingPlanStepView(
                         plannedTrainingType: $entry.plannedTrainingType,
                         plannedTrainingTime: $entry.plannedTrainingTime,
                         plannedIntensity: $entry.plannedIntensity,
                         plannedDuration: $entry.plannedDuration,
+                        plannedNotes: $entry.plannedNotes,
                         timeContext: timeContext
                     )
-                    .tag(4)
+                    .tag(2)
+                    
+                    // Step 4: Affirmation (user writes; suggested text shown)
+                    PremiumAffirmationStepView(
+                        affirmation: $entry.affirmation,
+                        suggestedText: viewModel.suggestedAffirmation,
+                        timeContext: timeContext
+                    )
+                    .tag(3)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 
@@ -89,7 +66,7 @@ struct MorningRitualView: View {
                 HStack {
                     Spacer()
                     
-                    if currentStep < 4 {
+                    if currentStep < 3 {
                         Button {
                             withAnimation(DesignSystem.Animation.spring) {
                                 currentStep += 1
@@ -159,16 +136,16 @@ struct MorningRitualView: View {
                     onDismiss: { dismiss() }
                 )
             }
+            .task { await viewModel.prepare(goals: entry.goals ?? []) }
         }
     }
     
     private var canProceed: Bool {
         switch currentStep {
         case 0: return !(entry.goalsText?.isEmpty ?? true) // Goals
-        case 1: return !(entry.affirmation?.isEmpty ?? true) // Affirmation  
-        case 2: return !(entry.gratitudeText?.isEmpty ?? true) // Gratitude
-        case 3: return !(entry.quote?.isEmpty ?? true) && !(entry.quoteReflection?.isEmpty ?? true) // Quote + Reflection
-        case 4: return entry.plannedTrainingType != nil // Training Plan
+        case 1: return !(entry.gratitudeText?.isEmpty ?? true) // Gratitude
+        case 2: return entry.plannedTrainingType != nil // Training Plan
+        case 3: return !(entry.affirmation?.isEmpty ?? true) // Affirmation
         default: return false
         }
     }
@@ -185,24 +162,24 @@ struct PremiumGoalsStepView: View {
     @Binding var goalsText: String?
     let timeContext: DesignSystem.TimeContext
     
-    // Convert between display text and array format
-    private var goalsArray: [String] {
-        guard let text = goalsText, !text.isEmpty else { return ["", "", ""] }
-        let lines = text.components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-        
-        // Ensure we always have 3 slots
-        var goals = lines.prefix(3).map { $0 }
-        while goals.count < 3 {
-            goals.append("")
-        }
-        return Array(goals)
+    private var numberedPlaceholder: String {
+        "1. Performance goal\n2. Process goal\n3. Personal goal"
     }
-    
-    private func updateGoalsText(from goals: [String]) {
-        let nonEmptyGoals = goals.filter { !$0.isEmpty }
-        goalsText = nonEmptyGoals.isEmpty ? nil : nonEmptyGoals.joined(separator: "\n")
+    @State private var displayGoals: String = ""
+
+    private func enforceNumbering(_ text: String) -> (display: String, lines: [String]) {
+        var rawLines = text.components(separatedBy: CharacterSet.newlines)
+        if rawLines.count > 3 { rawLines = Array(rawLines.prefix(3)) }
+        var numberedLines: [String] = []
+        var contentLines: [String] = []
+        for (idx, line) in rawLines.enumerated() {
+            let removed = line.replacingOccurrences(of: "^\\s*\\d+\\.\\s*", with: "", options: .regularExpression)
+            numberedLines.append("\(idx + 1). \(removed)")
+            let trimmedContent = removed.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmedContent.isEmpty { contentLines.append(trimmedContent) }
+        }
+        let display = numberedLines.joined(separator: "\n")
+        return (display, contentLines)
     }
     
     var body: some View {
@@ -215,35 +192,20 @@ struct PremiumGoalsStepView: View {
                 )
                 
                 PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md) {
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                        ForEach(0..<3, id: \.self) { index in
-                            HStack(alignment: .top, spacing: DesignSystem.Spacing.sm) {
-                                // Numbered bullet point
-                                Text("\(index + 1).")
-                                    .font(DesignSystem.Typography.buttonMedium)
-                                    .foregroundColor(timeContext.primaryColor)
-                                    .frame(width: 20, alignment: .leading)
-                                
-                                // Goal text field
-                                TextField(goalPlaceholder(for: index), text: Binding(
-                                    get: { goalsArray[index] },
-                                    set: { newValue in
-                                        var goals = goalsArray
-                                        goals[index] = newValue
-                                        updateGoalsText(from: goals)
-                                    }
-                                ), axis: .vertical)
-                                .font(DesignSystem.Typography.journalTextSafe)
-                                .foregroundColor(DesignSystem.Colors.primaryText)
-                                .textFieldStyle(PlainTextFieldStyle())
-                                .lineLimit(2...4)
-                            }
-                            
-                            if index < 2 {
-                                Divider()
-                                    .background(DesignSystem.Colors.divider.opacity(0.3))
-                            }
-                        }
+                    TextEditor(text: $displayGoals)
+                    .font(DesignSystem.Typography.journalTextSafe)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+                    .scrollContentBackground(.hidden)
+                    .background(Color.clear)
+                    .frame(minHeight: 150)
+                    .onChange(of: displayGoals) { newValue in
+                        let result = enforceNumbering(newValue)
+                        if result.display != newValue { displayGoals = result.display }
+                        goalsText = result.lines.isEmpty ? nil : result.lines.joined(separator: "\n")
+                    }
+                    .onAppear {
+                        let existing = goalsText?.components(separatedBy: "\n").joined(separator: "\n") ?? ""
+                        displayGoals = enforceNumbering(existing).display
                     }
                 }
                 
@@ -253,15 +215,13 @@ struct PremiumGoalsStepView: View {
                             HStack {
                                 Text("💡")
                                     .font(DesignSystem.Typography.headlineSmall)
-                                Text("Example goals:")
+                                Text("Tip: Type on new lines — we'll number them for you")
                                     .font(DesignSystem.Typography.buttonMedium)
                                     .foregroundColor(timeContext.primaryColor)
                             }
                             
                             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                Text("1. Performance goal: Hit a new PR in today's workout")
-                                Text("2. Process goal: Focus on form and technique over speed")
-                                Text("3. Personal goal: Get 8 hours of sleep tonight")
+                                Text(numberedPlaceholder)
                             }
                             .font(DesignSystem.Typography.bodyMedium)
                             .foregroundColor(DesignSystem.Colors.secondaryText)
@@ -272,39 +232,30 @@ struct PremiumGoalsStepView: View {
             .padding(DesignSystem.Spacing.cardPadding)
         }
     }
-    
-    private func goalPlaceholder(for index: Int) -> String {
-        switch index {
-        case 0: return "Performance goal (technique, PR, etc.)"
-        case 1: return "Process goal (effort, focus, etc.)"
-        case 2: return "Personal goal (recovery, nutrition, etc.)"
-        default: return "Goal \(index + 1)"
-        }
-    }
 }
 
 struct PremiumGratitudeStepView: View {
     @Binding var gratitudeText: String?
     let timeContext: DesignSystem.TimeContext
     
-    // Convert between display text and array format
-    private var gratitudesArray: [String] {
-        guard let text = gratitudeText, !text.isEmpty else { return ["", "", ""] }
-        let lines = text.components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-        
-        // Ensure we always have 3 slots
-        var gratitudes = lines.prefix(3).map { $0 }
-        while gratitudes.count < 3 {
-            gratitudes.append("")
-        }
-        return Array(gratitudes)
+    private var numberedPlaceholder: String {
+        "1. Family and friends who support me\n2. My health and ability to pursue my goals\n3. The opportunity to learn and grow today"
     }
+    @State private var displayGratitudes: String = ""
     
-    private func updateGratitudeText(from gratitudes: [String]) {
-        let nonEmptyGratitudes = gratitudes.filter { !$0.isEmpty }
-        gratitudeText = nonEmptyGratitudes.isEmpty ? nil : nonEmptyGratitudes.joined(separator: "\n")
+    private func enforceNumbering(_ text: String) -> (display: String, lines: [String]) {
+        var rawLines = text.components(separatedBy: CharacterSet.newlines)
+        if rawLines.count > 3 { rawLines = Array(rawLines.prefix(3)) }
+        var numberedLines: [String] = []
+        var contentLines: [String] = []
+        for (idx, line) in rawLines.enumerated() {
+            let removed = line.replacingOccurrences(of: "^\\s*\\d+\\.\\s*", with: "", options: .regularExpression)
+            numberedLines.append("\(idx + 1). \(removed)")
+            let trimmedContent = removed.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmedContent.isEmpty { contentLines.append(trimmedContent) }
+        }
+        let display = numberedLines.joined(separator: "\n")
+        return (display, contentLines)
     }
     
     var body: some View {
@@ -317,35 +268,20 @@ struct PremiumGratitudeStepView: View {
                 )
                 
                 PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md) {
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                        ForEach(0..<3, id: \.self) { index in
-                            HStack(alignment: .top, spacing: DesignSystem.Spacing.sm) {
-                                // Numbered bullet point
-                                Text("\(index + 1).")
-                                    .font(DesignSystem.Typography.buttonMedium)
-                                    .foregroundColor(timeContext.primaryColor)
-                                    .frame(width: 20, alignment: .leading)
-                                
-                                // Gratitude text field
-                                TextField(gratitudePlaceholder(for: index), text: Binding(
-                                    get: { gratitudesArray[index] },
-                                    set: { newValue in
-                                        var gratitudes = gratitudesArray
-                                        gratitudes[index] = newValue
-                                        updateGratitudeText(from: gratitudes)
-                                    }
-                                ), axis: .vertical)
-                                .font(DesignSystem.Typography.journalTextSafe)
-                                .foregroundColor(DesignSystem.Colors.primaryText)
-                                .textFieldStyle(PlainTextFieldStyle())
-                                .lineLimit(2...4)
-                            }
-                            
-                            if index < 2 {
-                                Divider()
-                                    .background(DesignSystem.Colors.divider.opacity(0.3))
-                            }
-                        }
+                    TextEditor(text: $displayGratitudes)
+                    .font(DesignSystem.Typography.journalTextSafe)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+                    .scrollContentBackground(.hidden)
+                    .background(Color.clear)
+                    .frame(minHeight: 150)
+                    .onChange(of: displayGratitudes) { newValue in
+                        let result = enforceNumbering(newValue)
+                        if result.display != newValue { displayGratitudes = result.display }
+                        gratitudeText = result.lines.isEmpty ? nil : result.lines.joined(separator: "\n")
+                    }
+                    .onAppear {
+                        let existing = gratitudeText?.components(separatedBy: "\n").joined(separator: "\n") ?? ""
+                        displayGratitudes = enforceNumbering(existing).display
                     }
                 }
                 
@@ -355,15 +291,13 @@ struct PremiumGratitudeStepView: View {
                             HStack {
                                 Text("🙏")
                                     .font(DesignSystem.Typography.headlineSmall)
-                                Text("What to be grateful for:")
+                                Text("Tip: Type on new lines — we'll number them for you")
                                     .font(DesignSystem.Typography.buttonMedium)
                                     .foregroundColor(timeContext.primaryColor)
                             }
                             
                             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                Text("1. Family and friends who support me")
-                                Text("2. My health and ability to pursue my goals")
-                                Text("3. The opportunity to learn and grow today")
+                                Text(numberedPlaceholder)
                             }
                             .font(DesignSystem.Typography.bodyMedium)
                             .foregroundColor(DesignSystem.Colors.secondaryText)
@@ -374,37 +308,20 @@ struct PremiumGratitudeStepView: View {
             .padding(DesignSystem.Spacing.cardPadding)
         }
     }
-    
-    private func gratitudePlaceholder(for index: Int) -> String {
-        switch index {
-        case 0: return "Physical abilities, opportunities..."
-        case 1: return "Support system, relationships..."
-        case 2: return "Personal growth, achievements..."
-        default: return "Something you're grateful for"
-        }
-    }
 }
 
 struct PremiumAffirmationStepView: View {
     @Binding var affirmation: String?
-    let isGenerating: Bool
+    let suggestedText: String?
     let timeContext: DesignSystem.TimeContext
-    let onGenerate: () -> Void
     
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
                 PremiumSectionHeader(
                     "Affirmation",
-                    subtitle: "Write or generate a positive affirmation to boost your confidence and set your intention.",
+                    subtitle: "Write your own affirmation. We'll suggest one to inspire you.",
                     timeContext: timeContext
-                )
-                
-                PremiumPrimaryButton(
-                    isGenerating ? "Generating..." : "Generate Affirmation",
-                    isLoading: isGenerating,
-                    timeContext: timeContext,
-                    action: onGenerate
                 )
                 
                 PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md) {
@@ -419,21 +336,19 @@ struct PremiumAffirmationStepView: View {
                     .frame(minHeight: 150)
                 }
                 
-                if affirmation?.isEmpty ?? true {
+                if let suggestion = suggestedText, (affirmation?.isEmpty ?? true) {
                     PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, hasShadow: false) {
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                             HStack {
                                 Text("💪")
                                     .font(DesignSystem.Typography.headlineSmall)
-                                Text("Example affirmations:")
+                                Text("Suggested affirmation:")
                                     .font(DesignSystem.Typography.buttonMedium)
                                     .foregroundColor(timeContext.primaryColor)
                             }
                             
                             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                Text("• I am capable of achieving my goals today")
-                                Text("• I approach challenges with confidence and creativity")
-                                Text("• I am worthy of success and happiness")
+                                Text("\(suggestion)")
                             }
                             .font(DesignSystem.Typography.bodyMedium)
                             .foregroundColor(DesignSystem.Colors.secondaryText)
@@ -498,75 +413,26 @@ struct PremiumOtherThoughtsStepView: View {
     }
 }
 
-struct PremiumQuoteStepView: View {
+struct PremiumQuoteDisplayStepView: View {
     @Binding var quote: String?
-    @Binding var quoteReflection: String?
-    let isGenerating: Bool
     let timeContext: DesignSystem.TimeContext
-    let onGenerate: () -> Void
     
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
                 PremiumSectionHeader(
                     "Quote for Today",
-                    subtitle: "Get inspired with a curated quote and reflect on how it applies to your day.",
+                    subtitle: "Your quote is prepared for you each morning.",
                     timeContext: timeContext
                 )
                 
-                PremiumPrimaryButton(
-                    isGenerating ? "Generating..." : "Generate Quote",
-                    isLoading: isGenerating,
-                    timeContext: timeContext,
-                    action: onGenerate
-                )
-                
                 if let quote = quote, !quote.isEmpty {
-                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md) {
+                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, hasShadow: false) {
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                             Text(quote)
                                 .font(DesignSystem.Typography.quoteText)
                                 .foregroundColor(DesignSystem.Colors.primaryText)
                                 .italic()
-                            
-                            Divider()
-                                .background(DesignSystem.Colors.divider)
-                            
-                            Text("How does this quote apply to your day?")
-                                .font(DesignSystem.Typography.buttonMedium)
-                                .foregroundColor(timeContext.primaryColor)
-                            
-                            TextEditor(text: Binding(
-                                get: { quoteReflection ?? "" },
-                                set: { quoteReflection = $0.isEmpty ? nil : $0 }
-                            ))
-                            .font(DesignSystem.Typography.journalTextSafe)
-                            .foregroundColor(DesignSystem.Colors.primaryText)
-                            .scrollContentBackground(.hidden)
-                            .background(Color.clear)
-                            .frame(minHeight: 100)
-                        }
-                    }
-                }
-                
-                if quote?.isEmpty ?? true {
-                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, hasShadow: false) {
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                            HStack {
-                                Text("✨")
-                                    .font(DesignSystem.Typography.headlineSmall)
-                                Text("Example quotes:")
-                                    .font(DesignSystem.Typography.buttonMedium)
-                                    .foregroundColor(timeContext.primaryColor)
-                            }
-                            
-                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                Text("• \"The only impossible journey is the one you never begin.\"")
-                                Text("• \"Success is not final, failure is not fatal: it is the courage to continue that counts.\"")
-                                Text("• \"Champions are made from something deep inside them.\"")
-                            }
-                            .font(DesignSystem.Typography.bodyMedium)
-                            .foregroundColor(DesignSystem.Colors.secondaryText)
                         }
                     }
                 }
@@ -581,10 +447,12 @@ struct PremiumTrainingPlanStepView: View {
     @Binding var plannedTrainingTime: String?
     @Binding var plannedIntensity: String?
     @Binding var plannedDuration: Int?
+    @Binding var plannedNotes: String?
     let timeContext: DesignSystem.TimeContext
     
     private let trainingTypes = ["strength", "cardio", "skills", "competition", "rest", "cross_training", "recovery"]
     private let intensityLevels = ["light", "moderate", "hard", "very_hard"]
+    @State private var timePickerDate: Date = Date()
     
     var body: some View {
         ScrollView {
@@ -597,33 +465,20 @@ struct PremiumTrainingPlanStepView: View {
                 
                 PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md) {
                     VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                        // Training Type
+                        // Training Type (Picker)
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                             Text("Training Type")
                                 .font(DesignSystem.Typography.buttonMedium)
                                 .foregroundColor(timeContext.primaryColor)
-                            
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: DesignSystem.Spacing.sm) {
+                            Picker("Training Type", selection: Binding(
+                                get: { plannedTrainingType ?? trainingTypes.first! },
+                                set: { plannedTrainingType = $0 }
+                            )) {
                                 ForEach(trainingTypes, id: \.self) { type in
-                                    Button {
-                                        plannedTrainingType = type
-                                    } label: {
-                                        Text(type.capitalized)
-                                            .font(DesignSystem.Typography.buttonSmall)
-                                            .foregroundColor(plannedTrainingType == type ? DesignSystem.Colors.invertedText : DesignSystem.Colors.primaryText)
-                                            .padding(.horizontal, DesignSystem.Spacing.md)
-                                            .padding(.vertical, DesignSystem.Spacing.sm)
-                                            .background(
-                                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
-                                                    .fill(plannedTrainingType == type ? timeContext.primaryColor : DesignSystem.Colors.cardBackground)
-                                            )
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
-                                                    .stroke(DesignSystem.Colors.divider, lineWidth: 1)
-                                            )
-                                    }
+                                    Text(type.capitalized).tag(type)
                                 }
                             }
+                            .pickerStyle(.menu)
                         }
                         
                         Divider()
@@ -635,15 +490,20 @@ struct PremiumTrainingPlanStepView: View {
                                 .font(DesignSystem.Typography.buttonMedium)
                                 .foregroundColor(DesignSystem.Colors.secondaryText)
                             
-                            HStack {
+                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                                 Text("Time:")
                                     .font(DesignSystem.Typography.bodyMedium)
-                                TextField("e.g., 7:00 AM", text: Binding(
-                                    get: { plannedTrainingTime ?? "" },
-                                    set: { plannedTrainingTime = $0.isEmpty ? nil : $0 }
-                                ))
-                                .font(DesignSystem.Typography.bodyMedium)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                DatePicker("", selection: Binding(
+                                    get: { timePickerDate },
+                                    set: { newDate in
+                                        timePickerDate = newDate
+                                        let fmt = DateFormatter()
+                                        fmt.dateFormat = "h:mm a"
+                                        plannedTrainingTime = fmt.string(from: newDate)
+                                    }
+                                ), displayedComponents: .hourAndMinute)
+                                .datePickerStyle(.wheel)
+                                .labelsHidden()
                             }
                             
                             HStack {
@@ -653,6 +513,19 @@ struct PremiumTrainingPlanStepView: View {
                                     .font(DesignSystem.Typography.bodyMedium)
                                     .textFieldStyle(RoundedBorderTextFieldStyle())
                                     .keyboardType(.numberPad)
+                            }
+                            
+                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                                Text("Notes:")
+                                    .font(DesignSystem.Typography.bodyMedium)
+                                TextEditor(text: Binding(
+                                    get: { plannedNotes ?? "" },
+                                    set: { plannedNotes = $0.isEmpty ? nil : $0 }
+                                ))
+                                .font(DesignSystem.Typography.journalTextSafe)
+                                .frame(minHeight: 100)
+                                .scrollContentBackground(.hidden)
+                                .background(Color.clear)
                             }
                         }
                     }
@@ -667,33 +540,19 @@ struct PremiumTrainingPlanStepView: View {
 
 @MainActor
 class MorningRitualViewModel: ObservableObject {
-    @Published var isGeneratingAffirmation = false
-    @Published var isGeneratingQuote = false
+    @Published var suggestedAffirmation: String?
+    @Published var preGeneratedQuote: String?
     
     private let supabase = SupabaseManager.shared
     
-    func generateAffirmation(goals: [String]) async -> String? {
-        isGeneratingAffirmation = true
-        defer { isGeneratingAffirmation = false }
-        
-        do {
-            return try await supabase.generateAffirmation(for: goals)
-        } catch {
-            print("Failed to generate affirmation: \(error)")
-            return nil
+    func prepare(goals: [String]) async {
+        // Generate suggested affirmation and quote once in the morning
+        if suggestedAffirmation == nil {
+            if let text = try? await supabase.generateAffirmation(for: goals) {
+                suggestedAffirmation = text
+            }
         }
-    }
-    
-    func generateQuote() async -> String? {
-        isGeneratingQuote = true
-        defer { isGeneratingQuote = false }
-        
-        do {
-            return try await supabase.generateQuoteText(for: [])
-        } catch {
-            print("Failed to generate quote: \(error)")
-            return nil
-        }
+        // Quote generation removed from morning flow; keep placeholder if needed later
     }
 }
 
