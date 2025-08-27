@@ -57,24 +57,20 @@ Daily Practice:
    - Process goal (effort, focus, etc.)
    - Personal goal (recovery, nutrition, etc.)
 
-2. AI-Generated Affirmation (For MVP, just user inputted affirmation)
-   - Based on recent goals, mood patterns, upcoming training, Whoop recovery
-   - Sport-specific language and scenarios
-   - Option to regenerate or edit
-
-3. 3 Things I'm Grateful For
+2. 3 Things I'm Grateful For
    - Physical abilities, opportunities, support system
    - Quick-select common options + free text
 
-4. Quote for Today
-   - Curated athlete/champion quotes
-   - Rotated based on user's sport and current focus
-   - Space to write brief reflection on quote
-
-5. Today's Training Plan
+3. Today's Training Plan
    - Training type (strength, cardio, skills, competition, rest)
    - Scheduled time (triggers auto-reflection notification)
    - Expected intensity/duration for context
+   - Notes (free text for specifics like focus, location, coach cues)
+
+4. AI-Generated Affirmation (For MVP, just user inputted affirmation)
+   - Based on recent goals, mood patterns, upcoming training, Whoop recovery
+   - Sport-specific language and scenarios
+   - Option to regenerate or edit
 
 ```
 
@@ -207,6 +203,7 @@ CREATE TABLE daily_entries (
     planned_training_time TIME,
     planned_intensity TEXT, -- light, moderate, hard
     planned_duration INTEGER, -- minutes
+    planned_notes TEXT,
 
     morning_completed_at TIMESTAMP,
 
