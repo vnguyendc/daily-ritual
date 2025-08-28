@@ -222,7 +222,12 @@ class SupabaseManager: ObservableObject {
         let morningData = MorningRitualRequest(
             goals: entry.goals ?? [],
             gratitudes: entry.gratitudes ?? [],
-            quote_reflection: entry.quoteReflection
+            quote_reflection: entry.quoteReflection,
+            planned_training_type: entry.plannedTrainingType,
+            planned_training_time: entry.plannedTrainingTime,
+            planned_intensity: entry.plannedIntensity,
+            planned_duration: entry.plannedDuration,
+            planned_notes: entry.plannedNotes
         )
         
         request.httpBody = try JSONEncoder().encode(morningData)
@@ -422,6 +427,11 @@ struct MorningRitualRequest: Codable {
     let goals: [String]
     let gratitudes: [String]
     let quote_reflection: String?
+    let planned_training_type: String?
+    let planned_training_time: String?
+    let planned_intensity: String?
+    let planned_duration: Int?
+    let planned_notes: String?
 }
 
 struct MorningRitualResponse: Codable {

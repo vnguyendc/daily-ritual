@@ -298,6 +298,14 @@ serve(async (req) => {
 3. **Data Export**: Ensure smooth transition for existing users
 4. **Backward Compatibility**: Maintain basic functionality during transition
 
+## Data Model Note: Hybrid Approach
+
+- Short term: Keep `daily_entries` as the unique-per-day roll-up backing Today/Morning/Evening flows.
+- Medium term: Introduce `journal_items` for granular, typed content (`goal`, `affirmation`, `gratitude`, `training_plan`, `workout_reflection`, `quote_reflection`, `note`) with JSON payloads.
+- Enforcement: Partial unique indexes (e.g., one affirmation per day), optional enum for `kind`.
+- API: Aggregate items into day responses; daily roll-up can remain a table or become a view later.
+- Migration path: Start using `journal_items` for new features/notes first; backfill from `daily_entries` if/when we switch to item-first aggregation.
+
 ## Success Metrics
 
 ### Technical Milestones

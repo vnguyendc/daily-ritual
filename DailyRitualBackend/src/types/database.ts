@@ -72,6 +72,7 @@ export interface Database {
           planned_training_time: string | null
           planned_intensity: 'light' | 'moderate' | 'hard' | 'very_hard' | null
           planned_duration: number | null
+          planned_notes: string | null
           morning_completed_at: string | null
           quote_application: string | null
           day_went_well: string | null
@@ -94,6 +95,7 @@ export interface Database {
           planned_training_time?: string | null
           planned_intensity?: 'light' | 'moderate' | 'hard' | 'very_hard' | null
           planned_duration?: number | null
+          planned_notes?: string | null
           morning_completed_at?: string | null
           quote_application?: string | null
           day_went_well?: string | null
@@ -114,6 +116,7 @@ export interface Database {
           planned_training_time?: string | null
           planned_intensity?: 'light' | 'moderate' | 'hard' | 'very_hard' | null
           planned_duration?: number | null
+          planned_notes?: string | null
           morning_completed_at?: string | null
           quote_application?: string | null
           day_went_well?: string | null

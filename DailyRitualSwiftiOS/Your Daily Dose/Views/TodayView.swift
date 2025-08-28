@@ -13,6 +13,7 @@ struct TodayView: View {
     @State private var showingMorningRitual = false
     @State private var showingEveningReflection = false
     @State private var completedGoals: Set<Int> = []
+    @State private var selectedDate: Date = Date()
     
     private var timeContext: DesignSystem.TimeContext {
         DesignSystem.TimeContext.current()
@@ -34,6 +35,40 @@ struct TodayView: View {
                             .foregroundColor(DesignSystem.Colors.secondaryText)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
+
+                    // Weekly date strip
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: DesignSystem.Spacing.md) {
+                            ForEach(weekDates(for: selectedDate), id: \.self) { date in
+                                let isSelected = Calendar.current.isDate(date, inSameDayAs: selectedDate)
+                                Button {
+                                    withAnimation(DesignSystem.Animation.gentle) {
+                                        selectedDate = date
+                                    }
+                                } label: {
+                                    VStack(spacing: DesignSystem.Spacing.xs) {
+                                        Text(date, format: .dateTime.weekday(.abbreviated))
+                                            .font(DesignSystem.Typography.metadata)
+                                            .foregroundColor(isSelected ? DesignSystem.Colors.invertedText : DesignSystem.Colors.secondaryText)
+                                        Text(date, format: .dateTime.day())
+                                            .font(DesignSystem.Typography.buttonMedium)
+                                            .foregroundColor(isSelected ? DesignSystem.Colors.invertedText : DesignSystem.Colors.primaryText)
+                                    }
+                                    .frame(width: 52, height: 64)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 14)
+                                            .fill(isSelected ? timeContext.primaryColor : DesignSystem.Colors.cardBackground)
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 14)
+                                            .stroke(DesignSystem.Colors.border, lineWidth: isSelected ? 0 : 1)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, DesignSystem.Spacing.xs)
+                    }
                     
                     // Daily Quote card
                     PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.xl, hasShadow: false) {
@@ -336,6 +371,32 @@ struct TodayView: View {
             .edgesIgnoringSafeArea(.all)
             .navigationTitle("")
             .navigationBarHidden(true)
+            // Floating + action button
+            .overlay(alignment: .bottomTrailing) {
+                Button {
+                    // Quick action: open Morning or Evening depending on state
+                    if !viewModel.entry.isMorningComplete {
+                        showingMorningRitual = true
+                    } else if viewModel.shouldShowEvening && !viewModel.entry.isEveningComplete {
+                        showingEveningReflection = true
+                    } else {
+                        showingMorningRitual = true
+                    }
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(timeContext.primaryColor)
+                            .frame(width: 56, height: 56)
+                            .shadow(color: DesignSystem.Colors.background.opacity(0.3), radius: 8, x: 0, y: 4)
+                        Image(systemName: "plus")
+                            .foregroundColor(DesignSystem.Colors.invertedText)
+                            .font(.system(size: 22, weight: .bold))
+                    }
+                }
+                .buttonStyle(.plain)
+                .padding(.trailing, DesignSystem.Spacing.lg)
+                .padding(.bottom, DesignSystem.Spacing.lg)
+            }
             .refreshable {
                 await viewModel.refresh()
             }
@@ -369,6 +430,13 @@ extension TodayView {
                 .font(DesignSystem.Typography.bodyLargeSafe)
                 .foregroundColor(DesignSystem.Colors.primaryText)
         }
+    }
+
+    // Generate the week (Mon-Sun) containing a reference date
+    func weekDates(for reference: Date) -> [Date] {
+        let calendar = Calendar.current
+        let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: reference)) ?? reference
+        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: startOfWeek) }
     }
 }
 

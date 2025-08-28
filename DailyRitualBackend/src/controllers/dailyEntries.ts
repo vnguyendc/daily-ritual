@@ -1,7 +1,7 @@
 // Daily Entries Controller
 import { Request, Response } from 'express'
 import { z } from 'zod'
-import { DatabaseService, getUserFromToken } from '../services/supabase.js'
+import { DatabaseService, getUserFromToken, supabaseServiceClient } from '../services/supabase.js'
 import type { MorningRitualRequest, EveningReflectionRequest, APIResponse } from '../types/api.js'
 
 // Validation schemas
@@ -12,7 +12,8 @@ const morningRitualSchema = z.object({
   planned_training_type: z.enum(['strength', 'cardio', 'skills', 'competition', 'rest', 'cross_training', 'recovery']).optional(),
   planned_training_time: z.string().optional(),
   planned_intensity: z.enum(['light', 'moderate', 'hard', 'very_hard']).optional(),
-  planned_duration: z.number().min(5).max(600).optional()
+  planned_duration: z.number().min(5).max(600).optional(),
+  planned_notes: z.string().max(2000).optional()
 })
 
 const eveningReflectionSchema = z.object({
@@ -46,7 +47,7 @@ export class DailyEntriesController {
       } else {
         user = await getUserFromToken(token)
       }
-      const { date } = req.params
+      const date = req.params.date as string
 
       // Validate date format
       if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -62,10 +63,11 @@ export class DailyEntriesController {
 
       res.json(response)
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
       console.error('Error getting daily entry:', error)
       res.status(500).json({
         success: false,
-        error: { error: 'Internal server error', message: error.message }
+        error: { error: 'Internal server error', message }
       })
     }
   }
@@ -92,7 +94,7 @@ export class DailyEntriesController {
       } else {
         user = await getUserFromToken(token)
       }
-      const { date } = req.params
+      const date = req.params.date as string
 
       // Validate date format
       if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -108,7 +110,7 @@ export class DailyEntriesController {
         })
       }
 
-      const morningData: MorningRitualRequest = validationResult.data
+      const morningData: Partial<MorningRitualRequest> = validationResult.data as Partial<MorningRitualRequest>
 
       // Get daily quote for the user
       const dailyQuote = await DatabaseService.getDailyQuote(user.id, date)
@@ -148,6 +150,7 @@ export class DailyEntriesController {
         planned_training_time: morningData.planned_training_time,
         planned_intensity: morningData.planned_intensity,
         planned_duration: morningData.planned_duration,
+        planned_notes: morningData.planned_notes,
         morning_completed_at: new Date().toISOString()
       })
 
@@ -183,10 +186,11 @@ export class DailyEntriesController {
 
       res.json(response)
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
       console.error('Error completing morning ritual:', error)
       res.status(500).json({
         success: false,
-        error: { error: 'Internal server error', message: error.message }
+        error: { error: 'Internal server error', message }
       })
     }
   }
@@ -213,7 +217,7 @@ export class DailyEntriesController {
       } else {
         user = await getUserFromToken(token)
       }
-      const { date } = req.params
+      const date = req.params.date as string
 
       // Validate date format
       if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -273,10 +277,11 @@ export class DailyEntriesController {
 
       res.json(response)
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
       console.error('Error completing evening reflection:', error)
       res.status(500).json({
         success: false,
-        error: { error: 'Internal server error', message: error.message }
+        error: { error: 'Internal server error', message }
       })
     }
   }
@@ -300,7 +305,7 @@ export class DailyEntriesController {
       const hasEveningReflection = req.query.has_evening_reflection === 'true'
 
       // Build query
-      let query = DatabaseService.supabaseServiceClient
+      let query = supabaseServiceClient
         .from('daily_entries')
         .select('*', { count: 'exact' })
         .eq('user_id', user.id)
@@ -349,10 +354,11 @@ export class DailyEntriesController {
 
       res.json(response)
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
       console.error('Error getting daily entries:', error)
       res.status(500).json({
         success: false,
-        error: { error: 'Internal server error', message: error.message }
+        error: { error: 'Internal server error', message }
       })
     }
   }
@@ -366,14 +372,14 @@ export class DailyEntriesController {
       }
 
       const user = await getUserFromToken(token)
-      const { date } = req.params
+      const date = req.params.date as string
 
       // Validate date format
       if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {
         return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' })
       }
 
-      const { error } = await DatabaseService.supabaseServiceClient
+      const { error } = await supabaseServiceClient
         .from('daily_entries')
         .delete()
         .eq('user_id', user.id)
@@ -388,10 +394,11 @@ export class DailyEntriesController {
 
       res.json(response)
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
       console.error('Error deleting daily entry:', error)
       res.status(500).json({
         success: false,
-        error: { error: 'Internal server error', message: error.message }
+        error: { error: 'Internal server error', message }
       })
     }
   }

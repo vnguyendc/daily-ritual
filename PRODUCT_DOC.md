@@ -248,6 +248,37 @@ CREATE TABLE journal_entries (
 
 ```
 
+### Hybrid Data Model (Planned)
+
+- We will keep `daily_entries` as the canonical, unique-per-day record powering Today/Morning/Evening flows for performance and invariants.
+- We plan to introduce a flexible `journal_items` table for granular, typed content (goals, affirmation, gratitude, training_plan, workout_reflection, quote_reflection, note), enabling fast iteration without schema churn.
+- The API can aggregate `journal_items` into day-level responses; partial unique indexes will enforce singletons where needed (e.g., one affirmation per day).
+
+Planned schema (abridged):
+
+```sql
+-- Enum is optional; could also be TEXT + CHECK
+CREATE TYPE journal_item_kind AS ENUM (
+  'goal','affirmation','gratitude','training_plan','workout_reflection','quote_reflection','note'
+);
+
+CREATE TABLE journal_items (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  kind journal_item_kind NOT NULL,
+  payload JSONB NOT NULL,
+  is_private BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Example guardrail: ensure one affirmation per day
+CREATE UNIQUE INDEX one_affirmation_per_day
+  ON journal_items(user_id, date)
+  WHERE kind = 'affirmation';
+```
+
 ### Integration Points
 
 ```swift
@@ -280,22 +311,24 @@ struct WhoopStrain {
 
 ---
 
-## Weekend Implementation Plan
+## Weekend Implementation Plan (MVP scope)
 
-### Saturday (8 hours)
+This section tracks the MVP features and testing status. Legend: [Done], [In Progress], [Todo], [Future]
 
-- Supabase setup + database schema with competitions table (1 hour)
-- SwiftUI screens: Onboarding, Morning Ritual, Post-Training Reflection (3 hours)
-- Basic history viewing (list of past entries by date) (2 hours)
-- Competition setup flow (add competition + basic prep mode) (2 hours)
+### MVP Features & Testing
+- Supabase setup and database schema — [Done]
+- SwiftUI screens (Onboarding, Morning, Evening, Today dashboard) — [In Progress]
+- Basic history viewing (list of past entries by date) — [Todo]
+- Historical entry detail view — [Todo]
+- Polish, notifications, TestFlight readiness — [Todo]
 
-### Sunday (8 hours)
+### Moved out of MVP
+- Competition setup flow (add competition + prep mode) — [Future]
 
-- Evening reflection screen (3 questions + mood) (2 hours)
-- AI insights generation (morning + evening + basic competition) (2 hours)
-- Whoop integration basics (1 hour)
-- Competition preparation logic (tailored content when competition set) (2 hours)
-- Polish, notifications, TestFlight (1 hour)
+### Future/Optional (post-MVP)
+- Weekly/Monthly Planner (SwiftUI): plan training per-day and monthly goals — [Future]
+- Basic AI Weekly Insights on Insights page (brainstorm session needed) — [Future]
+- Whoop/Strava/Apple Health integrations — [Future]
 
 ---
 

@@ -38,6 +38,7 @@ export interface MorningRitualRequest {
   planned_training_time?: string
   planned_intensity?: string
   planned_duration?: number
+  planned_notes?: string
 }
 
 export interface MorningRitualResponse {
