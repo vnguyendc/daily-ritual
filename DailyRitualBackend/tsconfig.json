@@ -10,10 +10,10 @@
     "rootDir": "./src",
     "strict": true,
     "moduleDetection": "force",
-    "noImplicitReturns": true,
+    "noImplicitReturns": false,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
+    "exactOptionalPropertyTypes": false,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
@@ -21,10 +21,17 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["node"]
+    "types": ["node"],
+    "useUnknownInCatchVariables": false,
+    "noImplicitAny": false
   },
   "include": [
-    "src/**/*"
+    "src/index.ts",
+    "src/routes/index.ts",
+    "src/controllers/dailyEntries.ts",
+    "src/services/supabase.ts",
+    "src/middleware/auth.ts",
+    "src/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

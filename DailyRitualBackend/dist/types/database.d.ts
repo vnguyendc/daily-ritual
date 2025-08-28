@@ -1,0 +1,459 @@
+export type Json = string | number | boolean | null | {
+    [key: string]: Json | undefined;
+} | Json[];
+export interface Database {
+    public: {
+        Tables: {
+            users: {
+                Row: {
+                    id: string;
+                    email: string;
+                    name: string | null;
+                    primary_sport: string | null;
+                    morning_reminder_time: string;
+                    fitness_connected: boolean;
+                    whoop_connected: boolean;
+                    strava_connected: boolean;
+                    apple_health_connected: boolean;
+                    timezone: string;
+                    subscription_status: 'free' | 'premium' | 'trial';
+                    subscription_expires_at: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id: string;
+                    email: string;
+                    name?: string | null;
+                    primary_sport?: string | null;
+                    morning_reminder_time?: string;
+                    fitness_connected?: boolean;
+                    whoop_connected?: boolean;
+                    strava_connected?: boolean;
+                    apple_health_connected?: boolean;
+                    timezone?: string;
+                    subscription_status?: 'free' | 'premium' | 'trial';
+                    subscription_expires_at?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    email?: string;
+                    name?: string | null;
+                    primary_sport?: string | null;
+                    morning_reminder_time?: string;
+                    fitness_connected?: boolean;
+                    whoop_connected?: boolean;
+                    strava_connected?: boolean;
+                    apple_health_connected?: boolean;
+                    timezone?: string;
+                    subscription_status?: 'free' | 'premium' | 'trial';
+                    subscription_expires_at?: string | null;
+                };
+            };
+            daily_entries: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    date: string;
+                    goals: string[] | null;
+                    affirmation: string | null;
+                    gratitudes: string[] | null;
+                    daily_quote: string | null;
+                    quote_reflection: string | null;
+                    planned_training_type: 'strength' | 'cardio' | 'skills' | 'competition' | 'rest' | 'cross_training' | 'recovery' | null;
+                    planned_training_time: string | null;
+                    planned_intensity: 'light' | 'moderate' | 'hard' | 'very_hard' | null;
+                    planned_duration: number | null;
+                    planned_notes: string | null;
+                    morning_completed_at: string | null;
+                    quote_application: string | null;
+                    day_went_well: string | null;
+                    day_improve: string | null;
+                    overall_mood: number | null;
+                    evening_completed_at: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    date: string;
+                    goals?: string[] | null;
+                    affirmation?: string | null;
+                    gratitudes?: string[] | null;
+                    daily_quote?: string | null;
+                    quote_reflection?: string | null;
+                    planned_training_type?: 'strength' | 'cardio' | 'skills' | 'competition' | 'rest' | 'cross_training' | 'recovery' | null;
+                    planned_training_time?: string | null;
+                    planned_intensity?: 'light' | 'moderate' | 'hard' | 'very_hard' | null;
+                    planned_duration?: number | null;
+                    planned_notes?: string | null;
+                    morning_completed_at?: string | null;
+                    quote_application?: string | null;
+                    day_went_well?: string | null;
+                    day_improve?: string | null;
+                    overall_mood?: number | null;
+                    evening_completed_at?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    date?: string;
+                    goals?: string[] | null;
+                    affirmation?: string | null;
+                    gratitudes?: string[] | null;
+                    daily_quote?: string | null;
+                    quote_reflection?: string | null;
+                    planned_training_type?: 'strength' | 'cardio' | 'skills' | 'competition' | 'rest' | 'cross_training' | 'recovery' | null;
+                    planned_training_time?: string | null;
+                    planned_intensity?: 'light' | 'moderate' | 'hard' | 'very_hard' | null;
+                    planned_duration?: number | null;
+                    planned_notes?: string | null;
+                    morning_completed_at?: string | null;
+                    quote_application?: string | null;
+                    day_went_well?: string | null;
+                    day_improve?: string | null;
+                    overall_mood?: number | null;
+                    evening_completed_at?: string | null;
+                };
+            };
+            workout_reflections: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    date: string;
+                    workout_sequence: number;
+                    strain_score: number | null;
+                    recovery_score: number | null;
+                    sleep_performance: number | null;
+                    hrv: number | null;
+                    resting_hr: number | null;
+                    max_hr: number | null;
+                    average_hr: number | null;
+                    calories_burned: number | null;
+                    duration_minutes: number | null;
+                    workout_type: string | null;
+                    workout_intensity: 'light' | 'moderate' | 'hard' | 'very_hard' | null;
+                    training_feeling: number | null;
+                    what_went_well: string | null;
+                    what_to_improve: string | null;
+                    energy_level: number | null;
+                    focus_level: number | null;
+                    strava_activity_id: string | null;
+                    apple_workout_id: string | null;
+                    whoop_activity_id: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    date: string;
+                    workout_sequence?: number;
+                    strain_score?: number | null;
+                    recovery_score?: number | null;
+                    sleep_performance?: number | null;
+                    hrv?: number | null;
+                    resting_hr?: number | null;
+                    max_hr?: number | null;
+                    average_hr?: number | null;
+                    calories_burned?: number | null;
+                    duration_minutes?: number | null;
+                    workout_type?: string | null;
+                    workout_intensity?: 'light' | 'moderate' | 'hard' | 'very_hard' | null;
+                    training_feeling?: number | null;
+                    what_went_well?: string | null;
+                    what_to_improve?: string | null;
+                    energy_level?: number | null;
+                    focus_level?: number | null;
+                    strava_activity_id?: string | null;
+                    apple_workout_id?: string | null;
+                    whoop_activity_id?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    date?: string;
+                    workout_sequence?: number;
+                    strain_score?: number | null;
+                    recovery_score?: number | null;
+                    sleep_performance?: number | null;
+                    hrv?: number | null;
+                    resting_hr?: number | null;
+                    max_hr?: number | null;
+                    average_hr?: number | null;
+                    calories_burned?: number | null;
+                    duration_minutes?: number | null;
+                    workout_type?: string | null;
+                    workout_intensity?: 'light' | 'moderate' | 'hard' | 'very_hard' | null;
+                    training_feeling?: number | null;
+                    what_went_well?: string | null;
+                    what_to_improve?: string | null;
+                    energy_level?: number | null;
+                    focus_level?: number | null;
+                    strava_activity_id?: string | null;
+                    apple_workout_id?: string | null;
+                    whoop_activity_id?: string | null;
+                };
+            };
+            journal_entries: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    title: string | null;
+                    content: string;
+                    mood: number | null;
+                    energy: number | null;
+                    tags: string[] | null;
+                    is_private: boolean;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    title?: string | null;
+                    content: string;
+                    mood?: number | null;
+                    energy?: number | null;
+                    tags?: string[] | null;
+                    is_private?: boolean;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    title?: string | null;
+                    content?: string;
+                    mood?: number | null;
+                    energy?: number | null;
+                    tags?: string[] | null;
+                    is_private?: boolean;
+                };
+            };
+            competitions: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    name: string;
+                    sport: string | null;
+                    competition_date: string;
+                    location: string | null;
+                    description: string | null;
+                    goal_time: string | null;
+                    goal_placement: string | null;
+                    importance_level: number | null;
+                    status: 'upcoming' | 'completed' | 'cancelled';
+                    actual_time: string | null;
+                    actual_placement: string | null;
+                    performance_rating: number | null;
+                    mental_performance_rating: number | null;
+                    lessons_learned: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    name: string;
+                    sport?: string | null;
+                    competition_date: string;
+                    location?: string | null;
+                    description?: string | null;
+                    goal_time?: string | null;
+                    goal_placement?: string | null;
+                    importance_level?: number | null;
+                    status?: 'upcoming' | 'completed' | 'cancelled';
+                    actual_time?: string | null;
+                    actual_placement?: string | null;
+                    performance_rating?: number | null;
+                    mental_performance_rating?: number | null;
+                    lessons_learned?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    name?: string;
+                    sport?: string | null;
+                    competition_date?: string;
+                    location?: string | null;
+                    description?: string | null;
+                    goal_time?: string | null;
+                    goal_placement?: string | null;
+                    importance_level?: number | null;
+                    status?: 'upcoming' | 'completed' | 'cancelled';
+                    actual_time?: string | null;
+                    actual_placement?: string | null;
+                    performance_rating?: number | null;
+                    mental_performance_rating?: number | null;
+                    lessons_learned?: string | null;
+                };
+            };
+            competition_prep_entries: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    competition_id: string;
+                    date: string;
+                    days_until_competition: number | null;
+                    confidence_level: number | null;
+                    anxiety_level: number | null;
+                    readiness_level: number | null;
+                    mental_focus_notes: string | null;
+                    physical_preparation_notes: string | null;
+                    strategy_notes: string | null;
+                    concerns: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    competition_id: string;
+                    date: string;
+                    days_until_competition?: number | null;
+                    confidence_level?: number | null;
+                    anxiety_level?: number | null;
+                    readiness_level?: number | null;
+                    mental_focus_notes?: string | null;
+                    physical_preparation_notes?: string | null;
+                    strategy_notes?: string | null;
+                    concerns?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    competition_id?: string;
+                    date?: string;
+                    days_until_competition?: number | null;
+                    confidence_level?: number | null;
+                    anxiety_level?: number | null;
+                    readiness_level?: number | null;
+                    mental_focus_notes?: string | null;
+                    physical_preparation_notes?: string | null;
+                    strategy_notes?: string | null;
+                    concerns?: string | null;
+                };
+            };
+            ai_insights: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    insight_type: 'morning' | 'evening' | 'weekly' | 'competition_prep' | 'pattern_analysis';
+                    content: string;
+                    data_period_start: string | null;
+                    data_period_end: string | null;
+                    confidence_score: number | null;
+                    is_read: boolean;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    insight_type: 'morning' | 'evening' | 'weekly' | 'competition_prep' | 'pattern_analysis';
+                    content: string;
+                    data_period_start?: string | null;
+                    data_period_end?: string | null;
+                    confidence_score?: number | null;
+                    is_read?: boolean;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    insight_type?: 'morning' | 'evening' | 'weekly' | 'competition_prep' | 'pattern_analysis';
+                    content?: string;
+                    data_period_start?: string | null;
+                    data_period_end?: string | null;
+                    confidence_score?: number | null;
+                    is_read?: boolean;
+                };
+            };
+            quotes: {
+                Row: {
+                    id: string;
+                    quote_text: string;
+                    author: string | null;
+                    sport: string | null;
+                    category: 'motivation' | 'perseverance' | 'confidence' | 'preparation' | 'competition' | 'recovery' | 'teamwork' | null;
+                    is_active: boolean;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    quote_text: string;
+                    author?: string | null;
+                    sport?: string | null;
+                    category?: 'motivation' | 'perseverance' | 'confidence' | 'preparation' | 'competition' | 'recovery' | 'teamwork' | null;
+                    is_active?: boolean;
+                };
+                Update: {
+                    id?: string;
+                    quote_text?: string;
+                    author?: string | null;
+                    sport?: string | null;
+                    category?: 'motivation' | 'perseverance' | 'confidence' | 'preparation' | 'competition' | 'recovery' | 'teamwork' | null;
+                    is_active?: boolean;
+                };
+            };
+            user_streaks: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    streak_type: 'morning_ritual' | 'workout_reflection' | 'evening_reflection' | 'daily_complete';
+                    current_streak: number;
+                    longest_streak: number;
+                    last_completed_date: string | null;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    streak_type: 'morning_ritual' | 'workout_reflection' | 'evening_reflection' | 'daily_complete';
+                    current_streak?: number;
+                    longest_streak?: number;
+                    last_completed_date?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    streak_type?: 'morning_ritual' | 'workout_reflection' | 'evening_reflection' | 'daily_complete';
+                    current_streak?: number;
+                    longest_streak?: number;
+                    last_completed_date?: string | null;
+                };
+            };
+        };
+        Views: {
+            [_ in never]: never;
+        };
+        Functions: {
+            get_daily_quote: {
+                Args: {
+                    p_user_id: string;
+                    p_date?: string;
+                };
+                Returns: {
+                    id: string;
+                    quote_text: string;
+                    author: string;
+                    sport: string;
+                    category: string;
+                }[];
+            };
+            update_user_streak: {
+                Args: {
+                    p_user_id: string;
+                    p_streak_type: string;
+                    p_completed_date?: string;
+                };
+                Returns: void;
+            };
+        };
+        Enums: {
+            [_ in never]: never;
+        };
+        CompositeTypes: {
+            [_ in never]: never;
+        };
+    };
+}
+//# sourceMappingURL=database.d.ts.map

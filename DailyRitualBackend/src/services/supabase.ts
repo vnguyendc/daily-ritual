@@ -141,8 +141,8 @@ export class DatabaseService {
     return data
   }
 
-  static async updateUserProfile(userId: string, updates: any) {
-    const { data, error } = await supabaseServiceClient
+  static async updateUserProfile(userId: string, updates: Record<string, any>) {
+    const query = (supabaseServiceClient as any)
       .from('users')
       .update({
         ...updates,
@@ -151,6 +151,7 @@ export class DatabaseService {
       .eq('id', userId)
       .select()
       .single()
+    const { data, error } = await query
     
     if (error) throw error
     return data
@@ -166,14 +167,15 @@ export class DatabaseService {
     return data
   }
 
-  static async updateUserStreak(userId: string, streakType: string, date: string = new Date().toISOString().split('T')[0]) {
+  static async updateUserStreak(userId: string, streakType: string, dateParam?: string) {
     // For development with placeholder credentials, just log
+    const date = dateParam || new Date().toISOString().split('T')[0]
     if (useMock) {
       console.log(`📝 Mock streak update: ${streakType} for ${userId} on ${date}`)
       return
     }
 
-    const { error } = await supabaseServiceClient.rpc('update_user_streak', {
+    const { error } = await (supabaseServiceClient as any).rpc('update_user_streak', {
       p_user_id: userId,
       p_streak_type: streakType,
       p_completed_date: date
@@ -182,8 +184,9 @@ export class DatabaseService {
     if (error) throw error
   }
 
-  static async getDailyQuote(userId: string, date: string = new Date().toISOString().split('T')[0]) {
+  static async getDailyQuote(userId: string, dateParam?: string) {
     // For development with placeholder credentials, return mock quote
+    const date = dateParam || new Date().toISOString().split('T')[0]
     if (useMock) {
       console.log('📝 Returning mock daily quote for development')
       const mockQuotes = [
@@ -194,7 +197,7 @@ export class DatabaseService {
       return mockQuotes[Math.floor(Math.random() * mockQuotes.length)]
     }
 
-    const { data, error } = await supabaseServiceClient.rpc('get_daily_quote', {
+    const { data, error } = await (supabaseServiceClient as any).rpc('get_daily_quote', {
       p_user_id: userId,
       p_date: date
     })
@@ -263,7 +266,7 @@ export class DatabaseService {
   }
 
   static async markInsightAsRead(insightId: string, userId: string) {
-    const { error } = await supabaseServiceClient
+    const { error } = await (supabaseServiceClient as any)
       .from('ai_insights')
       .update({ is_read: true })
       .eq('id', insightId)

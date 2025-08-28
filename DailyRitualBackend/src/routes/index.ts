@@ -1,8 +1,7 @@
 // Main routes configuration
 import { Router } from 'express'
 import { DailyEntriesController } from '../controllers/dailyEntries.js'
-import { WorkoutReflectionsController } from '../controllers/workoutReflections.js'
-import { DashboardController } from '../controllers/dashboard.js'
+// Trim to MVP routes only for initial deploy
 
 const router = Router()
 
@@ -15,14 +14,7 @@ router.get('/health', (req, res) => {
   })
 })
 
-// Dashboard routes
-router.get('/dashboard', DashboardController.getDashboardData)
-router.get('/profile', DashboardController.getUserProfile)
-router.put('/profile', DashboardController.updateUserProfile)
-router.get('/streaks', DashboardController.getUserStreaks)
-router.get('/insights', DashboardController.getAIInsights)
-router.put('/insights/:insightId/read', DashboardController.markInsightAsRead)
-router.post('/insights/weekly', DashboardController.generateWeeklyInsights)
+// Dashboard routes (TODO – trimmed for MVP)
 
 // Daily entries routes
 router.get('/daily-entries', DailyEntriesController.getDailyEntries)
@@ -31,13 +23,7 @@ router.post('/daily-entries/:date/morning', DailyEntriesController.completeMorni
 router.post('/daily-entries/:date/evening', DailyEntriesController.completeEveningReflection)
 router.delete('/daily-entries/:date', DailyEntriesController.deleteDailyEntry)
 
-// Workout reflections routes
-router.get('/workout-reflections', WorkoutReflectionsController.getWorkoutReflections)
-router.post('/workout-reflections', WorkoutReflectionsController.createWorkoutReflection)
-router.get('/workout-reflections/stats', WorkoutReflectionsController.getWorkoutStats)
-router.get('/workout-reflections/:id', WorkoutReflectionsController.getWorkoutReflection)
-router.put('/workout-reflections/:id', WorkoutReflectionsController.updateWorkoutReflection)
-router.delete('/workout-reflections/:id', WorkoutReflectionsController.deleteWorkoutReflection)
+// Workout reflections routes (TODO – trimmed for MVP)
 
 // TODO: Add these routes when controllers are implemented
 // Competition routes
