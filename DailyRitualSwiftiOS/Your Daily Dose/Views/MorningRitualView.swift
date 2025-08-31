@@ -151,8 +151,20 @@ struct MorningRitualView: View {
     }
     
     private func completeRitual() {
-        entry.morningCompletedAt = Date()
-        showingCompletion = true
+        print("Tapped complete morning")
+        Task {
+            do {
+                let updated = try await SupabaseManager.shared.completeMorning(for: entry)
+                entry = updated
+                entry.morningCompletedAt = Date()
+                showingCompletion = true
+            } catch {
+                print("completeMorning() failed:", error.localizedDescription)
+                // Still show completion to not block the flow; queued retry can be added later
+                entry.morningCompletedAt = Date()
+                showingCompletion = true
+            }
+        }
     }
 }
 

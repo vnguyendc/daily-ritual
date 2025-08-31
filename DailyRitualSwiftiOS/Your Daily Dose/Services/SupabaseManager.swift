@@ -17,7 +17,8 @@ class SupabaseManager: ObservableObject {
     @Published var isLoading = false
     
     // Backend configuration - use localhost for simulator, IP for device
-    private let baseURL = "http://localhost:3000/api/v1" // Change to IP for device testing
+    // private let baseURL = "http://localhost:3000/api/v1" // Change to IP for device testing
+    private let baseURL = "https://daily-ritual-api.onrender.com/api/v1" // Change to IP for device testing
     private var authToken: String?
     
     // Toggle for development: when true, a mock user is loaded automatically
@@ -135,6 +136,7 @@ class SupabaseManager: ObservableObject {
         if let token = authToken { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         
         do {
+            print("GET:", url.absoluteString)
             let (data, response) = try await URLSession.shared.data(for: request)
             
             if let httpResponse = response as? HTTPURLResponse {
@@ -233,6 +235,7 @@ class SupabaseManager: ObservableObject {
         request.httpBody = try JSONEncoder().encode(morningData)
         
         do {
+            print("POST:", url.absoluteString)
             let (data, response) = try await URLSession.shared.data(for: request)
             
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
@@ -292,6 +295,7 @@ class SupabaseManager: ObservableObject {
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         
         do {
+            print("POST:", url.absoluteString)
             let (data, response) = try await URLSession.shared.data(for: request)
             
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {

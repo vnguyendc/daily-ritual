@@ -49,6 +49,13 @@ export class DailyEntriesController {
       }
       const date = req.params.date as string
 
+      // Ensure user exists in public.users for FK
+      try {
+        await DatabaseService.ensureUserRecord({ id: user.id, email: (user as any).email || null })
+      } catch (e) {
+        console.warn('ensureUserRecord failed:', e)
+      }
+
       // Validate date format
       if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {
         return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' })
@@ -111,6 +118,13 @@ export class DailyEntriesController {
       }
 
       const morningData: Partial<MorningRitualRequest> = validationResult.data as Partial<MorningRitualRequest>
+
+      // Ensure user exists in public.users for FK
+      try {
+        await DatabaseService.ensureUserRecord({ id: user.id, email: (user as any).email || null })
+      } catch (e) {
+        console.warn('ensureUserRecord failed:', e)
+      }
 
       // Get daily quote for the user
       const dailyQuote = await DatabaseService.getDailyQuote(user.id, date)
@@ -218,6 +232,13 @@ export class DailyEntriesController {
         user = await getUserFromToken(token)
       }
       const date = req.params.date as string
+
+      // Ensure user exists in public.users for FK
+      try {
+        await DatabaseService.ensureUserRecord({ id: user.id, email: (user as any).email || null })
+      } catch (e) {
+        console.warn('ensureUserRecord failed:', e)
+      }
 
       // Validate date format
       if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {

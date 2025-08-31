@@ -131,6 +131,48 @@ Notes:
 - [ ] GET `/daily-entries?start_date=&end_date=` returns paginated history
 - [ ] (When ready) GET `/insights?type=weekly&limit=5` returns recent insights
 
+### V1 readiness testing checklist (app level)
+- [ ] Home loads today’s entry and goal states on first launch
+- [ ] Today’s date entry loads on demand (pull-to-refresh)
+- [ ] Morning Ritual submits successfully; Evening Reflection submits successfully
+- [ ] Goals/tasks can be checked/unchecked and reflected in UI state
+- [ ] User can sign up/sign in
+  - Preferred: Apple or Google (via Supabase OAuth + deep link schema)
+  - Temporary fallback: email/password (already supported)
+
+---
+
+## 8) Local cache and submit queue (offline-first)
+
+Purpose: Make the app resilient and fast during device testing and flaky network/auth.
+
+What we cache (SwiftData):
+- CachedDailyEntry keyed by date (mirror of `daily_entries` fields used by UI)
+- Optional: lightweight history cache for recent days (rolling 7–14)
+- Keychain ONLY for JWT/session (no secrets in SwiftData)
+
+Submit queue (write-behind):
+- PendingOp items for POSTs (morning, evening, goal check toggles)
+  - fields: opType (morning|evening|goalToggle), date, payload JSON, status (pending|synced|failed), attemptCount, lastAttemptAt
+- Flow:
+  1) User submits → update local cache immediately (optimistic UI) and enqueue PendingOp
+  2) Fire network right away; on success mark synced and refresh cache from server
+  3) On failure keep pending; retry with exponential backoff on app launch/foreground or pull-to-refresh
+- Conflict policy: server is source of truth; compare `updated_at`; if server is newer, overwrite local
+
+Triggers:
+- App launch, app foreground, explicit refresh, successful sign-in
+
+Observability:
+- Log request URLs and op transitions (enqueued → sent → success/failure)
+- Surface subtle “Syncing…” and “Will retry” states where useful
+
+QA for cache + queue:
+- [ ] Kill network → complete morning → UI updates; PendingOp shows 1 pending
+- [ ] Restore network → app foreground → PendingOp drains; server has entry; cache refreshed
+- [ ] Toggle goals offline → state persists locally → sync on reconnect
+- [ ] 401 while offline → after sign-in, queued ops replay and succeed
+
 ---
 
 ## 8) Environment Switching (Optional Convenience)
