@@ -259,7 +259,7 @@ Planned schema (abridged):
 ```sql
 -- Enum is optional; could also be TEXT + CHECK
 CREATE TYPE journal_item_kind AS ENUM (
-  'goal','affirmation','gratitude','training_plan','workout_reflection','quote_reflection','note'
+  'goal','affirmation','gratitude','workout_reflection','quote_reflection','note'
 );
 
 CREATE TABLE journal_items (

@@ -30,7 +30,7 @@ struct TodayView: View {
                             .font(DesignSystem.Typography.displayMediumSafe)
                             .foregroundColor(DesignSystem.Colors.primaryText)
                         
-                        Text(Date(), format: .dateTime.weekday(.wide).month(.wide).day())
+                        Text(selectedDate, format: .dateTime.weekday(.wide).month(.wide).day())
                             .font(DesignSystem.Typography.headlineMedium)
                             .foregroundColor(DesignSystem.Colors.secondaryText)
                     }
@@ -44,6 +44,8 @@ struct TodayView: View {
                                 Button {
                                     withAnimation(DesignSystem.Animation.gentle) {
                                         selectedDate = date
+                                        print("UI: Selected date tapped ->", date.formatted(date: .abbreviated, time: .omitted))
+                                        Task { await viewModel.load(date: selectedDate) }
                                     }
                                 } label: {
                                     VStack(spacing: DesignSystem.Spacing.xs) {
@@ -398,10 +400,12 @@ struct TodayView: View {
                 .padding(.bottom, DesignSystem.Spacing.lg)
             }
             .refreshable {
-                await viewModel.refresh()
+                await viewModel.refresh(for: selectedDate)
             }
-            .task {
-                await viewModel.loadToday()
+            .task { await viewModel.load(date: selectedDate) }
+            .onChange(of: selectedDate) { oldValue, newValue in
+                print("UI: selectedDate changed from", oldValue.formatted(date: .abbreviated, time: .omitted), "to", newValue.formatted(date: .abbreviated, time: .omitted))
+                Task { await viewModel.load(date: newValue) }
             }
             .sheet(isPresented: $showingMorningRitual) {
                 MorningRitualView(entry: $viewModel.entry)
@@ -454,26 +458,26 @@ class TodayViewModel: ObservableObject {
         return entry.shouldShowEvening
     }
     
-    func loadToday() async {
+    func load(date: Date) async {
         isLoading = true
         defer { isLoading = false }
         
         do {
-            if let todaysEntry = try await supabase.getTodaysEntry() {
-                entry = todaysEntry
+            if let e = try await supabase.getEntry(for: date) {
+                entry = e
             } else {
                 // Create a new entry for today if none exists
-                entry = DailyEntry(userId: supabase.currentUser?.id ?? UUID())
+                entry = DailyEntry(userId: supabase.currentUser?.id ?? UUID(), date: Calendar.current.startOfDay(for: date))
             }
         } catch {
             print("Failed to load today's entry: \(error)")
             // Fallback to a new entry
-            entry = DailyEntry(userId: supabase.currentUser?.id ?? UUID())
+            entry = DailyEntry(userId: supabase.currentUser?.id ?? UUID(), date: Calendar.current.startOfDay(for: date))
         }
     }
     
-    func refresh() async {
-        await loadToday()
+    func refresh(for date: Date) async {
+        await load(date: date)
     }
     
     var hasTrainingPlan: Bool {

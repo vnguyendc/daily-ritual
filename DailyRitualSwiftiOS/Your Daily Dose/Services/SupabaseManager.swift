@@ -7,6 +7,8 @@
 
 import Foundation
 import SwiftUI
+import Security
+import Security
 
 @MainActor
 class SupabaseManager: ObservableObject {
@@ -19,7 +21,65 @@ class SupabaseManager: ObservableObject {
     // Backend configuration - use localhost for simulator, IP for device
     // private let baseURL = "http://localhost:3000/api/v1" // Change to IP for device testing
     private let baseURL = "https://daily-ritual-api.onrender.com/api/v1" // Change to IP for device testing
-    private var authToken: String?
+    private var authToken: String? {
+        didSet {
+            if let t = authToken {
+                KeychainService.save(service: "DailyRitual", account: "authToken", data: Data(t.utf8))
+            } else {
+                KeychainService.delete(service: "DailyRitual", account: "authToken")
+            }
+        }
+    }
+    private var refreshToken: String? {
+        didSet {
+            if let t = refreshToken {
+                KeychainService.save(service: "DailyRitual", account: "refreshToken", data: Data(t.utf8))
+            } else {
+                KeychainService.delete(service: "DailyRitual", account: "refreshToken")
+            }
+        }
+    }
+    
+    // Date decoding helpers for API responses
+    private static let iso8601WithFractional: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+    private static let iso8601NoFractional: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
+    private static let dateOnlyFormatter: DateFormatter = {
+        let df = DateFormatter()
+        df.calendar = Calendar(identifier: .gregorian)
+        df.locale = Locale(identifier: "en_US_POSIX")
+        df.dateFormat = "yyyy-MM-dd"
+        return df
+    }()
+    
+    private func makeAPIDecoder() -> JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            if let str = try? container.decode(String.self) {
+                if let date = SupabaseManager.iso8601WithFractional.date(from: str)
+                    ?? SupabaseManager.iso8601NoFractional.date(from: str)
+                    ?? SupabaseManager.dateOnlyFormatter.date(from: str) {
+                    return date
+                }
+                if let seconds = Double(str) {
+                    return Date(timeIntervalSince1970: seconds)
+                }
+            }
+            if let seconds = try? container.decode(Double.self) {
+                return Date(timeIntervalSince1970: seconds)
+            }
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unrecognized date format")
+        }
+        return decoder
+    }
     
     // Toggle for development: when true, a mock user is loaded automatically
     private let useMockAuth = false
@@ -30,6 +90,16 @@ class SupabaseManager: ObservableObject {
             self.currentUser = User(email: "demo@example.com", name: "Demo User")
             self.isAuthenticated = true
             self.authToken = nil
+        }
+        // Attempt to restore session from Keychain
+        if let tokenData = KeychainService.load(service: "DailyRitual", account: "authToken"),
+           let token = String(data: tokenData, encoding: .utf8), !token.isEmpty {
+            self.authToken = token
+            self.isAuthenticated = true
+        }
+        if let rtData = KeychainService.load(service: "DailyRitual", account: "refreshToken"),
+           let rt = String(data: rtData, encoding: .utf8), !rt.isEmpty {
+            self.refreshToken = rt
         }
     }
     
@@ -51,10 +121,15 @@ class SupabaseManager: ObservableObject {
             "password": password
         ])
         let (data, response) = try await URLSession.shared.data(for: req)
+        if let http = response as? HTTPURLResponse, http.statusCode == 401 {
+            clearSession()
+            throw SupabaseError.notAuthenticated
+        }
         guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { throw SupabaseError.networkError }
         let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
         guard let access = json?["access_token"] as? String else { throw SupabaseError.invalidData }
         self.authToken = access
+        if let rt = json?["refresh_token"] as? String { self.refreshToken = rt }
         
         // Fetch user from backend profile route (or set minimal info)
         self.currentUser = User(email: email, name: nil)
@@ -101,15 +176,39 @@ class SupabaseManager: ObservableObject {
         // TODO: Implement actual sign out
         try await Task.sleep(nanoseconds: 500_000_000)
         
-        currentUser = nil
-        isAuthenticated = false
-        authToken = nil
+        clearSession()
+    }
+
+    // Refresh Supabase access token using refresh token
+    func refreshAuthToken() async throws {
+        guard let rt = refreshToken, !rt.isEmpty else { throw SupabaseError.notAuthenticated }
+        guard let url = URL(string: "https://bkjfyxfphwhwwonmbulj.supabase.co/auth/v1/token?grant_type=refresh_token") else {
+            throw SupabaseError.invalidData
+        }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJramZ5eGZwaHdod3dvbm1idWxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDUxMzMsImV4cCI6MjA3MTc4MTEzM30.UCySNkl1qbBgPtN1TQynImtWdI-LQ5mv8T-SGmYUVJQ", forHTTPHeaderField: "apikey")
+        req.httpBody = try JSONSerialization.data(withJSONObject: [
+            "refresh_token": rt
+        ])
+        print("AUTH: refreshing access token…")
+        let (data, response) = try await URLSession.shared.data(for: req)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+            print("AUTH: refresh failed status", (response as? HTTPURLResponse)?.statusCode ?? -1, String(data: data, encoding: .utf8) ?? "")
+            throw SupabaseError.notAuthenticated
+        }
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        guard let access = json?["access_token"] as? String else { throw SupabaseError.invalidData }
+        self.authToken = access
+        if let newRt = json?["refresh_token"] as? String { self.refreshToken = newRt }
+        print("AUTH: refresh success")
     }
     
     // MARK: - Daily Entries
-    func getTodaysEntry() async throws -> DailyEntry? {
-        guard let userId = currentUser?.id else { return nil }
+    func getEntry(for date: Date) async throws -> DailyEntry? {
         if useMockAuth {
+            guard let userId = currentUser?.id else { return nil }
             let today = Calendar.current.startOfDay(for: Date())
             var entry = DailyEntry(userId: userId, date: today)
             entry.goals = ["Run 5k", "Meal prep", "Spend time with family"]
@@ -126,35 +225,63 @@ class SupabaseManager: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         
-        let today = ISO8601DateFormatter().string(from: Date()).prefix(10) // YYYY-MM-DD format
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        let dateString = df.string(from: date)
         
-        guard let url = URL(string: "\(baseURL)/daily-entries/\(today)") else {
+        guard let url = URL(string: "\(baseURL)/daily-entries/\(dateString)") else {
             throw SupabaseError.invalidData
         }
         
         var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        let hasToken = (authToken?.isEmpty == false)
         if let token = authToken { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         
         do {
             print("GET:", url.absoluteString)
             let (data, response) = try await URLSession.shared.data(for: request)
-            
             if let httpResponse = response as? HTTPURLResponse {
-                if httpResponse.statusCode == 404 {
-                    // No entry for today, return nil
+                let bodyString = String(data: data, encoding: .utf8) ?? "<non-utf8>"
+                print("GET status:", httpResponse.statusCode, "token:", hasToken, "body:", bodyString.prefix(300))
+                if httpResponse.statusCode == 401 || (httpResponse.statusCode == 500 && bodyString.contains("Invalid or expired token")) {
+                    // Attempt one refresh then retry once
+                    do {
+                        try await refreshAuthToken()
+                        var retryReq = URLRequest(url: url)
+                        retryReq.httpMethod = "GET"
+                        if let token = authToken { retryReq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+                        print("GET(retry):", url.absoluteString)
+                        let (retryData, retryResp) = try await URLSession.shared.data(for: retryReq)
+                        if let retryHttp = retryResp as? HTTPURLResponse, retryHttp.statusCode == 200 {
+                            let apiResponse = try makeAPIDecoder().decode(APIResponse<DailyEntry>.self, from: retryData)
+                            return apiResponse.data
+                        } else {
+                            clearSession()
+                            throw SupabaseError.notAuthenticated
+                        }
+                    } catch {
+                        clearSession()
+                        throw SupabaseError.notAuthenticated
+                    }
+                } else if httpResponse.statusCode == 404 {
                     return nil
                 } else if httpResponse.statusCode != 200 {
                     throw SupabaseError.networkError
                 }
             }
             
-            let apiResponse = try JSONDecoder().decode(APIResponse<DailyEntry>.self, from: data)
+            let apiResponse = try makeAPIDecoder().decode(APIResponse<DailyEntry>.self, from: data)
             return apiResponse.data
         } catch {
-            print("Error fetching today's entry: \(error)")
+            print("Error fetching today's entry:", error)
             // Fallback to mock data for now
-            return DailyEntry(userId: userId, date: Calendar.current.startOfDay(for: Date()))
+            return DailyEntry(userId: currentUser?.id ?? UUID(), date: Calendar.current.startOfDay(for: date))
         }
+    }
+    
+    func getTodaysEntry() async throws -> DailyEntry? {
+        return try await getEntry(for: Date())
     }
     
     func createTodaysEntry() async throws -> DailyEntry {
@@ -210,9 +337,11 @@ class SupabaseManager: ObservableObject {
             return updated
         }
         
-        let today = ISO8601DateFormatter().string(from: Date()).prefix(10) // YYYY-MM-DD format
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        let dateString = df.string(from: entry.date)
         
-        guard let url = URL(string: "\(baseURL)/daily-entries/\(today)/morning") else {
+        guard let url = URL(string: "\(baseURL)/daily-entries/\(dateString)/morning") else {
             throw SupabaseError.invalidData
         }
         
@@ -238,11 +367,15 @@ class SupabaseManager: ObservableObject {
             print("POST:", url.absoluteString)
             let (data, response) = try await URLSession.shared.data(for: request)
             
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 401 {
+                clearSession()
+                throw SupabaseError.notAuthenticated
+            }
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
                 throw SupabaseError.networkError
             }
             
-            let apiResponse = try JSONDecoder().decode(APIResponse<MorningRitualResponse>.self, from: data)
+            let apiResponse = try makeAPIDecoder().decode(APIResponse<MorningRitualResponse>.self, from: data)
             
             if let responseData = apiResponse.data {
                 var updatedEntry = responseData.daily_entry
@@ -298,11 +431,15 @@ class SupabaseManager: ObservableObject {
             print("POST:", url.absoluteString)
             let (data, response) = try await URLSession.shared.data(for: request)
             
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 401 {
+                clearSession()
+                throw SupabaseError.notAuthenticated
+            }
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
                 throw SupabaseError.networkError
             }
             
-            let apiResponse = try JSONDecoder().decode(APIResponse<DailyEntry>.self, from: data)
+            let apiResponse = try makeAPIDecoder().decode(APIResponse<DailyEntry>.self, from: data)
             
             if let responseData = apiResponse.data {
                 return responseData
@@ -471,5 +608,56 @@ enum SupabaseError: LocalizedError {
         case .invalidData:
             return "Invalid data format"
         }
+    }
+}
+
+// MARK: - Keychain helper
+enum KeychainService {
+    @discardableResult
+    static func save(service: String, account: String, data: Data) -> OSStatus {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account
+        ]
+        SecItemDelete(query as CFDictionary)
+        var attributes = query
+        attributes[kSecValueData as String] = data
+        return SecItemAdd(attributes as CFDictionary, nil)
+    }
+
+    static func load(service: String, account: String) -> Data? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+        var dataTypeRef: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &dataTypeRef)
+        if status == errSecSuccess {
+            return dataTypeRef as? Data
+        }
+        return nil
+    }
+
+    @discardableResult
+    static func delete(service: String, account: String) -> OSStatus {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account
+        ]
+        return SecItemDelete(query as CFDictionary)
+    }
+}
+
+// MARK: - Session helpers
+extension SupabaseManager {
+    func clearSession() {
+        authToken = nil
+        currentUser = nil
+        isAuthenticated = false
     }
 }
