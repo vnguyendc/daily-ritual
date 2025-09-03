@@ -51,9 +51,10 @@ Notes:
   - `baseURL = "https://<your-domain>/api/v1"`
 - ATS: HTTPS requires no exception. Keep any HTTP exceptions for dev-only.
 - Auth:
-  - Sign in via Supabase email/password; store `access_token`.
+  - Sign in via Supabase email/password; store `access_token` and `refresh_token`.
   - Send `Authorization: Bearer <token>` on all API calls.
-  - Recommended: persist session in Keychain + auto-login on launch.
+  - Persist session in Keychain + auto-login on launch.
+  - Auto-refresh tokens on 401 or "Invalid or expired token", then retry once.
 
 ---
 
@@ -93,6 +94,7 @@ Notes:
 ### C) View Today + Quote
 - GET `/api/v1/daily-entries/:date`
   - Returns full entry fields including `daily_quote`.
+  - iOS decoder supports date-only strings (`yyyy-MM-dd`) and ISO8601.
 
 ### D) Historical Entries
 - GET `/api/v1/daily-entries?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD&page=1&limit=20`
@@ -172,6 +174,82 @@ QA for cache + queue:
 - [ ] Restore network → app foreground → PendingOp drains; server has entry; cache refreshed
 - [ ] Toggle goals offline → state persists locally → sync on reconnect
 - [ ] 401 while offline → after sign-in, queued ops replay and succeed
+
+---
+
+## 9) Instrumentation & troubleshooting
+
+Checklist to verify end‑to‑end wiring on device with a deployed backend:
+
+- Base URL & reachability
+  - [ ] iOS `baseURL` is `https://<render-domain>/api/v1` (HTTPS and `/api/v1` included)
+  - [ ] On device Safari: `https://<render-domain>/api/v1/health` loads
+
+- Client logs (already added)
+  - [ ] Console prints request URLs: `GET:` today, `POST:` morning, `POST:` evening
+  - [ ] Morning UI prints `Tapped complete morning` on final submit
+  - [ ] GET prints status, token presence, and first 300 chars of body
+
+- Auth & user FK
+  - [ ] Sign in via Supabase (email/password for now) so requests include `Authorization: Bearer <token>`
+  - [ ] Backend calls `ensureUserRecord` before writes so FK to `users` is satisfied
+  - Optional dev: set `DEV_USER_ID` in Render env to allow requests without a token (testing only)
+
+- Render deploy sanity
+  - [ ] Service uses repo blueprint with `rootDir: DailyRitualBackend`
+  - [ ] Env var `NPM_CONFIG_PRODUCTION=false` so dev types install in build
+  - [ ] Health check passes at `/api/v1/health`
+
+- When things fail
+  - 401 Unauthorized → iOS refreshes token and retries once; if still failing, sign in again
+  - 403/Not owner → verify user ID matches entry’s `user_id`
+  - 500 FK user_id → confirmed fixed via `ensureUserRecord`; redeploy and retry
+  - 500 with "Invalid or expired token" → iOS will refresh token and retry once automatically
+  - No POST seen → button action not firing; verify console prints and that `canProceed == true`
+
+---
+
+## 10) V1 acceptance criteria (must‑pass)
+- [ ] Home loads today’s entry and goal states on first app launch
+- [ ] Pull‑to‑refresh loads today’s entry from server
+- [ ] Morning ritual submits (200), entry reflects server response
+- [ ] Evening reflection submits (200), streaks update
+- [ ] Goals toggle locally and persist after refresh
+- [ ] User can sign up/sign in (email/password now; Apple/Google planned)
+
+---
+
+## 11) V1 task board (live)
+
+Auth/Session
+- [x] Persist JWT in Keychain; auto-restore on launch
+- [x] Global 401 handling with refresh + re-auth on failure
+
+Date & Loading
+- [x] Make date selector drive GET/POST by date across flows
+- [x] Home loads by selected date; Today cards reflect selected date
+
+Morning/Evening
+- [ ] Wire Evening Reflection submit with date param and completion UI
+- [ ] Morning/Evening Edit screens (view + edit existing entries)
+
+Training Plans
+- [ ] Backend training_plans CRUD endpoints
+- [ ] Extend GET /daily-entries/:date to include training_plans
+- [ ] iOS Training Plans list + add/edit (multi per day)
+
+Offline & UX
+- [ ] SwiftData cache and pending submit queue (basic)
+- [ ] Consistent loading/error toasts and disabled states
+
+Insights & Tooling
+- [ ] GET /insights endpoint and wire iOS
+- [ ] Postman/Bruno collection and README
+
+Ops & Policies
+- [x] Backend structured logs; iOS request logs
+- [ ] Remove DEV_USER_ID in prod; verify RLS policies
+- [ ] Apply training_plans migration on Supabase and verify
 
 ---
 
