@@ -230,7 +230,7 @@ Date & Loading
 - [x] Home loads by selected date; Today cards reflect selected date
 
 Morning/Evening
-- [ ] Wire Evening Reflection submit with date param and completion UI
+- [x] Wire Evening Reflection submit with date param and completion UI
 - [ ] Morning/Evening Edit screens (view + edit existing entries)
 
 Training Plans
@@ -245,11 +245,13 @@ Offline & UX
 Insights & Tooling
 - [ ] GET /insights endpoint and wire iOS
 - [ ] Postman/Bruno collection and README
+ - [x] GET /daily-entries/:date/quote endpoint; iOS quote preload on load/date change
 
 Ops & Policies
 - [x] Backend structured logs; iOS request logs
 - [ ] Remove DEV_USER_ID in prod; verify RLS policies
 - [ ] Apply training_plans migration on Supabase and verify
+ - [x] Upsert daily_entries on (user_id,date) to avoid duplicate conflicts
 
 ---
 
