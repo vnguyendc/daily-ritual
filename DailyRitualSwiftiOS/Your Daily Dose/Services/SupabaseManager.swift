@@ -283,6 +283,26 @@ class SupabaseManager: ObservableObject {
     func getTodaysEntry() async throws -> DailyEntry? {
         return try await getEntry(for: Date())
     }
+
+    // Fetch just the daily quote for a given date (optional helper)
+    func getQuote(for date: Date) async throws -> Quote? {
+        isLoading = true
+        defer { isLoading = false }
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        let dateString = df.string(from: date)
+        guard let url = URL(string: "\(baseURL)/daily-entries/\(dateString)/quote") else {
+            throw SupabaseError.invalidData
+        }
+        var req = URLRequest(url: url)
+        if let token = authToken { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+        print("GET:", url.absoluteString)
+        let (data, response) = try await URLSession.shared.data(for: req)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return nil }
+        let decoder = makeAPIDecoder()
+        let resp = try decoder.decode(APIResponse<Quote>.self, from: data)
+        return resp.data
+    }
     
     func createTodaysEntry() async throws -> DailyEntry {
         guard let userId = currentUser?.id else {
@@ -322,10 +342,6 @@ class SupabaseManager: ObservableObject {
     }
     
     func completeMorning(for entry: DailyEntry) async throws -> DailyEntry {
-        guard currentUser != nil else {
-            throw SupabaseError.notAuthenticated
-        }
-        
         isLoading = true
         defer { isLoading = false }
         
@@ -348,6 +364,7 @@ class SupabaseManager: ObservableObject {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let hasToken = (authToken?.isEmpty == false)
         if let token = authToken { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         
         let morningData = MorningRitualRequest(
@@ -366,27 +383,49 @@ class SupabaseManager: ObservableObject {
         do {
             print("POST:", url.absoluteString)
             let (data, response) = try await URLSession.shared.data(for: request)
-            
-            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 401 {
-                clearSession()
-                throw SupabaseError.notAuthenticated
+            if let httpResponse = response as? HTTPURLResponse {
+                let bodyString = String(data: data, encoding: .utf8) ?? "<non-utf8>"
+                print("POST status:", httpResponse.statusCode, "body:", bodyString.prefix(300))
+                if httpResponse.statusCode == 401 || (httpResponse.statusCode == 500 && bodyString.contains("Invalid or expired token")) {
+                    // Attempt one refresh then retry once
+                    do {
+                        try await refreshAuthToken()
+                        var retryReq = URLRequest(url: url)
+                        retryReq.httpMethod = "POST"
+                        retryReq.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                        if let token = authToken { retryReq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+                        retryReq.httpBody = try JSONEncoder().encode(morningData)
+                        print("POST(retry):", url.absoluteString)
+                        let (retryData, retryResp) = try await URLSession.shared.data(for: retryReq)
+                        if let retryHttp = retryResp as? HTTPURLResponse, retryHttp.statusCode == 200 {
+                            let apiResponse = try makeAPIDecoder().decode(APIResponse<MorningRitualResponse>.self, from: retryData)
+                            if let responseData = apiResponse.data {
+                                var updatedEntry = responseData.daily_entry
+                                updatedEntry.affirmation = responseData.affirmation
+                                updatedEntry.dailyQuote = responseData.daily_quote?.quote_text
+                                return updatedEntry
+                            }
+                        }
+                        clearSession()
+                        throw SupabaseError.notAuthenticated
+                    } catch {
+                        clearSession()
+                        throw SupabaseError.notAuthenticated
+                    }
+                } else if httpResponse.statusCode != 200 {
+                    throw SupabaseError.networkError
+                }
             }
-            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
-                throw SupabaseError.networkError
-            }
-            
             let apiResponse = try makeAPIDecoder().decode(APIResponse<MorningRitualResponse>.self, from: data)
-            
             if let responseData = apiResponse.data {
                 var updatedEntry = responseData.daily_entry
                 updatedEntry.affirmation = responseData.affirmation
                 updatedEntry.dailyQuote = responseData.daily_quote?.quote_text
                 return updatedEntry
             }
-            
             return entry
         } catch {
-            print("Error completing morning ritual: \(error)")
+            print("Error completing morning ritual:", error)
             // Fallback to local update
             var updatedEntry = entry
             updatedEntry.morningCompletedAt = Date()
@@ -395,10 +434,6 @@ class SupabaseManager: ObservableObject {
     }
     
     func completeEvening(for entry: DailyEntry) async throws -> DailyEntry {
-        guard currentUser != nil else {
-            throw SupabaseError.notAuthenticated
-        }
-        
         isLoading = true
         defer { isLoading = false }
         
@@ -416,6 +451,7 @@ class SupabaseManager: ObservableObject {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let hasToken = (authToken?.isEmpty == false)
         if let token = authToken { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         
         let requestBody: [String: Any] = [
@@ -425,31 +461,53 @@ class SupabaseManager: ObservableObject {
             "overall_mood": entry.overallMood ?? 3
         ]
         
-        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        let bodyData = try JSONSerialization.data(withJSONObject: requestBody)
+        request.httpBody = bodyData
+        if let bodyString = String(data: bodyData, encoding: .utf8) {
+            print("POST payload (evening) token:", hasToken, bodyString)
+        }
         
         do {
             print("POST:", url.absoluteString)
             let (data, response) = try await URLSession.shared.data(for: request)
-            
-            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 401 {
-                clearSession()
-                throw SupabaseError.notAuthenticated
+            if let httpResponse = response as? HTTPURLResponse {
+                let bodyString = String(data: data, encoding: .utf8) ?? "<non-utf8>"
+                if httpResponse.statusCode == 401 || (httpResponse.statusCode == 500 && bodyString.contains("Invalid or expired token")) {
+                    // Attempt one refresh then retry once
+                    do {
+                        try await refreshAuthToken()
+                        var retryReq = URLRequest(url: url)
+                        retryReq.httpMethod = "POST"
+                        retryReq.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                        if let token = authToken { retryReq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+                        retryReq.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+                        print("POST(retry):", url.absoluteString)
+                        let (retryData, retryResp) = try await URLSession.shared.data(for: retryReq)
+                        if let retryHttp = retryResp as? HTTPURLResponse {
+                            let retryBody = String(data: retryData, encoding: .utf8) ?? "<non-utf8>"
+                            print("POST(retry) status:", retryHttp.statusCode, "body:", retryBody.prefix(300))
+                        }
+                        if let retryHttp = retryResp as? HTTPURLResponse, retryHttp.statusCode == 200 {
+                            let apiResponse = try makeAPIDecoder().decode(APIResponse<DailyEntry>.self, from: retryData)
+                            if let responseData = apiResponse.data { return responseData }
+                        }
+                        clearSession()
+                        throw SupabaseError.notAuthenticated
+                    } catch {
+                        clearSession()
+                        throw SupabaseError.notAuthenticated
+                    }
+                } else if httpResponse.statusCode != 200 {
+                    throw SupabaseError.networkError
+                }
             }
-            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
-                throw SupabaseError.networkError
-            }
-            
             let apiResponse = try makeAPIDecoder().decode(APIResponse<DailyEntry>.self, from: data)
-            
-            if let responseData = apiResponse.data {
-                return responseData
-            }
-            
+            if let responseData = apiResponse.data { return responseData }
             var updatedEntry = entry
             updatedEntry.eveningCompletedAt = Date()
             return updatedEntry
         } catch {
-            print("Error completing evening reflection: \(error)")
+            print("Error completing evening reflection:", error)
             var updatedEntry = entry
             updatedEntry.eveningCompletedAt = Date()
             return updatedEntry

@@ -108,7 +108,7 @@ export class DatabaseService {
         date,
         ...updates,
         updated_at: new Date().toISOString()
-      })
+      }, { onConflict: 'user_id,date' })
       .select()
       .single()
     

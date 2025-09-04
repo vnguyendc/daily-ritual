@@ -72,7 +72,7 @@ struct TodayView: View {
                         .padding(.vertical, DesignSystem.Spacing.xs)
                     }
                     
-                    // Daily Quote card
+                    // Daily Quote card (pre-fetched)
                     PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.xl, hasShadow: false) {
                         VStack(alignment: .center, spacing: DesignSystem.Spacing.md) {
                             if let quote = viewModel.entry.dailyQuote, !quote.isEmpty {
@@ -89,22 +89,9 @@ struct TodayView: View {
                                         .foregroundColor(DesignSystem.Colors.secondaryText)
                                 }
                             } else {
-                                VStack(spacing: DesignSystem.Spacing.sm) {
-                                    Text("No quote yet for today")
-                                        .font(DesignSystem.Typography.bodyMedium)
-                                        .foregroundColor(DesignSystem.Colors.secondaryText)
-                                    Button {
-                                        Task { await viewModel.generateQuote() }
-                                    } label: {
-                                        HStack(spacing: DesignSystem.Spacing.xs) {
-                                            Image(systemName: "sparkles")
-                                            Text("Get Quote")
-                                        }
-                                        .font(DesignSystem.Typography.buttonMedium)
-                                        .foregroundColor(timeContext.primaryColor)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
+                                Text("No quote yet for today")
+                                    .font(DesignSystem.Typography.bodyMedium)
+                                    .foregroundColor(DesignSystem.Colors.secondaryText)
                             }
                         }
                     }
@@ -402,10 +389,16 @@ struct TodayView: View {
             .refreshable {
                 await viewModel.refresh(for: selectedDate)
             }
-            .task { await viewModel.load(date: selectedDate) }
-            .onChange(of: selectedDate) { oldValue, newValue in
-                print("UI: selectedDate changed from", oldValue.formatted(date: .abbreviated, time: .omitted), "to", newValue.formatted(date: .abbreviated, time: .omitted))
-                Task { await viewModel.load(date: newValue) }
+            .task {
+                await viewModel.load(date: selectedDate)
+                await viewModel.preloadQuoteIfNeeded(for: selectedDate)
+            }
+            .onChange(of: selectedDate) { newValue in
+                print("UI: selectedDate changed to", newValue.formatted(date: .abbreviated, time: .omitted))
+                Task {
+                    await viewModel.load(date: newValue)
+                    await viewModel.preloadQuoteIfNeeded(for: newValue)
+                }
             }
             .sheet(isPresented: $showingMorningRitual) {
                 MorningRitualView(entry: $viewModel.entry)
@@ -414,6 +407,22 @@ struct TodayView: View {
             .sheet(isPresented: $showingEveningReflection) {
                 EveningReflectionView(entry: $viewModel.entry)
                     .edgesIgnoringSafeArea(.all)
+            }
+            .onChange(of: showingMorningRitual) { isPresented in
+                if !isPresented {
+                    Task {
+                        await viewModel.load(date: selectedDate)
+                        await viewModel.preloadQuoteIfNeeded(for: selectedDate)
+                    }
+                }
+            }
+            .onChange(of: showingEveningReflection) { isPresented in
+                if !isPresented {
+                    Task {
+                        await viewModel.load(date: selectedDate)
+                        await viewModel.preloadQuoteIfNeeded(for: selectedDate)
+                    }
+                }
             }
         }
     }
@@ -492,17 +501,18 @@ class TodayViewModel: ObservableObject {
         return "\(d) min"
     }
     
-    // MARK: - Quote
-    func generateQuote() async {
+    // MARK: - Quote prefetch
+    func preloadQuoteIfNeeded(for date: Date) async {
+        if entry.dailyQuote?.isEmpty == false { return }
         do {
-            let text = try await supabase.generateQuoteText(for: entry.goals ?? [])
-            await MainActor.run {
-                entry.dailyQuote = text
-                // When using mock generateQuoteText, author isn't returned
-                quoteAuthor = nil
+            if let q = try await supabase.getQuote(for: date) {
+                await MainActor.run {
+                    entry.dailyQuote = q.quote_text
+                    quoteAuthor = q.author
+                }
             }
         } catch {
-            print("Failed to generate quote: \(error)")
+            print("Failed to preload quote:", error)
         }
     }
 }
