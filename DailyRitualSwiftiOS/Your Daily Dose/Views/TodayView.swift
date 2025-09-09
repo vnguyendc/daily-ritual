@@ -72,29 +72,7 @@ struct TodayView: View {
                         .padding(.vertical, DesignSystem.Spacing.xs)
                     }
                     
-                    // Daily Quote card (pre-fetched)
-                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.xl, hasShadow: false) {
-                        VStack(alignment: .center, spacing: DesignSystem.Spacing.md) {
-                            if let quote = viewModel.entry.dailyQuote, !quote.isEmpty {
-                                Text("\(quote)")
-                                    .font(DesignSystem.Typography.quoteText)
-                                    .foregroundColor(DesignSystem.Colors.primaryText)
-                                    .multilineTextAlignment(.center)
-                                    .lineSpacing(DesignSystem.Spacing.lineHeightRelaxed - 1.0)
-                                    .padding(.horizontal, DesignSystem.Spacing.lg)
-                                
-                                if let author = viewModel.quoteAuthor, !author.isEmpty {
-                                    Text("— \(author)")
-                                        .font(DesignSystem.Typography.quoteAttribution)
-                                        .foregroundColor(DesignSystem.Colors.secondaryText)
-                                }
-                            } else {
-                                Text("No quote yet for today")
-                                    .font(DesignSystem.Typography.bodyMedium)
-                                    .foregroundColor(DesignSystem.Colors.secondaryText)
-                            }
-                        }
-                    }
+                    // Quote card hidden for POC V1
                     
                     // Premium Morning ritual card
                     if !viewModel.entry.isMorningComplete {
@@ -391,13 +369,11 @@ struct TodayView: View {
             }
             .task {
                 await viewModel.load(date: selectedDate)
-                await viewModel.preloadQuoteIfNeeded(for: selectedDate)
             }
             .onChange(of: selectedDate) { newValue in
                 print("UI: selectedDate changed to", newValue.formatted(date: .abbreviated, time: .omitted))
                 Task {
                     await viewModel.load(date: newValue)
-                    await viewModel.preloadQuoteIfNeeded(for: newValue)
                 }
             }
             .sheet(isPresented: $showingMorningRitual) {
@@ -412,7 +388,6 @@ struct TodayView: View {
                 if !isPresented {
                     Task {
                         await viewModel.load(date: selectedDate)
-                        await viewModel.preloadQuoteIfNeeded(for: selectedDate)
                     }
                 }
             }
@@ -420,7 +395,6 @@ struct TodayView: View {
                 if !isPresented {
                     Task {
                         await viewModel.load(date: selectedDate)
-                        await viewModel.preloadQuoteIfNeeded(for: selectedDate)
                     }
                 }
             }

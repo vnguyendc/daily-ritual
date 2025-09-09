@@ -36,7 +36,7 @@ struct EveningReflectionView: View {
                 TabView(selection: $currentStep) {
                     PremiumQuoteApplicationView(
                         application: $entry.quoteApplication,
-                        quote: entry.dailyQuote ?? "No quote available",
+                        quote: "",
                         timeContext: timeContext
                     )
                     .tag(0)
@@ -202,28 +202,12 @@ struct PremiumQuoteApplicationView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
                 PremiumSectionHeader(
-                    "Quote Application",
-                    subtitle: "How did today's quote apply to your day? What did you learn?",
+                    "Evening Reflection",
+                    subtitle: "Reflect on your day. What resonated and what did you learn?",
                     timeContext: timeContext
                 )
                 
-                // Premium quote display
-                PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, hasShadow: false) {
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        HStack {
-                            Text("💭")
-                                .font(DesignSystem.Typography.headlineSmall)
-                            Text("Today's Quote")
-                                .font(DesignSystem.Typography.buttonMedium)
-                                .foregroundColor(timeContext.primaryColor)
-                        }
-                        
-                        Text(quote)
-                            .font(DesignSystem.Typography.bodyLarge)
-                            .foregroundColor(DesignSystem.Colors.primaryText)
-                            .italic()
-                    }
-                }
+                // Quote display hidden for POC V1
                 
                 PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md) {
                     TextEditor(text: Binding(
