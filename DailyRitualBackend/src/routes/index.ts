@@ -1,6 +1,8 @@
 // Main routes configuration
 import { Router } from 'express'
 import { DailyEntriesController } from '../controllers/dailyEntries.js'
+import { TrainingPlansController } from '../controllers/trainingPlans.js'
+import { InsightsController } from '../controllers/insights.js'
 // Trim to MVP routes only for initial deploy
 
 const router = Router()
@@ -19,10 +21,22 @@ router.get('/health', (req, res) => {
 // Daily entries routes
 router.get('/daily-entries', DailyEntriesController.getDailyEntries)
 router.get('/daily-entries/:date', DailyEntriesController.getDailyEntry)
+router.get('/daily-entries/:date/with-plans', DailyEntriesController.getDailyEntryWithPlans)
 router.get('/daily-entries/:date/quote', DailyEntriesController.getDailyQuote)
 router.post('/daily-entries/:date/morning', DailyEntriesController.completeMorningRitual)
 router.post('/daily-entries/:date/evening', DailyEntriesController.completeEveningReflection)
 router.delete('/daily-entries/:date', DailyEntriesController.deleteDailyEntry)
+
+// Training plans routes
+router.get('/training-plans', TrainingPlansController.list)
+router.post('/training-plans', TrainingPlansController.create)
+router.put('/training-plans/:id', TrainingPlansController.update)
+router.delete('/training-plans/:id', TrainingPlansController.remove)
+
+// Insights routes
+router.get('/insights', InsightsController.getInsights)
+router.get('/insights/stats', InsightsController.getInsightsStats)
+router.post('/insights/:id/read', InsightsController.markAsRead)
 
 // Workout reflections routes (TODO – trimmed for MVP)
 

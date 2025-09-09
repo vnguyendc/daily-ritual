@@ -204,6 +204,43 @@ export interface Database {
           whoop_activity_id?: string | null
         }
       }
+      training_plans: {
+        Row: {
+          id: string
+          user_id: string
+          date: string
+          sequence: number
+          type: 'strength' | 'cardio' | 'skills' | 'competition' | 'rest' | 'cross_training' | 'recovery'
+          start_time: string | null
+          intensity: 'light' | 'moderate' | 'hard' | 'very_hard' | null
+          duration_minutes: number | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          date: string
+          sequence?: number
+          type: 'strength' | 'cardio' | 'skills' | 'competition' | 'rest' | 'cross_training' | 'recovery'
+          start_time?: string | null
+          intensity?: 'light' | 'moderate' | 'hard' | 'very_hard' | null
+          duration_minutes?: number | null
+          notes?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          date?: string
+          sequence?: number
+          type?: 'strength' | 'cardio' | 'skills' | 'competition' | 'rest' | 'cross_training' | 'recovery'
+          start_time?: string | null
+          intensity?: 'light' | 'moderate' | 'hard' | 'very_hard' | null
+          duration_minutes?: number | null
+          notes?: string | null
+        }
+      }
       journal_entries: {
         Row: {
           id: string

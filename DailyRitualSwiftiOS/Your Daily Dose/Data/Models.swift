@@ -261,6 +261,35 @@ struct WeeklyInsight: Codable, Identifiable, Sendable {
     }
 }
 
+// MARK: - Training Plans
+struct TrainingPlan: Codable, Identifiable, Sendable {
+    let id: UUID
+    let userId: UUID
+    let date: Date
+    var sequence: Int
+    var trainingType: String?
+    var startTime: String?
+    var intensity: String?
+    var durationMinutes: Int?
+    var notes: String?
+    let createdAt: Date?
+    let updatedAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case date
+        case sequence
+        case trainingType = "type"
+        case startTime = "start_time"
+        case intensity
+        case durationMinutes = "duration_minutes"
+        case notes
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
 enum MorningStep: Int, CaseIterable {
     case goals = 0
     case affirmation = 1

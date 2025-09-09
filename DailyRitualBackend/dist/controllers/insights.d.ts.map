@@ -1,0 +1,1 @@
+{"version":3,"file":"insights.d.ts","sourceRoot":"","sources":["../../src/controllers/insights.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,OAAO,EAAE,QAAQ,EAAE,MAAM,SAAS,CAAA;AAI3C,qBAAa,kBAAkB;WAGhB,WAAW,CAAC,GAAG,EAAE,OAAO,EAAE,GAAG,EAAE,QAAQ;WAyHvC,UAAU,CAAC,GAAG,EAAE,OAAO,EAAE,GAAG,EAAE,QAAQ;WA0DtC,gBAAgB,CAAC,GAAG,EAAE,OAAO,EAAE,GAAG,EAAE,QAAQ;CAuF1D"}

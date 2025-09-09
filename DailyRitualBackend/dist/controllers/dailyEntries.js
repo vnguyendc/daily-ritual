@@ -40,6 +40,12 @@ export class DailyEntriesController {
                 user = await getUserFromToken(token);
             }
             const date = req.params.date;
+            try {
+                await DatabaseService.ensureUserRecord({ id: user.id, email: user.email || null });
+            }
+            catch (e) {
+                console.warn('ensureUserRecord failed:', e);
+            }
             if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {
                 return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' });
             }
@@ -57,6 +63,100 @@ export class DailyEntriesController {
                 success: false,
                 error: { error: 'Internal server error', message }
             });
+        }
+    }
+    static async getDailyEntryWithPlans(req, res) {
+        try {
+            const token = req.headers.authorization?.replace('Bearer ', '');
+            const useMock = process.env.USE_MOCK === 'true';
+            const devUserId = process.env.DEV_USER_ID;
+            let user;
+            if (!token) {
+                if (useMock) {
+                    user = { id: 'mock-user-id' };
+                }
+                else if (devUserId) {
+                    user = { id: devUserId };
+                }
+                else {
+                    return res.status(401).json({ error: 'Authorization token required' });
+                }
+            }
+            else {
+                user = await getUserFromToken(token);
+            }
+            const date = req.params.date;
+            if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' });
+            }
+            try {
+                await DatabaseService.ensureUserRecord({ id: user.id, email: user.email || null });
+            }
+            catch (e) {
+                console.warn('ensureUserRecord failed:', e);
+            }
+            const entry = await DatabaseService.getDailyEntry(user.id, date);
+            const { data: plans, error: plansError } = await supabaseServiceClient
+                .from('training_plans')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('date', date)
+                .order('sequence', { ascending: true });
+            if (plansError)
+                throw plansError;
+            const response = {
+                success: true,
+                data: {
+                    daily_entry: entry || null,
+                    training_plans: plans || []
+                }
+            };
+            res.json(response);
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            console.error('Error getting daily entry with plans:', error);
+            res.status(500).json({ success: false, error: { error: 'Internal server error', message } });
+        }
+    }
+    static async getDailyQuote(req, res) {
+        try {
+            const token = req.headers.authorization?.replace('Bearer ', '');
+            const useMock = process.env.USE_MOCK === 'true';
+            const devUserId = process.env.DEV_USER_ID;
+            let user;
+            if (!token) {
+                if (useMock) {
+                    user = { id: 'mock-user-id' };
+                }
+                else if (devUserId) {
+                    user = { id: devUserId };
+                }
+                else {
+                    return res.status(401).json({ error: 'Authorization token required' });
+                }
+            }
+            else {
+                user = await getUserFromToken(token);
+            }
+            const date = req.params.date;
+            if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' });
+            }
+            try {
+                await DatabaseService.ensureUserRecord({ id: user.id, email: user.email || null });
+            }
+            catch (e) {
+                console.warn('ensureUserRecord failed:', e);
+            }
+            const dailyQuote = await DatabaseService.getDailyQuote(user.id, date);
+            const response = { success: true, data: dailyQuote };
+            res.json(response);
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            console.error('Error getting daily quote:', error);
+            res.status(500).json({ success: false, error: { error: 'Internal server error', message } });
         }
     }
     static async completeMorningRitual(req, res) {
@@ -93,6 +193,12 @@ export class DailyEntriesController {
                 });
             }
             const morningData = validationResult.data;
+            try {
+                await DatabaseService.ensureUserRecord({ id: user.id, email: user.email || null });
+            }
+            catch (e) {
+                console.warn('ensureUserRecord failed:', e);
+            }
             const dailyQuote = await DatabaseService.getDailyQuote(user.id, date);
             let affirmation = "I am prepared, focused, and ready to give my best effort today.";
             try {
@@ -188,6 +294,12 @@ export class DailyEntriesController {
                 user = await getUserFromToken(token);
             }
             const date = req.params.date;
+            try {
+                await DatabaseService.ensureUserRecord({ id: user.id, email: user.email || null });
+            }
+            catch (e) {
+                console.warn('ensureUserRecord failed:', e);
+            }
             if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {
                 return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' });
             }

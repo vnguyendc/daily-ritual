@@ -79,6 +79,59 @@ export class DailyEntriesController {
     }
   }
 
+  // Get daily entry + training plans for a date
+  static async getDailyEntryWithPlans(req: Request, res: Response) {
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '')
+      const useMock = process.env.USE_MOCK === 'true'
+      const devUserId = process.env.DEV_USER_ID
+      
+      let user: any
+      if (!token) {
+        if (useMock) {
+          user = { id: 'mock-user-id' }
+        } else if (devUserId) {
+          user = { id: devUserId }
+        } else {
+          return res.status(401).json({ error: 'Authorization token required' })
+        }
+      } else {
+        user = await getUserFromToken(token)
+      }
+      const date = req.params.date as string
+      if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' })
+      }
+
+      try {
+        await DatabaseService.ensureUserRecord({ id: user.id, email: (user as any).email || null })
+      } catch (e) {
+        console.warn('ensureUserRecord failed:', e)
+      }
+
+      const entry = await DatabaseService.getDailyEntry(user.id, date)
+      const { data: plans, error: plansError } = await supabaseServiceClient
+        .from('training_plans')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('date', date)
+        .order('sequence', { ascending: true })
+      if (plansError) throw plansError
+
+      const response: APIResponse = {
+        success: true,
+        data: {
+          daily_entry: entry || null,
+          training_plans: plans || []
+        }
+      }
+      res.json(response)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      console.error('Error getting daily entry with plans:', error)
+      res.status(500).json({ success: false, error: { error: 'Internal server error', message } })
+    }
+  }
   // Get only the daily quote for a specific date
   static async getDailyQuote(req: Request, res: Response) {
     try {
