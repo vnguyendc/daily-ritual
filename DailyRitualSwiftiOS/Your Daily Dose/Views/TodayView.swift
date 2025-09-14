@@ -281,11 +281,47 @@ struct TodayView: View {
                                 .foregroundColor(DesignSystem.Colors.primaryText)
 
                             if viewModel.hasTrainingPlan {
-                                VStack(spacing: DesignSystem.Spacing.sm) {
-                                    planRow(icon: "dumbbell.fill", label: "Type", value: viewModel.entry.plannedTrainingType ?? "-")
-                                    planRow(icon: "clock.fill", label: "Time", value: viewModel.entry.plannedTrainingTime ?? "-")
-                                    planRow(icon: "flame.fill", label: "Intensity", value: viewModel.entry.plannedIntensity ?? "-")
-                                    planRow(icon: "hourglass", label: "Duration", value: viewModel.durationText)
+                                VStack(spacing: DesignSystem.Spacing.md) {
+                                    if !viewModel.trainingPlans.isEmpty {
+                                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                                            ForEach(viewModel.trainingPlans.sorted(by: { $0.sequence < $1.sequence })) { plan in
+                                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                                                    HStack {
+                                                        Text("#\(plan.sequence)")
+                                                            .font(DesignSystem.Typography.metadata)
+                                                            .foregroundColor(DesignSystem.Colors.tertiaryText)
+                                                        Text(plan.trainingType?.capitalized ?? "-")
+                                                            .font(DesignSystem.Typography.bodyLargeSafe)
+                                                            .foregroundColor(DesignSystem.Colors.primaryText)
+                                                        Spacer()
+                                                    }
+                                                    HStack(spacing: DesignSystem.Spacing.lg) {
+                                                        Label(plan.startTime ?? "--:--", systemImage: "clock.fill")
+                                                        Label(plan.intensity?.replacingOccurrences(of: "_", with: " ") ?? "-", systemImage: "flame.fill")
+                                                        Label("\(plan.durationMinutes ?? 0) min", systemImage: "hourglass")
+                                                    }
+                                                    .font(DesignSystem.Typography.bodyMedium)
+                                                    .foregroundColor(DesignSystem.Colors.secondaryText)
+                                                }
+                                                .padding(.vertical, DesignSystem.Spacing.xs)
+                                                .overlay(
+                                                    Rectangle()
+                                                        .fill(DesignSystem.Colors.divider)
+                                                        .frame(height: 1)
+                                                        .opacity(0.5)
+                                                        .padding(.top, DesignSystem.Spacing.md), alignment: .bottom
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        // Fallback to single planned fields on the entry
+                                        VStack(spacing: DesignSystem.Spacing.sm) {
+                                            planRow(icon: "dumbbell.fill", label: "Type", value: viewModel.entry.plannedTrainingType ?? "-")
+                                            planRow(icon: "clock.fill", label: "Time", value: viewModel.entry.plannedTrainingTime ?? "-")
+                                            planRow(icon: "flame.fill", label: "Intensity", value: viewModel.entry.plannedTrainingIntensityText)
+                                            planRow(icon: "hourglass", label: "Duration", value: viewModel.durationText)
+                                        }
+                                    }
                                     Button {
                                         showingTrainingPlans = true
                                     } label: {
@@ -400,6 +436,13 @@ struct TodayView: View {
                 EveningReflectionView(entry: $viewModel.entry)
                     .edgesIgnoringSafeArea(.all)
             }
+            .onChange(of: showingTrainingPlans) { isPresented in
+                if !isPresented {
+                    Task {
+                        await viewModel.load(date: selectedDate)
+                    }
+                }
+            }
             .onChange(of: showingMorningRitual) { isPresented in
                 if !isPresented {
                     Task {
@@ -449,6 +492,7 @@ class TodayViewModel: ObservableObject {
     @Published var entry = DailyEntry(userId: UUID())
     @Published var isLoading = false
     @Published var quoteAuthor: String? = nil
+    @Published var trainingPlans: [TrainingPlan] = []
     
     private let supabase = SupabaseManager.shared
     
@@ -468,10 +512,13 @@ class TodayViewModel: ObservableObject {
                 // Create a new entry for today if none exists
                 entry = DailyEntry(userId: supabase.currentUser?.id ?? UUID(), date: Calendar.current.startOfDay(for: date))
             }
+            // Load training plans for the date
+            trainingPlans = (try? await supabase.getTrainingPlans(for: date)) ?? []
         } catch {
             print("Failed to load today's entry: \(error)")
             // Fallback to a new entry
             entry = DailyEntry(userId: supabase.currentUser?.id ?? UUID(), date: Calendar.current.startOfDay(for: date))
+            trainingPlans = []
         }
     }
     
@@ -480,6 +527,7 @@ class TodayViewModel: ObservableObject {
     }
     
     var hasTrainingPlan: Bool {
+        !trainingPlans.isEmpty ||
         (entry.plannedTrainingType?.isEmpty == false) ||
         (entry.plannedTrainingTime?.isEmpty == false) ||
         (entry.plannedIntensity?.isEmpty == false) ||
@@ -489,6 +537,10 @@ class TodayViewModel: ObservableObject {
     var durationText: String {
         guard let d = entry.plannedDuration, d > 0 else { return "-" }
         return "\(d) min"
+    }
+
+    var plannedTrainingIntensityText: String {
+        entry.plannedIntensity?.replacingOccurrences(of: "_", with: " ") ?? "-"
     }
     
     // MARK: - Quote prefetch
