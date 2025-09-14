@@ -4,19 +4,20 @@
 
 Transform the current basic SwiftUI + SwiftData app into an AI-powered self-mastery journaling app with a structured 7-step daily practice. Target: Weekend MVP → 100K users in 2 years.
 
-## Current State Analysis
+## Current State Analysis (Updated for POC V1)
 
 **What we have:**
-- Basic SwiftUI app with SwiftData
-- Simple Item model with timestamps  
-- Basic CRUD operations in ContentView
-- Testing setup with Swift Testing framework
+- Deployed backend on Render (`/api/v1`) with Supabase (Postgres + Auth)
+- Core endpoints live: daily entries (GET/POST morning/evening), quotes (GET), training plans (CRUD), insights (GET/stats/mark read)
+- iOS app with `TodayView`, `MorningRitualView`, `EveningReflectionView`, and `TrainingPlansView` wired
+- Auth flow in iOS using Supabase REST; tokens stored in Keychain; auto-refresh on 401
+- POC V1: Quote UI hidden in Today and Evening (data kept for compatibility)
 
-**What needs to change:**
-- Replace SwiftData with Supabase backend
-- Transform from simple item tracker to 7-step daily ritual app
-- Add AI integration for personalized content
-- Implement freemium model with premium features
+**What needs to change (near-term):**
+- iOS Insights tab: fetch from `/api/v1/insights` and render list
+- Offline cache + submit queue (SwiftData or lightweight local store)
+- Environment toggles (sim vs prod baseURL) and minor UX polish
+- Optional: remove DEV fallbacks in prod and verify RLS
 
 ## Target Architecture
 
@@ -34,18 +35,23 @@ Transform the current basic SwiftUI + SwiftData app into an AI-powered self-mast
 
 ## Core Features
 
-### 7-Step Daily Practice
+### 7-Step Daily Practice (POC V1 adjustments noted)
 
 **Morning Ritual (5 minutes):**
 1. **Top 3 Goals**: Daily goal setting with persistence
 2. **AI Affirmation**: Personalized based on goals + mood patterns
 3. **3 Gratitudes**: Gratitude practice with optional categories
-4. **Inspiring Quote**: AI-curated wisdom matching user's journey
+4. (POC V1: Quote UI hidden; backend still returns quote text if needed later)
 
 **Evening Ritual (5 minutes):**
-5. **Quote Reflection**: Journal thoughts on morning's quote
+5. **Evening Reflection**: Generic reflection prompt (POC V1; not quote-specific)
 6. **What Went Well**: Celebrate wins and positive moments
 7. **What to Improve**: Identify growth areas for tomorrow
+
+### Training Plans (Multi per day)
+- Backend table `training_plans` with unique `(user_id, date, sequence)`; API auto-assigns next sequence
+- Endpoints: list by date, create, update, delete
+- iOS: `TrainingPlansView` to add/manage multiple plans, entry point from `TodayView`
 
 ### Freemium Model
 - **Free**: Complete 7-step practice, 7-day history, basic streaks
@@ -194,7 +200,15 @@ struct MainTabView: View {
 }
 ```
 
-## Implementation Timeline
+## Implementation Timeline (Progress + Next)
+
+### Completed (POC V1)
+- Backend deploy with `/api/v1` and health check
+- Daily entries: GET, morning submit, evening submit; streak updates
+- Quotes: GET per day (kept for future; UI hidden for now)
+- Training plans: CRUD; auto-sequencing; iOS manager view
+- Insights: GET/stats/mark-read endpoint; wired backend (iOS pending)
+- iOS: Today, Morning, Evening; TrainingPlansView wired; Quote UI hidden
 
 ### Weekend 1 (16 hours) - Core MVP
 
@@ -208,7 +222,7 @@ struct MainTabView: View {
    - Setup SupabaseManager
 3. **Build Morning Ritual UI** (3 hours)
    - Create MorningRitualView with 4 steps
-   - Build individual step views (Goals, Affirmation, Gratitude, Quote)
+   - Build individual step views (Goals, Affirmation, Gratitude, Training Plan)
    - Add progress tracking
 4. **Basic AI Integration** (2 hours)
    - Setup Claude API calls
@@ -218,7 +232,7 @@ struct MainTabView: View {
 **Sunday (8 hours):**
 1. **Evening Reflection Flow** (3 hours)
    - Build EveningReflectionView with 3 steps
-   - Connect quote reflection to morning quote
+   - Generic reflection prompt (POC V1)
    - Add "What went well" and "What to improve" sections
 2. **Basic Streak Tracking** (2 hours)
    - Implement completion tracking
@@ -250,6 +264,7 @@ struct MainTabView: View {
    - Generate AI-powered weekly summaries
    - Create insights visualization
    - Add goal progress tracking
+   - iOS: Wire Insights tab to `/api/v1/insights`
 2. **Export Functionality** (2 hours)
    - PDF export for journal entries
    - Data export for power users
@@ -337,11 +352,11 @@ serve(async (req) => {
 
 ## Next Steps
 
-1. **Immediate**: Setup Supabase project and configure database
-2. **Week 1**: Begin Weekend 1 implementation
-3. **Week 2**: Complete Weekend 2 features
-4. **Week 3**: Testing and refinement
-5. **Week 4**: TestFlight and initial user feedback
+1. iOS: Implement Insights tab fetching `/api/v1/insights` (list + mark read)
+2. Offline-first: SwiftData cache (entry-by-date) + submit queue (morning/evening/training-plan ops)
+3. UX polish: consistent loading/error states; disabled states during requests
+4. Ops: Remove DEV fallbacks for prod; verify RLS policies on Supabase
+5. Optional: Bruno/Postman collection for endpoints + README update
 
 ---
 
