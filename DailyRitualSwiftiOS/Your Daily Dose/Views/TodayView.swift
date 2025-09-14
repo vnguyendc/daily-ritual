@@ -12,6 +12,7 @@ struct TodayView: View {
     @StateObject private var viewModel = TodayViewModel()
     @State private var showingMorningRitual = false
     @State private var showingEveningReflection = false
+    @State private var showingTrainingPlans = false
     @State private var completedGoals: Set<Int> = []
     @State private var selectedDate: Date = Date()
     
@@ -285,6 +286,17 @@ struct TodayView: View {
                                     planRow(icon: "clock.fill", label: "Time", value: viewModel.entry.plannedTrainingTime ?? "-")
                                     planRow(icon: "flame.fill", label: "Intensity", value: viewModel.entry.plannedIntensity ?? "-")
                                     planRow(icon: "hourglass", label: "Duration", value: viewModel.durationText)
+                                    Button {
+                                        showingTrainingPlans = true
+                                    } label: {
+                                        HStack(spacing: DesignSystem.Spacing.xs) {
+                                            Image(systemName: "slider.horizontal.3")
+                                            Text("Manage training plans")
+                                        }
+                                        .font(DesignSystem.Typography.buttonMedium)
+                                        .foregroundColor(timeContext.primaryColor)
+                                    }
+                                    .buttonStyle(.plain)
                                 }
                             } else {
                                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
@@ -292,11 +304,11 @@ struct TodayView: View {
                                         .font(DesignSystem.Typography.bodyMedium)
                                         .foregroundColor(DesignSystem.Colors.secondaryText)
                                     Button {
-                                        showingMorningRitual = true
+                                        showingTrainingPlans = true
                                     } label: {
                                         HStack(spacing: DesignSystem.Spacing.xs) {
                                             Image(systemName: "plus.circle.fill")
-                                            Text("Set training plan")
+                                            Text("Add training plan")
                                         }
                                         .font(DesignSystem.Typography.buttonMedium)
                                         .foregroundColor(timeContext.primaryColor)
@@ -378,6 +390,10 @@ struct TodayView: View {
             }
             .sheet(isPresented: $showingMorningRitual) {
                 MorningRitualView(entry: $viewModel.entry)
+                    .edgesIgnoringSafeArea(.all)
+            }
+            .sheet(isPresented: $showingTrainingPlans) {
+                TrainingPlansView()
                     .edgesIgnoringSafeArea(.all)
             }
             .sheet(isPresented: $showingEveningReflection) {
