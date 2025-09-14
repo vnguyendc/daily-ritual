@@ -285,34 +285,7 @@ struct TodayView: View {
                                     if !viewModel.trainingPlans.isEmpty {
                                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                                             ForEach(viewModel.sortedTrainingPlans) { plan in
-                                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                                    HStack {
-                                                        Text("#\(plan.sequence)")
-                                                            .font(DesignSystem.Typography.metadata)
-                                                            .foregroundColor(DesignSystem.Colors.tertiaryText)
-                                                        Text(plan.trainingType?.capitalized ?? "-")
-                                                            .font(DesignSystem.Typography.bodyLargeSafe)
-                                                            .foregroundColor(DesignSystem.Colors.primaryText)
-                                                        Spacer()
-                                                    }
-                                                    HStack(spacing: DesignSystem.Spacing.lg) {
-                                                        HStack(spacing: DesignSystem.Spacing.xs) {
-                                                            Image(systemName: "clock.fill")
-                                                            Text(plan.startTime ?? "--:--")
-                                                        }
-                                                        HStack(spacing: DesignSystem.Spacing.xs) {
-                                                            Image(systemName: "flame.fill")
-                                                            Text(plan.intensity?.replacingOccurrences(of: "_", with: " ") ?? "-")
-                                                        }
-                                                        HStack(spacing: DesignSystem.Spacing.xs) {
-                                                            Image(systemName: "hourglass")
-                                                            Text("\(plan.durationMinutes ?? 0) min")
-                                                        }
-                                                    }
-                                                    .font(DesignSystem.Typography.bodyMedium)
-                                                    .foregroundColor(DesignSystem.Colors.secondaryText)
-                                                }
-                                                .padding(.vertical, DesignSystem.Spacing.xs)
+                                                TrainingPlanRow(plan: plan, timeContext: timeContext)
                                             }
                                         }
                                     } else {
@@ -477,6 +450,41 @@ extension TodayView {
             Text(value)
                 .font(DesignSystem.Typography.bodyLargeSafe)
                 .foregroundColor(DesignSystem.Colors.primaryText)
+        }
+    }
+
+    struct TrainingPlanRow: View {
+        let plan: TrainingPlan
+        let timeContext: DesignSystem.TimeContext
+        var body: some View {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                HStack {
+                    Text("#\(plan.sequence)")
+                        .font(DesignSystem.Typography.metadata)
+                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                    Text(plan.trainingType?.capitalized ?? "-")
+                        .font(DesignSystem.Typography.bodyLargeSafe)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                    Spacer()
+                }
+                HStack(spacing: DesignSystem.Spacing.lg) {
+                    HStack(spacing: DesignSystem.Spacing.xs) {
+                        Image(systemName: "clock.fill")
+                        Text(plan.startTime ?? "--:--")
+                    }
+                    HStack(spacing: DesignSystem.Spacing.xs) {
+                        Image(systemName: "flame.fill")
+                        Text(plan.intensity?.replacingOccurrences(of: "_", with: " ") ?? "-")
+                    }
+                    HStack(spacing: DesignSystem.Spacing.xs) {
+                        Image(systemName: "hourglass")
+                        Text("\(plan.durationMinutes ?? 0) min")
+                    }
+                }
+                .font(DesignSystem.Typography.bodyMedium)
+                .foregroundColor(DesignSystem.Colors.secondaryText)
+            }
+            .padding(.vertical, DesignSystem.Spacing.xs)
         }
     }
 
