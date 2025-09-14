@@ -275,59 +275,12 @@ struct TodayView: View {
 
                     // Today's Training Plan
                     PremiumCard(timeContext: timeContext) {
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                            Text("Today's Training Plan")
-                                .font(DesignSystem.Typography.journalTitleSafe)
-                                .foregroundColor(DesignSystem.Colors.primaryText)
-
-                            if viewModel.hasTrainingPlan {
-                                VStack(spacing: DesignSystem.Spacing.md) {
-                                    if !viewModel.trainingPlans.isEmpty {
-                                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                                            ForEach(viewModel.sortedTrainingPlans) { plan in
-                                                TrainingPlanRow(plan: plan, timeContext: timeContext)
-                                            }
-                                        }
-                                    } else {
-                                        // Fallback to single planned fields on the entry
-                                        VStack(spacing: DesignSystem.Spacing.sm) {
-                                            planRow(icon: "dumbbell.fill", label: "Type", value: viewModel.entry.plannedTrainingType ?? "-")
-                                            planRow(icon: "clock.fill", label: "Time", value: viewModel.entry.plannedTrainingTime ?? "-")
-                                            planRow(icon: "flame.fill", label: "Intensity", value: viewModel.entry.plannedTrainingIntensityText)
-                                            planRow(icon: "hourglass", label: "Duration", value: viewModel.durationText)
-                                        }
-                                    }
-                                    Button {
-                                        showingTrainingPlans = true
-                                    } label: {
-                                        HStack(spacing: DesignSystem.Spacing.xs) {
-                                            Image(systemName: "slider.horizontal.3")
-                                            Text("Manage training plans")
-                                        }
-                                        .font(DesignSystem.Typography.buttonMedium)
-                                        .foregroundColor(timeContext.primaryColor)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            } else {
-                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                                    Text("No plan set yet")
-                                        .font(DesignSystem.Typography.bodyMedium)
-                                        .foregroundColor(DesignSystem.Colors.secondaryText)
-                                    Button {
-                                        showingTrainingPlans = true
-                                    } label: {
-                                        HStack(spacing: DesignSystem.Spacing.xs) {
-                                            Image(systemName: "plus.circle.fill")
-                                            Text("Add training plan")
-                                        }
-                                        .font(DesignSystem.Typography.buttonMedium)
-                                        .foregroundColor(timeContext.primaryColor)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                        }
+                        TrainingPlansSection(
+                            plans: viewModel.sortedTrainingPlans,
+                            entry: viewModel.entry,
+                            timeContext: timeContext,
+                            onManage: { showingTrainingPlans = true }
+                        )
                     }
 
                     // Premium celebration card for full completion
@@ -485,6 +438,89 @@ extension TodayView {
                 .foregroundColor(DesignSystem.Colors.secondaryText)
             }
             .padding(.vertical, DesignSystem.Spacing.xs)
+        }
+    }
+
+    struct TrainingPlansSection: View {
+        let plans: [TrainingPlan]
+        let entry: DailyEntry
+        let timeContext: DesignSystem.TimeContext
+        let onManage: () -> Void
+        
+        var hasAnyPlan: Bool {
+            !plans.isEmpty ||
+            (entry.plannedTrainingType?.isEmpty == false) ||
+            (entry.plannedTrainingTime?.isEmpty == false) ||
+            (entry.plannedIntensity?.isEmpty == false) ||
+            ((entry.plannedDuration ?? 0) > 0)
+        }
+        
+        var body: some View {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                Text("Today's Training Plan")
+                    .font(DesignSystem.Typography.journalTitleSafe)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+                
+                if hasAnyPlan {
+                    VStack(spacing: DesignSystem.Spacing.md) {
+                        if !plans.isEmpty {
+                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                                ForEach(plans) { plan in
+                                    TrainingPlanRow(plan: plan, timeContext: timeContext)
+                                }
+                            }
+                        } else {
+                            VStack(spacing: DesignSystem.Spacing.sm) {
+                                HStack(spacing: DesignSystem.Spacing.md) {
+                                    Image(systemName: "dumbbell.fill").foregroundColor(timeContext.primaryColor)
+                                    Text(entry.plannedTrainingType ?? "-")
+                                        .font(DesignSystem.Typography.bodyLargeSafe)
+                                }
+                                HStack(spacing: DesignSystem.Spacing.md) {
+                                    Image(systemName: "clock.fill").foregroundColor(timeContext.primaryColor)
+                                    Text(entry.plannedTrainingTime ?? "-")
+                                        .font(DesignSystem.Typography.bodyLargeSafe)
+                                }
+                                HStack(spacing: DesignSystem.Spacing.md) {
+                                    Image(systemName: "flame.fill").foregroundColor(timeContext.primaryColor)
+                                    Text(entry.plannedIntensity?.replacingOccurrences(of: "_", with: " ") ?? "-")
+                                        .font(DesignSystem.Typography.bodyLargeSafe)
+                                }
+                                HStack(spacing: DesignSystem.Spacing.md) {
+                                    Image(systemName: "hourglass").foregroundColor(timeContext.primaryColor)
+                                    let d = entry.plannedDuration ?? 0
+                                    Text(d > 0 ? "\(d) min" : "-")
+                                        .font(DesignSystem.Typography.bodyLargeSafe)
+                                }
+                            }
+                        }
+                        Button(action: onManage) {
+                            HStack(spacing: DesignSystem.Spacing.xs) {
+                                Image(systemName: "slider.horizontal.3")
+                                Text("Manage training plans")
+                            }
+                            .font(DesignSystem.Typography.buttonMedium)
+                            .foregroundColor(timeContext.primaryColor)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                        Text("No plan set yet")
+                            .font(DesignSystem.Typography.bodyMedium)
+                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                        Button(action: onManage) {
+                            HStack(spacing: DesignSystem.Spacing.xs) {
+                                Image(systemName: "plus.circle.fill")
+                                Text("Add training plan")
+                            }
+                            .font(DesignSystem.Typography.buttonMedium)
+                            .foregroundColor(timeContext.primaryColor)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
         }
     }
 
