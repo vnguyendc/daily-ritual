@@ -74,7 +74,7 @@ export class TrainingPlansController {
         user = await getUserFromToken(token)
       }
 
-      const { date, sequence = 1, type, start_time, intensity, duration_minutes, notes } = req.body || {}
+      const { date, sequence, type, start_time, intensity, duration_minutes, notes } = req.body || {}
       if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) {
         return res.status(400).json({ error: 'date (YYYY-MM-DD) required' })
       }
@@ -90,10 +90,24 @@ export class TrainingPlansController {
         console.warn('ensureUserRecord failed:', e)
       }
 
+      // Determine sequence: if not provided, auto-assign next available for the date
+      let planSequence = typeof sequence === 'number' && Number.isFinite(sequence) && sequence > 0 ? sequence : undefined
+      if (!planSequence) {
+        const { data: last, error: lastErr } = await (supabaseServiceClient as any)
+          .from('training_plans')
+          .select('sequence')
+          .eq('user_id', user.id)
+          .eq('date', date)
+          .order('sequence', { ascending: false })
+          .limit(1)
+        if (lastErr) throw lastErr
+        planSequence = ((last && last[0]?.sequence) || 0) + 1
+      }
+
       const insertData: TrainingPlanInsert = {
         user_id: user.id,
         date,
-        sequence,
+        sequence: planSequence,
         type,
         start_time,
         intensity,
@@ -101,11 +115,33 @@ export class TrainingPlansController {
         notes
       }
 
-      const { data, error } = await (supabaseServiceClient as any)
-        .from('training_plans')
-        .insert(insertData)
-        .select()
-        .single()
+      // Try insert; if unique violation on (user_id,date,sequence), bump sequence and retry once
+      const tryInsert = async (payload: any) => {
+        return (supabaseServiceClient as any)
+          .from('training_plans')
+          .insert(payload)
+          .select()
+          .single()
+      }
+
+      let { data, error } = await tryInsert(insertData)
+      if (error && (error.code === '23505' || (error.message && error.message.includes('duplicate key')))) {
+        // compute next sequence and retry once
+        const { data: last2, error: lastErr2 } = await (supabaseServiceClient as any)
+          .from('training_plans')
+          .select('sequence')
+          .eq('user_id', user.id)
+          .eq('date', date)
+          .order('sequence', { ascending: false })
+          .limit(1)
+        if (!lastErr2) {
+          const nextSeq = ((last2 && last2[0]?.sequence) || planSequence || 0) + 1
+          insertData.sequence = nextSeq
+          const retry = await tryInsert(insertData)
+          data = retry.data
+          error = retry.error
+        }
+      }
 
       if (error) throw error
       const response: APIResponse = { success: true, data }
