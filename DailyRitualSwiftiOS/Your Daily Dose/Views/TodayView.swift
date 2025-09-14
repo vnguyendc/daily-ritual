@@ -284,7 +284,7 @@ struct TodayView: View {
                                 VStack(spacing: DesignSystem.Spacing.md) {
                                     if !viewModel.trainingPlans.isEmpty {
                                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                                            ForEach(viewModel.trainingPlans.sorted(by: { $0.sequence < $1.sequence })) { plan in
+                                            ForEach(viewModel.sortedTrainingPlans) { plan in
                                                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                                                     HStack {
                                                         Text("#\(plan.sequence)")
@@ -296,21 +296,23 @@ struct TodayView: View {
                                                         Spacer()
                                                     }
                                                     HStack(spacing: DesignSystem.Spacing.lg) {
-                                                        Label(plan.startTime ?? "--:--", systemImage: "clock.fill")
-                                                        Label(plan.intensity?.replacingOccurrences(of: "_", with: " ") ?? "-", systemImage: "flame.fill")
-                                                        Label("\(plan.durationMinutes ?? 0) min", systemImage: "hourglass")
+                                                        HStack(spacing: DesignSystem.Spacing.xs) {
+                                                            Image(systemName: "clock.fill")
+                                                            Text(plan.startTime ?? "--:--")
+                                                        }
+                                                        HStack(spacing: DesignSystem.Spacing.xs) {
+                                                            Image(systemName: "flame.fill")
+                                                            Text(plan.intensity?.replacingOccurrences(of: "_", with: " ") ?? "-")
+                                                        }
+                                                        HStack(spacing: DesignSystem.Spacing.xs) {
+                                                            Image(systemName: "hourglass")
+                                                            Text("\(plan.durationMinutes ?? 0) min")
+                                                        }
                                                     }
                                                     .font(DesignSystem.Typography.bodyMedium)
                                                     .foregroundColor(DesignSystem.Colors.secondaryText)
                                                 }
                                                 .padding(.vertical, DesignSystem.Spacing.xs)
-                                                .overlay(
-                                                    Rectangle()
-                                                        .fill(DesignSystem.Colors.divider)
-                                                        .frame(height: 1)
-                                                        .opacity(0.5)
-                                                        .padding(.top, DesignSystem.Spacing.md), alignment: .bottom
-                                                )
                                             }
                                         }
                                     } else {
@@ -541,6 +543,13 @@ class TodayViewModel: ObservableObject {
 
     var plannedTrainingIntensityText: String {
         entry.plannedIntensity?.replacingOccurrences(of: "_", with: " ") ?? "-"
+    }
+
+    var sortedTrainingPlans: [TrainingPlan] {
+        trainingPlans.sorted { a, b in
+            if a.sequence == b.sequence { return (a.startTime ?? "") < (b.startTime ?? "") }
+            return a.sequence < b.sequence
+        }
     }
     
     // MARK: - Quote prefetch
