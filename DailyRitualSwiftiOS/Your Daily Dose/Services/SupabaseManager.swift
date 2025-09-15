@@ -51,7 +51,7 @@ class SupabaseManager: ObservableObject {
         f.formatOptions = [.withInternetDateTime]
         return f
     }()
-    private static let dateOnlyFormatter: DateFormatter = {
+    static let dateOnlyFormatter: DateFormatter = {
         let df = DateFormatter()
         df.calendar = Calendar(identifier: .gregorian)
         df.locale = Locale(identifier: "en_US_POSIX")
