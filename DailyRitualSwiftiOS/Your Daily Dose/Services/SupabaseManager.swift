@@ -228,6 +228,7 @@ class SupabaseManager: ObservableObject {
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
         let dateString = df.string(from: date)
+        let cachedEntry = LocalStore.loadCachedEntries()[dateString]
         
         guard let url = URL(string: "\(baseURL)/daily-entries/\(dateString)") else {
             throw SupabaseError.invalidData
@@ -273,11 +274,11 @@ class SupabaseManager: ObservableObject {
             }
             let apiResponse = try makeAPIDecoder().decode(APIResponse<DailyEntry>.self, from: data)
             if let fresh = apiResponse.data { LocalStore.upsertCachedEntry(fresh, for: dateString) }
-            return apiResponse.data ?? cached
+            return apiResponse.data ?? cachedEntry
         } catch {
             print("Error fetching today's entry:", error)
             // Fallback to cached, else empty new entry
-            if let cached = cached { return cached }
+            if let cached = cachedEntry { return cached }
             return DailyEntry(userId: currentUser?.id ?? UUID(), date: Calendar.current.startOfDay(for: date))
         }
     }
