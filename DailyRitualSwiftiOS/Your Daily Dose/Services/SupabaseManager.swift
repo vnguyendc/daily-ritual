@@ -255,6 +255,7 @@ class SupabaseManager: ObservableObject {
                         let (retryData, retryResp) = try await URLSession.shared.data(for: retryReq)
                         if let retryHttp = retryResp as? HTTPURLResponse, retryHttp.statusCode == 200 {
                             let apiResponse = try makeAPIDecoder().decode(APIResponse<DailyEntry>.self, from: retryData)
+                            if let fresh = apiResponse.data { LocalStore.upsertCachedEntry(fresh, for: dateString) }
                             return apiResponse.data
                         } else {
                             clearSession()
@@ -270,12 +271,13 @@ class SupabaseManager: ObservableObject {
                     throw SupabaseError.networkError
                 }
             }
-            
             let apiResponse = try makeAPIDecoder().decode(APIResponse<DailyEntry>.self, from: data)
-            return apiResponse.data
+            if let fresh = apiResponse.data { LocalStore.upsertCachedEntry(fresh, for: dateString) }
+            return apiResponse.data ?? cached
         } catch {
             print("Error fetching today's entry:", error)
-            // Fallback to mock data for now
+            // Fallback to cached, else empty new entry
+            if let cached = cached { return cached }
             return DailyEntry(userId: currentUser?.id ?? UUID(), date: Calendar.current.startOfDay(for: date))
         }
     }
@@ -421,14 +423,21 @@ class SupabaseManager: ObservableObject {
                 var updatedEntry = responseData.daily_entry
                 updatedEntry.affirmation = responseData.affirmation
                 updatedEntry.dailyQuote = responseData.daily_quote?.quote_text
+                LocalStore.upsertCachedEntry(updatedEntry, for: dateString)
                 return updatedEntry
             }
+            LocalStore.upsertCachedEntry(entry, for: dateString)
             return entry
         } catch {
             print("Error completing morning ritual:", error)
             // Fallback to local update
             var updatedEntry = entry
             updatedEntry.morningCompletedAt = Date()
+            LocalStore.upsertCachedEntry(updatedEntry, for: dateString)
+            // Enqueue pending op
+            let payload = try? JSONEncoder().encode(morningData)
+            let op = PendingOp(id: UUID(), opType: .morning, dateString: dateString, payload: payload, attemptCount: 0, lastAttemptAt: nil)
+            LocalStore.enqueue(op)
             return updatedEntry
         }
     }
@@ -502,14 +511,23 @@ class SupabaseManager: ObservableObject {
                 }
             }
             let apiResponse = try makeAPIDecoder().decode(APIResponse<DailyEntry>.self, from: data)
-            if let responseData = apiResponse.data { return responseData }
+            if let responseData = apiResponse.data {
+                LocalStore.upsertCachedEntry(responseData, for: dateString)
+                return responseData
+            }
             var updatedEntry = entry
             updatedEntry.eveningCompletedAt = Date()
+            LocalStore.upsertCachedEntry(updatedEntry, for: dateString)
             return updatedEntry
         } catch {
             print("Error completing evening reflection:", error)
             var updatedEntry = entry
             updatedEntry.eveningCompletedAt = Date()
+            LocalStore.upsertCachedEntry(updatedEntry, for: dateString)
+            // Enqueue pending op
+            let payload = try? JSONSerialization.data(withJSONObject: requestBody)
+            let op = PendingOp(id: UUID(), opType: .evening, dateString: dateString, payload: payload, attemptCount: 0, lastAttemptAt: nil)
+            LocalStore.enqueue(op)
             return updatedEntry
         }
     }
