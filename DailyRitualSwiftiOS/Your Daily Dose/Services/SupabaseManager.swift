@@ -228,6 +228,7 @@ class SupabaseManager: ObservableObject {
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
         let dateString = df.string(from: date)
+        let cachedPlans = LocalStore.loadCachedPlans()[dateString] ?? []
         let cachedEntry = LocalStore.loadCachedEntries()[dateString]
         
         guard let url = URL(string: "\(baseURL)/daily-entries/\(dateString)") else {
@@ -650,7 +651,9 @@ class SupabaseManager: ObservableObject {
                     let (retryData, retryResp) = try await URLSession.shared.data(for: retryReq)
                     if let retryHttp = retryResp as? HTTPURLResponse, retryHttp.statusCode == 200 {
                         let apiResponse = try makeAPIDecoder().decode(APIResponse<[TrainingPlan]>.self, from: retryData)
-                        return apiResponse.data ?? []
+                        let plans = apiResponse.data ?? []
+                        LocalStore.upsertCachedPlans(plans, for: dateString)
+                        return plans
                     } else {
                         clearSession()
                         throw SupabaseError.notAuthenticated
@@ -661,10 +664,12 @@ class SupabaseManager: ObservableObject {
             }
 
             let apiResponse = try makeAPIDecoder().decode(APIResponse<[TrainingPlan]>.self, from: data)
-            return apiResponse.data ?? []
+            let plans = apiResponse.data ?? []
+            LocalStore.upsertCachedPlans(plans, for: dateString)
+            return plans
         } catch {
             print("Error fetching training plans:", error)
-            throw SupabaseError.networkError
+            return cachedPlans
         }
     }
 

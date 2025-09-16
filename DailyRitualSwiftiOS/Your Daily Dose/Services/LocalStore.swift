@@ -19,6 +19,7 @@ struct PendingOp: Codable, Identifiable, Sendable {
 
 enum LocalStore {
     private static let cacheFilename = "cached_entries.json"
+    private static let plansCacheFilename = "cached_plans.json"
     private static let queueFilename = "pending_ops.json"
 
     // MARK: - Paths
@@ -27,6 +28,7 @@ enum LocalStore {
     }
     private static func cacheURL() -> URL { documentsURL().appendingPathComponent(cacheFilename) }
     private static func queueURL() -> URL { documentsURL().appendingPathComponent(queueFilename) }
+    private static func plansCacheURL() -> URL { documentsURL().appendingPathComponent(plansCacheFilename) }
 
     // MARK: - Cached entries keyed by date (yyyy-MM-dd)
     static func loadCachedEntries() -> [String: DailyEntry] {
@@ -77,6 +79,25 @@ enum LocalStore {
         var ops = loadPendingOps()
         ops.removeAll { $0.id == opId }
         savePendingOps(ops)
+    }
+}
+
+// MARK: - Training Plans cache per date
+extension LocalStore {
+    static func loadCachedPlans() -> [String: [TrainingPlan]] {
+        let url = plansCacheURL()
+        guard let data = try? Data(contentsOf: url) else { return [:] }
+        do { return try JSONDecoder().decode([String: [TrainingPlan]].self, from: data) } catch { print("LocalStore: failed to decode plans cache:", error); return [:] }
+    }
+
+    static func saveCachedPlans(_ dict: [String: [TrainingPlan]]) {
+        do { let data = try JSONEncoder().encode(dict); try data.write(to: plansCacheURL(), options: [.atomic]) } catch { print("LocalStore: failed to write plans cache:", error) }
+    }
+
+    static func upsertCachedPlans(_ plans: [TrainingPlan], for dateString: String) {
+        var all = loadCachedPlans()
+        all[dateString] = plans
+        saveCachedPlans(all)
     }
 }
 

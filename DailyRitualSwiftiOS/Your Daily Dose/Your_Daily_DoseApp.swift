@@ -144,6 +144,7 @@ extension Your_Daily_DoseApp {
                     _ = try? await supabaseManager.completeEvening(for: entry)
                 }
             default:
+                // TODO: implement trainingPlanCreate/update/delete replay
                 break
             }
             LocalStore.remove(opId: op.id)
