@@ -261,8 +261,10 @@ Training Plans
 - [x] iOS Training Plans list + add/edit (multi per day)
 
 Offline & UX
-- [ ] SwiftData cache and pending submit queue (basic)
-- [ ] Consistent loading/error toasts and disabled states
+- [x] Cache DailyEntry by date; replay queue for morning/evening (foreground)
+- [ ] Queue training plan create/update/delete and replay
+- [ ] Goal toggle queue and replay
+- [ ] Backoff policy + retry limits; offline banners/toasts; disabled states during writes
 
 Insights & Tooling
 - [x] GET /insights endpoints (list/stats/mark-read)
