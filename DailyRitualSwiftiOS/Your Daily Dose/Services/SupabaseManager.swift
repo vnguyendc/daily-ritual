@@ -228,8 +228,6 @@ class SupabaseManager: ObservableObject {
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
         let dateString = df.string(from: date)
-        let cachedPlans = LocalStore.loadCachedPlans()[dateString] ?? []
-        let cachedPlans = LocalStore.loadCachedPlans()[dateString] ?? []
         let cachedEntry = LocalStore.loadCachedEntries()[dateString]
         
         guard let url = URL(string: "\(baseURL)/daily-entries/\(dateString)") else {
@@ -670,7 +668,8 @@ class SupabaseManager: ObservableObject {
             return plans
         } catch {
             print("Error fetching training plans:", error)
-            return cachedPlans
+            let plans = LocalStore.loadCachedPlans()[dateString] ?? []
+            return plans
         }
     }
 
