@@ -147,6 +147,7 @@ Notes:
   - [ ] POST `/training-plans` → 200, created with auto `sequence`
   - [ ] PUT `/training-plans/:id` → 200, updates applied
   - [ ] DELETE `/training-plans/:id` → 200, deleted
+ - [ ] Today card shows training plans created for the selected date
 
 ### V1 readiness testing checklist (app level)
 - [ ] Home loads today’s entry and goal states on first launch
@@ -185,10 +186,15 @@ Observability:
 - Log request URLs and op transitions (enqueued → sent → success/failure)
 - Surface subtle “Syncing…” and “Will retry” states where useful
 
+Implementation status (POC V1):
+- Implemented: Cached DailyEntry by date; queue and replay for Morning and Evening submits (replay on foreground)
+- Pending: Queue for training plan create/update/delete; goal toggle queue; backoff policy; user-visible sync banners
+
 QA for cache + queue:
-- [ ] Kill network → complete morning → UI updates; PendingOp shows 1 pending
-- [ ] Restore network → app foreground → PendingOp drains; server has entry; cache refreshed
-- [ ] Toggle goals offline → state persists locally → sync on reconnect
+- [ ] Kill network → complete morning → UI updates; app has 1 pending op locally
+- [ ] Restore network → send app to background and foreground → pending op replays; server has entry; cache refreshed
+- [ ] Repeat for evening reflection
+- [ ] Training plans offline (pending) → current build should show a friendly error or no-op; to be enabled later
 - [ ] 401 while offline → after sign-in, queued ops replay and succeed
 
 ---
