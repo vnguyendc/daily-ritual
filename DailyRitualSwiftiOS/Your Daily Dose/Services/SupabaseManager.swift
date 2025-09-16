@@ -229,6 +229,7 @@ class SupabaseManager: ObservableObject {
         df.dateFormat = "yyyy-MM-dd"
         let dateString = df.string(from: date)
         let cachedPlans = LocalStore.loadCachedPlans()[dateString] ?? []
+        let cachedPlans = LocalStore.loadCachedPlans()[dateString] ?? []
         let cachedEntry = LocalStore.loadCachedEntries()[dateString]
         
         guard let url = URL(string: "\(baseURL)/daily-entries/\(dateString)") else {
