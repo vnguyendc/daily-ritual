@@ -22,18 +22,16 @@ Athletes train their bodies every day, but mental training often gets left to ch
   - Quick morning/evening/weekly insights (Edge Functions, optional)
 
 Quick links:
-- Product document: `PRODUCT_DOC.md`
-- Engineering plan: `IMPLEMENTATION_PLAN.md`
-- V1 device testing plan: `V1_TESTING_PLAN.md`
+- Product document: `docs/PRODUCT_DOC.md`
+- Engineering plan: `docs/IMPLEMENTATION_PLAN.md`
+- V1 device testing plan: `docs/V1_TESTING_PLAN.md`
 
 ---
 
 ## Monorepo layout
 - `DailyRitualBackend/` — Express + TypeScript API, Supabase schema, RLS, Edge Functions
 - `DailyRitualSwiftiOS/` — SwiftUI iOS app (morning/evening rituals, Today view)
-- `PRODUCT_DOC.md` — Product vision, MVP scope, user flows, schema
-- `IMPLEMENTATION_PLAN.md` — Engineering plan and milestones
-- `V1_TESTING_PLAN.md` — Device testing against deployed backend (HTTPS)
+- `docs/` — Product vision, engineering plan, device testing, guides
 - `render.yaml` — Render blueprint for one‑click backend deployment
 
 ---
