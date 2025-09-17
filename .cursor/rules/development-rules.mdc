@@ -1,0 +1,5 @@
+---
+description: Refer to ./docs/DEVELOPMENT_RULES.md
+globs:
+alwaysApply: true
+---

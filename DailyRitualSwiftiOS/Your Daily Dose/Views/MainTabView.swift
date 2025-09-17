@@ -145,7 +145,7 @@ struct MainTabView: View {
                 .edgesIgnoringSafeArea(.all)
             
             // Entries tab
-            EntriesView()
+            HistoryListView()
                 .tabItem {
                     Image(systemName: "list.bullet.rectangle.portrait")
                     Text("Entries")

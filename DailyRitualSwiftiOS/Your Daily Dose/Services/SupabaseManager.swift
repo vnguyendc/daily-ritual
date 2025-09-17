@@ -7,7 +7,11 @@
 
 import Foundation
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 import Security
 import AuthenticationServices
 import Security
@@ -1205,6 +1209,21 @@ struct APIError: Codable {
     let code: String?
 }
 
+// MARK: - Pagination models
+struct PaginationInfo: Codable {
+    let page: Int
+    let limit: Int
+    let total: Int
+    let total_pages: Int
+    let has_next: Bool
+    let has_prev: Bool
+}
+
+struct PaginatedEntries: Codable {
+    let data: [DailyEntry]
+    let pagination: PaginationInfo
+}
+
 struct MorningRitualRequest: Codable {
     let goals: [String]
     let gratitudes: [String]
@@ -1301,14 +1320,50 @@ extension SupabaseManager {
         currentUser = nil
         isAuthenticated = false
     }
+
+    // MARK: - History (paginated)
+    func fetchDailyEntries(startDate: Date?, endDate: Date?, page: Int = 1, limit: Int = 20, hasMorning: Bool? = nil, hasEvening: Bool? = nil) async throws -> PaginatedEntries {
+        isLoading = true
+        defer { isLoading = false }
+
+        var components = URLComponents(string: "\(baseURL)/daily-entries")!
+        var items: [URLQueryItem] = [
+            .init(name: "page", value: String(page)),
+            .init(name: "limit", value: String(limit))
+        ]
+        let df = Self.dateOnlyFormatter
+        if let sd = startDate { items.append(.init(name: "start_date", value: df.string(from: sd))) }
+        if let ed = endDate { items.append(.init(name: "end_date", value: df.string(from: ed))) }
+        if let m = hasMorning, m { items.append(.init(name: "has_morning_ritual", value: "true")) }
+        if let e = hasEvening, e { items.append(.init(name: "has_evening_reflection", value: "true")) }
+        components.queryItems = items
+
+        var req = URLRequest(url: components.url!)
+        req.httpMethod = "GET"
+        if let token = authToken { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+
+        let (data, response) = try await URLSession.shared.data(for: req)
+        if let http = response as? HTTPURLResponse, http.statusCode == 401 {
+            try await refreshAuthToken()
+            return try await fetchDailyEntries(startDate: startDate, endDate: endDate, page: page, limit: limit, hasMorning: hasMorning, hasEvening: hasEvening)
+        }
+        let apiResponse = try makeAPIDecoder().decode(APIResponse<PaginatedEntries>.self, from: data)
+        return apiResponse.data ?? PaginatedEntries(data: [], pagination: PaginationInfo(page: page, limit: limit, total: 0, total_pages: 0, has_next: false, has_prev: false))
+    }
 }
 
 // MARK: - ASWebAuthenticationSession context
 extension SupabaseManager: ASWebAuthenticationPresentationContextProviding {
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
         // Fallback to key window
+        #if canImport(UIKit)
         return UIApplication.shared.connectedScenes
             .compactMap { ($0 as? UIWindowScene)?.keyWindow }
             .first ?? UIWindow()
+        #elseif canImport(AppKit)
+        return NSApplication.shared.windows.first ?? NSWindow()
+        #else
+        return ASPresentationAnchor()
+        #endif
     }
 }

@@ -51,7 +51,7 @@ struct User: Codable, Identifiable, Sendable {
     }
 }
 
-struct DailyEntry: Codable, Identifiable, Sendable {
+struct DailyEntry: Codable, Identifiable, Sendable, Hashable {
     let id: UUID
     let userId: UUID
     let date: Date
