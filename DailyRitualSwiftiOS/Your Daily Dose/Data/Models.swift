@@ -261,6 +261,45 @@ struct WeeklyInsight: Codable, Identifiable, Sendable {
     }
 }
 
+// MARK: - AI Insights (Backend-driven)
+struct Insight: Codable, Identifiable, Sendable {
+    let id: UUID
+    let userId: UUID
+    let insightType: String
+    let content: String
+    let dataPeriodStart: Date?
+    let dataPeriodEnd: Date?
+    let confidenceScore: Double?
+    let isRead: Bool?
+    let createdAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case insightType = "insight_type"
+        case content
+        case dataPeriodStart = "data_period_start"
+        case dataPeriodEnd = "data_period_end"
+        case confidenceScore = "confidence_score"
+        case isRead = "is_read"
+        case createdAt = "created_at"
+    }
+}
+
+struct InsightStats: Codable, Sendable {
+    let totalInsights: Int
+    let unreadCount: Int
+    let insightsByType: [String: Int]
+    let latestInsightDate: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case totalInsights = "total_insights"
+        case unreadCount = "unread_count"
+        case insightsByType = "insights_by_type"
+        case latestInsightDate = "latest_insight_date"
+    }
+}
+
 // MARK: - Training Plans
 struct TrainingPlan: Codable, Identifiable, Sendable {
     let id: UUID
@@ -292,25 +331,25 @@ struct TrainingPlan: Codable, Identifiable, Sendable {
 
 enum MorningStep: Int, CaseIterable {
     case goals = 0
-    case affirmation = 1
-    case gratitude = 2
-    case quote = 3
+    case gratitude = 1
+    case affirmation = 2
+    case notes = 3
     
     var title: String {
         switch self {
         case .goals: return "Goals"
-        case .affirmation: return "Affirmation"
         case .gratitude: return "Gratitude"
-        case .quote: return "Quote"
+        case .affirmation: return "Affirmation"
+        case .notes: return "Notes"
         }
     }
     
     var description: String {
         switch self {
         case .goals: return "Journal about your intentions and priorities for today"
-        case .affirmation: return "Your personalized affirmation"
         case .gratitude: return "Reflect on what fills your heart with appreciation"
-        case .quote: return "Today's inspiring quote"
+        case .affirmation: return "Your personalized affirmation"
+        case .notes: return "Notes or thoughts for the day"
         }
     }
     
@@ -318,12 +357,12 @@ enum MorningStep: Int, CaseIterable {
         switch self {
         case .goals:
             return entry.goalsText?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
-        case .affirmation:
-            return entry.affirmation?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
         case .gratitude:
             return entry.gratitudeText?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
-        case .quote:
-            return entry.quote?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        case .affirmation:
+            return entry.affirmation?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        case .notes:
+            return entry.otherThoughts?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
         }
     }
     
@@ -331,12 +370,12 @@ enum MorningStep: Int, CaseIterable {
         switch self {
         case .goals:
             return "Share your intentions and what you want to accomplish today"
-        case .affirmation:
-            return "Your affirmation helps set a positive mindset for the day"
         case .gratitude:
             return "Write about what you're grateful for and appreciate in your life"
-        case .quote:
-            return "Today's quote will inspire and guide your actions"
+        case .affirmation:
+            return "Your affirmation helps set a positive mindset for the day"
+        case .notes:
+            return "Optionally jot down notes or thoughts for the day"
         }
     }
 }

@@ -15,5 +15,15 @@
 		<string>CrimsonPro-VariableFont_wght.ttf</string>
 		<string>CrimsonPro-Italic-VariableFont_wght.ttf</string>
 	</array>
+	<!-- URL scheme for OAuth redirect -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>dailyritual</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

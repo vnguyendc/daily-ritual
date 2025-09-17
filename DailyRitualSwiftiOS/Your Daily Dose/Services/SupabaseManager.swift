@@ -7,16 +7,20 @@
 
 import Foundation
 import SwiftUI
+import UIKit
 import Security
+import AuthenticationServices
 import Security
 
 @MainActor
-class SupabaseManager: ObservableObject {
+class SupabaseManager: NSObject, ObservableObject {
     static let shared = SupabaseManager()
     
     @Published var currentUser: User?
     @Published var isAuthenticated = false
     @Published var isLoading = false
+    @Published var pendingOpsCount = 0
+    @Published var isSyncing = false
     
     // Backend configuration - use localhost for simulator, IP for device
     // private let baseURL = "http://localhost:3000/api/v1" // Change to IP for device testing
@@ -39,6 +43,7 @@ class SupabaseManager: ObservableObject {
             }
         }
     }
+    private var oauthSession: ASWebAuthenticationSession?
     
     // Date decoding helpers for API responses
     private static let iso8601WithFractional: ISO8601DateFormatter = {
@@ -83,8 +88,11 @@ class SupabaseManager: ObservableObject {
     
     // Toggle for development: when true, a mock user is loaded automatically
     private let useMockAuth = false
+    private let supabaseProjectURL = "https://bkjfyxfphwhwwonmbulj.supabase.co"
+    private let oauthCallbackScheme = "dailyritual"
+    private let oauthCallbackPath = "auth-callback"
     
-    private init() {
+    private override init() {
         if useMockAuth {
             // Auto-authenticate with a mock user for rapid testing
             self.currentUser = User(email: "demo@example.com", name: "Demo User")
@@ -101,6 +109,9 @@ class SupabaseManager: ObservableObject {
            let rt = String(data: rtData, encoding: .utf8), !rt.isEmpty {
             self.refreshToken = rt
         }
+        // Initialize pending ops state
+        self.pendingOpsCount = LocalStore.countPendingOps()
+        super.init()
     }
     
     // MARK: - Authentication
@@ -137,20 +148,13 @@ class SupabaseManager: ObservableObject {
     }
     
     func signInWithApple() async throws -> User {
-        isLoading = true
-        defer { isLoading = false }
-        
-        // TODO: Implement actual Apple Sign In
-        try await Task.sleep(nanoseconds: 1_000_000_000) // Simulate network delay
-        
-        let user = User(
-            email: "user@example.com",
-            name: "User"
-        )
-        
-        currentUser = user
-        isAuthenticated = true
-        return user
+        try await signInWithProvider("apple")
+        return currentUser ?? User(email: "user@example.com", name: nil)
+    }
+
+    func signInWithGoogle() async throws -> User {
+        try await signInWithProvider("google")
+        return currentUser ?? User(email: "user@example.com", name: nil)
     }
     
     func signInDemo() async throws {
@@ -177,6 +181,66 @@ class SupabaseManager: ObservableObject {
         try await Task.sleep(nanoseconds: 500_000_000)
         
         clearSession()
+    }
+
+    // Generic OAuth with Supabase Hosted Auth (Apple/Google) via ASWebAuthenticationSession
+    private func signInWithProvider(_ provider: String) async throws {
+        isLoading = true
+        defer { isLoading = false }
+
+        guard let redirectURL = URL(string: "\(oauthCallbackScheme)://\(oauthCallbackPath)") else {
+            throw SupabaseError.invalidData
+        }
+        var components = URLComponents(string: "\(supabaseProjectURL)/auth/v1/authorize")!
+        components.queryItems = [
+            URLQueryItem(name: "provider", value: provider),
+            URLQueryItem(name: "redirect_to", value: redirectURL.absoluteString)
+        ]
+        guard let authURL = components.url else { throw SupabaseError.invalidData }
+
+        let callbackURL = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<URL, Error>) in
+            self.oauthSession = ASWebAuthenticationSession(url: authURL, callbackURLScheme: oauthCallbackScheme) { url, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+                guard let url = url else {
+                    continuation.resume(throwing: SupabaseError.networkError)
+                    return
+                }
+                continuation.resume(returning: url)
+            }
+            self.oauthSession?.presentationContextProvider = self
+            self.oauthSession?.prefersEphemeralWebBrowserSession = false
+            _ = self.oauthSession?.start()
+        }
+
+        // Supabase returns tokens in URL fragment: #access_token=...&refresh_token=...
+        guard let fragment = callbackURL.fragment else { throw SupabaseError.invalidData }
+        let tokens = Self.parseFragment(fragment)
+        guard let access = tokens["access_token"], let refresh = tokens["refresh_token"] else {
+            throw SupabaseError.invalidData
+        }
+        self.authToken = access
+        self.refreshToken = refresh
+        self.isAuthenticated = true
+        // Minimal current user until fetched from profile
+        if self.currentUser == nil {
+            self.currentUser = User(email: "user@oauth.local", name: nil)
+        }
+    }
+
+    private static func parseFragment(_ fragment: String) -> [String: String] {
+        var dict: [String: String] = [:]
+        for pair in fragment.components(separatedBy: "&") {
+            let parts = pair.components(separatedBy: "=")
+            if parts.count == 2 {
+                let key = parts[0]
+                let value = parts[1].removingPercentEncoding ?? parts[1]
+                dict[key] = value
+            }
+        }
+        return dict
     }
 
     // Refresh Supabase access token using refresh token
@@ -374,11 +438,11 @@ class SupabaseManager: ObservableObject {
             goals: entry.goals ?? [],
             gratitudes: entry.gratitudes ?? [],
             quote_reflection: entry.quoteReflection,
-            planned_training_type: entry.plannedTrainingType,
-            planned_training_time: entry.plannedTrainingTime,
-            planned_intensity: entry.plannedIntensity,
-            planned_duration: entry.plannedDuration,
-            planned_notes: entry.plannedNotes
+            planned_training_type: nil,
+            planned_training_time: nil,
+            planned_intensity: nil,
+            planned_duration: nil,
+            planned_notes: entry.otherThoughts
         )
         
         request.httpBody = try JSONEncoder().encode(morningData)
@@ -439,6 +503,7 @@ class SupabaseManager: ObservableObject {
             let payload = try? JSONEncoder().encode(morningData)
             let op = PendingOp(id: UUID(), opType: .morning, dateString: dateString, payload: payload, attemptCount: 0, lastAttemptAt: nil)
             LocalStore.enqueue(op)
+            await MainActor.run { self.pendingOpsCount = LocalStore.countPendingOps() }
             return updatedEntry
         }
     }
@@ -529,6 +594,7 @@ class SupabaseManager: ObservableObject {
             let payload = try? JSONSerialization.data(withJSONObject: requestBody)
             let op = PendingOp(id: UUID(), opType: .evening, dateString: dateString, payload: payload, attemptCount: 0, lastAttemptAt: nil)
             LocalStore.enqueue(op)
+            await MainActor.run { self.pendingOpsCount = LocalStore.countPendingOps() }
             return updatedEntry
         }
     }
@@ -735,7 +801,23 @@ class SupabaseManager: ObservableObject {
             return apiResponse.data ?? plan
         } catch {
             print("Error creating training plan:", error)
-            throw SupabaseError.networkError
+            // Enqueue create for replay
+            let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
+            let dateString = df.string(from: plan.date)
+            let body: [String: Any] = [
+                "date": dateString,
+                "sequence": plan.sequence,
+                "type": plan.trainingType as Any,
+                "start_time": plan.startTime as Any,
+                "intensity": plan.intensity as Any,
+                "duration_minutes": plan.durationMinutes as Any,
+                "notes": plan.notes as Any
+            ].compactMapValues { $0 }
+            let payload = try? JSONSerialization.data(withJSONObject: body)
+            let op = PendingOp(id: UUID(), opType: .trainingPlanCreate, dateString: dateString, payload: payload, attemptCount: 0, lastAttemptAt: nil)
+            LocalStore.enqueue(op)
+            await MainActor.run { self.pendingOpsCount = LocalStore.countPendingOps() }
+            return plan
         }
     }
 
@@ -801,7 +883,24 @@ class SupabaseManager: ObservableObject {
             return apiResponse.data ?? plan
         } catch {
             print("Error updating training plan:", error)
-            throw SupabaseError.networkError
+            // Enqueue update for replay
+            let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
+            let dateString = df.string(from: plan.date)
+            let body: [String: Any] = [
+                "id": plan.id.uuidString,
+                "date": dateString,
+                "sequence": plan.sequence,
+                "type": plan.trainingType as Any,
+                "start_time": plan.startTime as Any,
+                "intensity": plan.intensity as Any,
+                "duration_minutes": plan.durationMinutes as Any,
+                "notes": plan.notes as Any
+            ].compactMapValues { $0 }
+            let payload = try? JSONSerialization.data(withJSONObject: body)
+            let op = PendingOp(id: UUID(), opType: .trainingPlanUpdate, dateString: dateString, payload: payload, attemptCount: 0, lastAttemptAt: nil)
+            LocalStore.enqueue(op)
+            await MainActor.run { self.pendingOpsCount = LocalStore.countPendingOps() }
+            return plan
         }
     }
 
@@ -841,7 +940,113 @@ class SupabaseManager: ObservableObject {
             }
         } catch {
             print("Error deleting training plan:", error)
-            throw SupabaseError.networkError
+            // Enqueue delete for replay (date unknown; use today's by default)
+            let dateString = SupabaseManager.dateOnlyFormatter.string(from: Date())
+            let body: [String: Any] = ["id": planId.uuidString]
+            let payload = try? JSONSerialization.data(withJSONObject: body)
+            let op = PendingOp(id: UUID(), opType: .trainingPlanDelete, dateString: dateString, payload: payload, attemptCount: 0, lastAttemptAt: nil)
+            LocalStore.enqueue(op)
+            await MainActor.run { self.pendingOpsCount = LocalStore.countPendingOps() }
+            return
+        }
+    }
+
+    // MARK: - Offline replay with backoff
+    func replayPendingOpsWithBackoff() async {
+        await MainActor.run { self.isSyncing = true }
+        defer { Task { await MainActor.run { self.isSyncing = false } } }
+        var ops = LocalStore.loadPendingOps()
+        guard !ops.isEmpty else { return }
+        for var op in ops {
+            let attempt = op.attemptCount + 1
+            op.attemptCount = attempt
+            op.lastAttemptAt = Date()
+            LocalStore.update(op)
+
+            do {
+                switch op.opType {
+                case .morning:
+                    if let data = op.payload,
+                       let body = try? JSONDecoder().decode(MorningRitualRequest.self, from: data),
+                       let date = SupabaseManager.dateOnlyFormatter.date(from: op.dateString) {
+                        var entry = DailyEntry(userId: self.currentUser?.id ?? UUID(), date: date)
+                        entry.goals = body.goals
+                        entry.gratitudes = body.gratitudes
+                        entry.quoteReflection = body.quote_reflection
+                        entry.plannedTrainingType = body.planned_training_type
+                        entry.plannedTrainingTime = body.planned_training_time
+                        entry.plannedIntensity = body.planned_intensity
+                        entry.plannedDuration = body.planned_duration
+                        entry.plannedNotes = body.planned_notes
+                        _ = try await self.completeMorning(for: entry)
+                    }
+                case .evening:
+                    if let data = op.payload,
+                       let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                       let date = SupabaseManager.dateOnlyFormatter.date(from: op.dateString) {
+                        var entry = DailyEntry(userId: self.currentUser?.id ?? UUID(), date: date)
+                        entry.quoteApplication = dict["quote_application"] as? String
+                        entry.dayWentWell = dict["day_went_well"] as? String
+                        entry.dayImprove = dict["day_improve"] as? String
+                        entry.overallMood = dict["overall_mood"] as? Int
+                        _ = try await self.completeEvening(for: entry)
+                    }
+                case .trainingPlanCreate:
+                    if let data = op.payload,
+                       let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                       let date = SupabaseManager.dateOnlyFormatter.date(from: op.dateString) {
+                        var plan = TrainingPlan(
+                            id: UUID(),
+                            userId: self.currentUser?.id ?? UUID(),
+                            date: date,
+                            sequence: dict["sequence"] as? Int ?? 1,
+                            trainingType: dict["type"] as? String,
+                            startTime: dict["start_time"] as? String,
+                            intensity: dict["intensity"] as? String,
+                            durationMinutes: dict["duration_minutes"] as? Int,
+                            notes: dict["notes"] as? String,
+                            createdAt: nil,
+                            updatedAt: nil
+                        )
+                        _ = try await self.createTrainingPlan(plan)
+                    }
+                case .trainingPlanUpdate:
+                    if let data = op.payload,
+                       let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                       let date = SupabaseManager.dateOnlyFormatter.date(from: op.dateString),
+                       let idString = dict["id"] as? String,
+                       let planUUID = UUID(uuidString: idString) {
+                        var plan = TrainingPlan(
+                            id: planUUID,
+                            userId: self.currentUser?.id ?? UUID(),
+                            date: date,
+                            sequence: dict["sequence"] as? Int ?? 1,
+                            trainingType: dict["type"] as? String,
+                            startTime: dict["start_time"] as? String,
+                            intensity: dict["intensity"] as? String,
+                            durationMinutes: dict["duration_minutes"] as? Int,
+                            notes: dict["notes"] as? String,
+                            createdAt: nil,
+                            updatedAt: nil
+                        )
+                        _ = try await self.updateTrainingPlan(plan)
+                    }
+                case .trainingPlanDelete:
+                    if let data = op.payload,
+                       let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                       let idString = dict["id"] as? String,
+                       let planUUID = UUID(uuidString: idString) {
+                        try await self.deleteTrainingPlan(planUUID)
+                    }
+                }
+
+                LocalStore.remove(opId: op.id)
+                await MainActor.run { self.pendingOpsCount = LocalStore.countPendingOps() }
+            } catch {
+                // Exponential backoff before next replay attempt
+                let delay = min(pow(2.0, Double(min(op.attemptCount, 5))), 60.0)
+                try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            }
         }
     }
 
@@ -870,6 +1075,119 @@ class SupabaseManager: ObservableObject {
             gratitudePatterns: ["Family", "Work accomplishments", "Health"],
             improvementThemes: ["Time management", "Exercise consistency"]
         )
+    }
+
+    // MARK: - Insights API
+    func fetchInsights(type: String? = nil, limit: Int = 5, unreadOnly: Bool = false) async throws -> [Insight] {
+        isLoading = true
+        defer { isLoading = false }
+
+        var components = URLComponents(string: "\(baseURL)/insights")!
+        var query: [URLQueryItem] = [URLQueryItem(name: "limit", value: String(limit))]
+        if let t = type { query.append(URLQueryItem(name: "type", value: t)) }
+        if unreadOnly { query.append(URLQueryItem(name: "unread_only", value: "true")) }
+        components.queryItems = query
+
+        var request = URLRequest(url: components.url!)
+        request.httpMethod = "GET"
+        if let token = authToken { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+
+        do {
+            print("GET:", components.url!.absoluteString)
+            let (data, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse {
+                let body = String(data: data, encoding: .utf8) ?? "<non-utf8>"
+                print("GET status:", http.statusCode, "body:", body.prefix(200))
+                if http.statusCode == 401 || (http.statusCode == 500 && body.contains("Invalid or expired token")) {
+                    try await refreshAuthToken()
+                    var retryReq = URLRequest(url: components.url!)
+                    retryReq.httpMethod = "GET"
+                    if let token = authToken { retryReq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+                    let (retryData, retryResp) = try await URLSession.shared.data(for: retryReq)
+                    if let retryHttp = retryResp as? HTTPURLResponse, retryHttp.statusCode == 200 {
+                        let apiResponse = try makeAPIDecoder().decode(APIResponse<[Insight]>.self, from: retryData)
+                        return apiResponse.data ?? []
+                    } else {
+                        clearSession()
+                        throw SupabaseError.notAuthenticated
+                    }
+                } else if http.statusCode != 200 {
+                    throw SupabaseError.networkError
+                }
+            }
+            let apiResponse = try makeAPIDecoder().decode(APIResponse<[Insight]>.self, from: data)
+            return apiResponse.data ?? []
+        } catch {
+            print("Error fetching insights:", error)
+            throw error
+        }
+    }
+
+    func fetchInsightStats() async throws -> InsightStats? {
+        isLoading = true
+        defer { isLoading = false }
+        guard let url = URL(string: "\(baseURL)/insights/stats") else { throw SupabaseError.invalidData }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        if let token = authToken { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+        do {
+            print("GET:", url.absoluteString)
+            let (data, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse {
+                let body = String(data: data, encoding: .utf8) ?? "<non-utf8>"
+                print("GET status:", http.statusCode, "body:", body.prefix(200))
+                if http.statusCode == 401 || (http.statusCode == 500 && body.contains("Invalid or expired token")) {
+                    try await refreshAuthToken()
+                    var retryReq = URLRequest(url: url)
+                    retryReq.httpMethod = "GET"
+                    if let token = authToken { retryReq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+                    let (retryData, retryResp) = try await URLSession.shared.data(for: retryReq)
+                    if let retryHttp = retryResp as? HTTPURLResponse, retryHttp.statusCode == 200 {
+                        let apiResponse = try makeAPIDecoder().decode(APIResponse<InsightStats>.self, from: retryData)
+                        return apiResponse.data
+                    } else {
+                        clearSession()
+                        throw SupabaseError.notAuthenticated
+                    }
+                } else if http.statusCode != 200 {
+                    throw SupabaseError.networkError
+                }
+            }
+            let apiResponse = try makeAPIDecoder().decode(APIResponse<InsightStats>.self, from: data)
+            return apiResponse.data
+        } catch {
+            print("Error fetching insights stats:", error)
+            return nil
+        }
+    }
+
+    func markInsightRead(_ id: UUID) async throws {
+        isLoading = true
+        defer { isLoading = false }
+        guard let url = URL(string: "\(baseURL)/insights/\(id.uuidString)/read") else { throw SupabaseError.invalidData }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        if let token = authToken { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+        do {
+            print("POST:", url.absoluteString)
+            let (_, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse, http.statusCode == 401 {
+                try await refreshAuthToken()
+                var retryReq = URLRequest(url: url)
+                retryReq.httpMethod = "POST"
+                if let token = authToken { retryReq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+                let (_, retryResp) = try await URLSession.shared.data(for: retryReq)
+                if let retryHttp = retryResp as? HTTPURLResponse, retryHttp.statusCode == 200 {
+                    return
+                } else {
+                    clearSession()
+                    throw SupabaseError.notAuthenticated
+                }
+            }
+        } catch {
+            print("Error marking insight read:", error)
+            throw error
+        }
     }
 }
 
@@ -982,5 +1300,15 @@ extension SupabaseManager {
         authToken = nil
         currentUser = nil
         isAuthenticated = false
+    }
+}
+
+// MARK: - ASWebAuthenticationSession context
+extension SupabaseManager: ASWebAuthenticationPresentationContextProviding {
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        // Fallback to key window
+        return UIApplication.shared.connectedScenes
+            .compactMap { ($0 as? UIWindowScene)?.keyWindow }
+            .first ?? UIWindow()
     }
 }

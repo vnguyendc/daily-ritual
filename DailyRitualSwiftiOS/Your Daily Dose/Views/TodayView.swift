@@ -22,8 +22,10 @@ struct TodayView: View {
     
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: DesignSystem.Spacing.sectionSpacing) {
+            ZStack {
+                ScrollView {
+                    VStack(spacing: DesignSystem.Spacing.sectionSpacing) {
+                    SyncStatusBanner(timeContext: timeContext)
                     Spacer(minLength: DesignSystem.Spacing.xl)
                     // Premium Header with time-based theming
                     VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
@@ -37,41 +39,21 @@ struct TodayView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                    // Weekly date strip
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: DesignSystem.Spacing.md) {
-                            ForEach(weekDates(for: selectedDate), id: \.self) { date in
-                                let isSelected = Calendar.current.isDate(date, inSameDayAs: selectedDate)
-                                Button {
-                                    withAnimation(DesignSystem.Animation.gentle) {
-                                        selectedDate = date
-                                        print("UI: Selected date tapped ->", date.formatted(date: .abbreviated, time: .omitted))
-                                        Task { await viewModel.load(date: selectedDate) }
-                                    }
-                                } label: {
-                                    VStack(spacing: DesignSystem.Spacing.xs) {
-                                        Text(date, format: .dateTime.weekday(.abbreviated))
-                                            .font(DesignSystem.Typography.metadata)
-                                            .foregroundColor(isSelected ? DesignSystem.Colors.invertedText : DesignSystem.Colors.secondaryText)
-                                        Text(date, format: .dateTime.day())
-                                            .font(DesignSystem.Typography.buttonMedium)
-                                            .foregroundColor(isSelected ? DesignSystem.Colors.invertedText : DesignSystem.Colors.primaryText)
-                                    }
-                                    .frame(width: 52, height: 64)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .fill(isSelected ? timeContext.primaryColor : DesignSystem.Colors.cardBackground)
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .stroke(DesignSystem.Colors.border, lineWidth: isSelected ? 0 : 1)
-                                    )
-                                }
-                                .buttonStyle(.plain)
+                    // Week header showing current week range
+                    WeekHeaderView(selectedDate: selectedDate)
+                        .padding(.bottom, DesignSystem.Spacing.xs)
+                    
+                    // Enhanced date slider with centered current date
+                    DateSlider(selectedDate: $selectedDate)
+                        .onChange(of: selectedDate) { newDate in
+                            print("UI: Selected date changed to", newDate.formatted(date: .abbreviated, time: .omitted))
+                            Task {
+                                await viewModel.load(date: newDate)
+                                let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
+                                let dateString = df.string(from: newDate)
+                                completedGoals = LocalStore.getCompletedGoals(for: dateString)
                             }
                         }
-                        .padding(.vertical, DesignSystem.Spacing.xs)
-                    }
                     
                     // Quote card hidden for POC V1
                     
@@ -246,6 +228,9 @@ struct TodayView: View {
                                         Button(action: {
                                             let isChecked = completedGoals.contains(idx)
                                             if isChecked { completedGoals.remove(idx) } else { completedGoals.insert(idx) }
+                                            let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
+                                            let dateString = df.string(from: viewModel.entry.date)
+                                            LocalStore.setCompletedGoals(completedGoals, for: dateString)
                                         }) {
                                             HStack(spacing: DesignSystem.Spacing.md) {
                                                 ZStack {
@@ -306,11 +291,19 @@ struct TodayView: View {
                         .animation(DesignSystem.Animation.gentle, value: viewModel.entry.isFullyComplete)
                     }
                     
-                    Spacer(minLength: DesignSystem.Spacing.xxxl)
+                        Spacer(minLength: DesignSystem.Spacing.xxxl)
+                    }
+                    .padding(DesignSystem.Spacing.cardPadding)
                 }
-                .padding(DesignSystem.Spacing.cardPadding)
+                
+                // Loading overlay when fetching data
+                if viewModel.isLoading {
+                    LoadingCard(message: "Loading your daily ritual...")
+                        .transition(.scale.combined(with: .opacity))
+                }
             }
             .premiumBackgroundGradient(timeContext)
+            .animation(DesignSystem.Animation.gentle, value: viewModel.isLoading)
             .edgesIgnoringSafeArea(.all)
             .navigationTitle("")
             .navigationBarHidden(true)
@@ -341,16 +334,14 @@ struct TodayView: View {
                 .padding(.bottom, DesignSystem.Spacing.lg)
             }
             .refreshable {
+                await SupabaseManager.shared.replayPendingOpsWithBackoff()
                 await viewModel.refresh(for: selectedDate)
             }
             .task {
                 await viewModel.load(date: selectedDate)
-            }
-            .onChange(of: selectedDate) { newValue in
-                print("UI: selectedDate changed to", newValue.formatted(date: .abbreviated, time: .omitted))
-                Task {
-                    await viewModel.load(date: newValue)
-                }
+                let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
+                let dateString = df.string(from: selectedDate)
+                completedGoals = LocalStore.getCompletedGoals(for: dateString)
             }
             .sheet(isPresented: $showingMorningRitual) {
                 MorningRitualView(entry: $viewModel.entry)
@@ -524,12 +515,6 @@ extension TodayView {
         }
     }
 
-    // Generate the week (Mon-Sun) containing a reference date
-    func weekDates(for reference: Date) -> [Date] {
-        let calendar = Calendar.current
-        let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: reference)) ?? reference
-        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: startOfWeek) }
-    }
 }
 
 // MARK: - Today View Model

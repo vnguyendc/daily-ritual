@@ -14,6 +14,7 @@ struct MorningRitualView: View {
     @StateObject private var viewModel = MorningRitualViewModel()
     @State private var currentStep = 0
     @State private var showingCompletion = false
+    @State private var isSaving = false
     
     private let timeContext: DesignSystem.TimeContext = .morning
     
@@ -41,24 +42,17 @@ struct MorningRitualView: View {
                     PremiumGratitudeStepView(gratitudeText: $entry.gratitudeText, timeContext: timeContext)
                         .tag(1)
                     
-                    // Step 3: Today's Training Plan
-                    PremiumTrainingPlanStepView(
-                        plannedTrainingType: $entry.plannedTrainingType,
-                        plannedTrainingTime: $entry.plannedTrainingTime,
-                        plannedIntensity: $entry.plannedIntensity,
-                        plannedDuration: $entry.plannedDuration,
-                        plannedNotes: $entry.plannedNotes,
-                        timeContext: timeContext
-                    )
-                    .tag(2)
-                    
-                    // Step 4: Affirmation (user writes; suggested text shown)
+                    // Step 3: Affirmation (user writes; suggested text shown)
                     PremiumAffirmationStepView(
                         affirmation: $entry.affirmation,
                         suggestedText: viewModel.suggestedAffirmation,
                         timeContext: timeContext
                     )
-                    .tag(3)
+                    .tag(2)
+                    
+                    // Step 4: Notes / Thoughts for the Day
+                    PremiumOtherThoughtsStepView(otherThoughts: $entry.otherThoughts, timeContext: timeContext)
+                        .tag(3)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 
@@ -85,8 +79,8 @@ struct MorningRitualView: View {
                                     y: DesignSystem.Shadow.elevated.y
                                 )
                         }
-                        .disabled(!canProceed)
-                        .opacity(canProceed ? 1.0 : 0.5)
+                        .disabled(!canProceed || SupabaseManager.shared.isLoading)
+                        .opacity((canProceed && !SupabaseManager.shared.isLoading) ? 1.0 : 0.5)
                         .animation(DesignSystem.Animation.quick, value: canProceed)
                     } else {
                         Button {
@@ -105,13 +99,14 @@ struct MorningRitualView: View {
                                     y: DesignSystem.Shadow.elevated.y
                                 )
                         }
-                        .disabled(!canProceed)
-                        .opacity(canProceed ? 1.0 : 0.5)
+                        .disabled(!canProceed || isSaving)
+                        .opacity((canProceed && !isSaving) ? 1.0 : 0.5)
                         .animation(DesignSystem.Animation.quick, value: canProceed)
                     }
                 }
                 .padding(DesignSystem.Spacing.cardPadding)
             }
+            .loadingOverlay(isLoading: isSaving, message: "Saving your morning ritual...")
             .premiumBackgroundGradient(timeContext)
             .navigationTitle("Morning Ritual")
             .navigationBarTitleDisplayMode(.inline)
@@ -144,15 +139,17 @@ struct MorningRitualView: View {
         switch currentStep {
         case 0: return !(entry.goalsText?.isEmpty ?? true) // Goals
         case 1: return !(entry.gratitudeText?.isEmpty ?? true) // Gratitude
-        case 2: return entry.plannedTrainingType != nil // Training Plan
-        case 3: return !(entry.affirmation?.isEmpty ?? true) // Affirmation
+        case 2: return !(entry.affirmation?.isEmpty ?? true) // Affirmation
+        case 3: return !(entry.otherThoughts?.isEmpty ?? true) // Notes
         default: return false
         }
     }
     
     private func completeRitual() {
         print("Tapped complete morning")
+        isSaving = true
         Task {
+            defer { isSaving = false }
             do {
                 let updated = try await SupabaseManager.shared.completeMorning(for: entry)
                 entry = updated
@@ -554,6 +551,7 @@ struct PremiumTrainingPlanStepView: View {
 class MorningRitualViewModel: ObservableObject {
     @Published var suggestedAffirmation: String?
     @Published var preGeneratedQuote: String?
+    @Published var isLoading = false
     
     private let supabase = SupabaseManager.shared
     

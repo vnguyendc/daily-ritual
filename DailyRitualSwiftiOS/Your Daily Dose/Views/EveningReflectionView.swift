@@ -15,6 +15,7 @@ struct EveningReflectionView: View {
     @State private var currentStep = 0
     @State private var showingCompletion = false
     @State private var overallMood: Int = 3
+    @State private var isSaving = false
     
     private let timeContext: DesignSystem.TimeContext = .evening
     
@@ -133,6 +134,7 @@ struct EveningReflectionView: View {
                 }
                 .padding(DesignSystem.Spacing.cardPadding)
             }
+            .loadingOverlay(isLoading: isSaving, message: "Saving your evening reflection...")
             .premiumBackgroundGradient(timeContext)
             .navigationTitle("Evening Reflection")
             .navigationBarTitleDisplayMode(.inline)
@@ -173,12 +175,14 @@ struct EveningReflectionView: View {
     private func completeReflection() async {
         // Update entry with mood
         entry.overallMood = overallMood
+        isSaving = true
         
         do {
             let updatedEntry = try await viewModel.completeEveningReflection(entry)
             await MainActor.run {
                 entry = updatedEntry
                 showingCompletion = true
+                isSaving = false
             }
         } catch {
             print("Error completing evening reflection: \(error)")
@@ -186,6 +190,7 @@ struct EveningReflectionView: View {
             await MainActor.run {
                 entry.eveningCompletedAt = Date()
                 showingCompletion = true
+                isSaving = false
             }
         }
     }

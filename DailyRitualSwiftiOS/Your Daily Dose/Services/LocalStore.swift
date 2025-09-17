@@ -21,6 +21,7 @@ enum LocalStore {
     private static let cacheFilename = "cached_entries.json"
     private static let plansCacheFilename = "cached_plans.json"
     private static let queueFilename = "pending_ops.json"
+    private static let goalsStateFilename = "goals_state.json"
 
     // MARK: - Paths
     private static func documentsURL() -> URL {
@@ -29,6 +30,7 @@ enum LocalStore {
     private static func cacheURL() -> URL { documentsURL().appendingPathComponent(cacheFilename) }
     private static func queueURL() -> URL { documentsURL().appendingPathComponent(queueFilename) }
     private static func plansCacheURL() -> URL { documentsURL().appendingPathComponent(plansCacheFilename) }
+    private static func goalsStateURL() -> URL { documentsURL().appendingPathComponent(goalsStateFilename) }
 
     // MARK: - Cached entries keyed by date (yyyy-MM-dd)
     static func loadCachedEntries() -> [String: DailyEntry] {
@@ -80,6 +82,18 @@ enum LocalStore {
         ops.removeAll { $0.id == opId }
         savePendingOps(ops)
     }
+
+    static func update(_ op: PendingOp) {
+        var ops = loadPendingOps()
+        if let idx = ops.firstIndex(where: { $0.id == op.id }) {
+            ops[idx] = op
+            savePendingOps(ops)
+        }
+    }
+
+    static func countPendingOps() -> Int {
+        loadPendingOps().count
+    }
 }
 
 // MARK: - Training Plans cache per date
@@ -98,6 +112,31 @@ extension LocalStore {
         var all = loadCachedPlans()
         all[dateString] = plans
         saveCachedPlans(all)
+    }
+}
+
+// MARK: - Goal completion state cache (per date)
+extension LocalStore {
+    // Map: dateString -> indices set
+    static func loadGoalsState() -> [String: [Int]] {
+        let url = goalsStateURL()
+        guard let data = try? Data(contentsOf: url) else { return [:] }
+        do { return try JSONDecoder().decode([String: [Int]].self, from: data) } catch { print("LocalStore: failed to decode goals state:", error); return [:] }
+    }
+
+    static func saveGoalsState(_ dict: [String: [Int]]) {
+        do { let data = try JSONEncoder().encode(dict); try data.write(to: goalsStateURL(), options: [.atomic]) } catch { print("LocalStore: failed to write goals state:", error) }
+    }
+
+    static func setCompletedGoals(_ indices: Set<Int>, for dateString: String) {
+        var all = loadGoalsState()
+        all[dateString] = Array(indices).sorted()
+        saveGoalsState(all)
+    }
+
+    static func getCompletedGoals(for dateString: String) -> Set<Int> {
+        let all = loadGoalsState()
+        return Set(all[dateString] ?? [])
     }
 }
 

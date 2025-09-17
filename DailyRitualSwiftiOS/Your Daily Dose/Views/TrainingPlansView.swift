@@ -17,6 +17,9 @@ struct TrainingPlansView: View {
     var body: some View {
         NavigationView {
             List {
+                Section {
+                    SyncStatusBanner(timeContext: .morning)
+                }
                 ForEach(plans.sorted(by: { $0.sequence < $1.sequence })) { plan in
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
@@ -63,9 +66,15 @@ struct TrainingPlansView: View {
                 }
             }
             .overlay {
-                if isLoading { ProgressView().scaleEffect(1.2) }
+                if isLoading && plans.isEmpty { 
+                    LoadingCard(message: "Loading training plans...")
+                }
             }
             .task { await load() }
+            .refreshable {
+                await SupabaseManager.shared.replayPendingOpsWithBackoff()
+                await load()
+            }
             .sheet(isPresented: $showAddSheet) {
                 AddTrainingPlanSheet(date: selectedDate) {
                     await load()

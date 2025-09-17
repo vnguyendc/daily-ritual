@@ -62,6 +62,31 @@ struct ProfileView: View {
                                 }
                             }
                             .buttonStyle(.borderedProminent)
+
+                            Divider().opacity(0.3)
+
+                            HStack(spacing: DesignSystem.Spacing.md) {
+                                Button {
+                                    Task { try? await supabase.signInWithApple() }
+                                } label: {
+                                    HStack {
+                                        Image(systemName: "apple.logo")
+                                        Text("Sign in with Apple")
+                                    }
+                                }
+                                .buttonStyle(.bordered)
+                            }
+                            HStack(spacing: DesignSystem.Spacing.md) {
+                                Button {
+                                    Task { try? await supabase.signInWithGoogle() }
+                                } label: {
+                                    HStack {
+                                        Image(systemName: "g.circle")
+                                        Text("Sign in with Google")
+                                    }
+                                }
+                                .buttonStyle(.bordered)
+                            }
                         }
                     }
                 }
@@ -128,8 +153,8 @@ struct MainTabView: View {
                 .tag(1)
                 .edgesIgnoringSafeArea(.all)
             
-            // Premium placeholder for Insights tab
-            InsightsView()
+            // Insights tab
+            InsightsListView()
                 .tabItem {
                     Image(systemName: "brain.head.profile")
                     Text("Insights")
