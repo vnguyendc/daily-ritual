@@ -444,7 +444,7 @@ class SupabaseManager: NSObject, ObservableObject {
         
         do {
             let data = try JSONSerialization.data(withJSONObject: requestBody)
-            let apiResponse: APIResponse<DailyEntry> = try await api.post("daily-entries/\(dateString)/evening", body: requestBody)
+            let apiResponse: APIResponse<DailyEntry> = try await api.postRaw("daily-entries/\(dateString)/evening", json: requestBody)
             if let responseData = apiResponse.data {
                 LocalStore.upsertCachedEntry(responseData, for: dateString)
                 return responseData
@@ -596,7 +596,7 @@ class SupabaseManager: NSObject, ObservableObject {
         ].compactMapValues { $0 }
 
         do {
-            let apiResponse: APIResponse<TrainingPlan> = try await api.post("training-plans", body: requestBody)
+            let apiResponse: APIResponse<TrainingPlan> = try await api.postRaw("training-plans", json: requestBody)
             return apiResponse.data ?? plan
         } catch {
             print("Error creating training plan:", error)
@@ -840,7 +840,7 @@ class SupabaseManager: NSObject, ObservableObject {
     func markInsightRead(_ id: UUID) async throws {
         isLoading = true
         defer { isLoading = false }
-        let _: APIResponse<Empty> = try await api.post("insights/\(id.uuidString)/read", body: Optional<[String: String]>.none)
+        let _: APIResponse<EmptyJSON> = try await api.postRaw("insights/\(id.uuidString)/read", json: nil)
     }
 }
 

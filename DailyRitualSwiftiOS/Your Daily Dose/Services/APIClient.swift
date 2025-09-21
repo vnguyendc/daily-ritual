@@ -114,4 +114,7 @@ struct APIClient {
     }
 }
 
+// Empty JSON envelope for responses that return only success/message
+struct EmptyJSON: Codable {}
+
 
