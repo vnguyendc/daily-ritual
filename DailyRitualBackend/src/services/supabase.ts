@@ -121,6 +121,57 @@ export class DatabaseService {
     return data
   }
 
+  static async listDailyEntries(
+    userId: string,
+    options: {
+      page: number
+      limit: number
+      startDate?: string
+      endDate?: string
+      hasMorningRitual?: boolean
+      hasEveningReflection?: boolean
+    }
+  ): Promise<{ data: any[]; count: number }> {
+    const { page, limit, startDate, endDate, hasMorningRitual, hasEveningReflection } = options
+    let query = (supabaseServiceClient as any)
+      .from('daily_entries')
+      .select('*', { count: 'exact' })
+      .eq('user_id', userId)
+      .order('date', { ascending: false })
+
+    if (startDate) {
+      query = query.gte('date', startDate)
+    }
+
+    if (endDate) {
+      query = query.lte('date', endDate)
+    }
+
+    if (hasMorningRitual) {
+      query = query.not('morning_completed_at', 'is', null)
+    }
+
+    if (hasEveningReflection) {
+      query = query.not('evening_completed_at', 'is', null)
+    }
+
+    const offset = (page - 1) * limit
+    query = query.range(offset, offset + limit - 1)
+
+    const { data, error, count } = await query
+    if (error) throw error
+    return { data: data || [], count: count || 0 }
+  }
+
+  static async deleteDailyEntry(userId: string, date: string): Promise<void> {
+    const { error } = await (supabaseServiceClient as any)
+      .from('daily_entries')
+      .delete()
+      .eq('user_id', userId)
+      .eq('date', date)
+    if (error) throw error
+  }
+
   static async createWorkoutReflection(userId: string, reflection: any) {
     const { data, error } = await supabaseServiceClient
       .from('workout_reflections')

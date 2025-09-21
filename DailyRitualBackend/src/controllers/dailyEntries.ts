@@ -422,47 +422,25 @@ export class DailyEntriesController {
       const hasMorningRitual = req.query.has_morning_ritual === 'true'
       const hasEveningReflection = req.query.has_evening_reflection === 'true'
 
-      // Build query
-      let query = supabaseServiceClient
-        .from('daily_entries')
-        .select('*', { count: 'exact' })
-        .eq('user_id', user.id)
-        .order('date', { ascending: false })
+      const { data, count } = await DatabaseService.listDailyEntries(user.id, {
+        page,
+        limit,
+        startDate,
+        endDate,
+        hasMorningRitual,
+        hasEveningReflection
+      })
 
-      if (startDate) {
-        query = query.gte('date', startDate)
-      }
-
-      if (endDate) {
-        query = query.lte('date', endDate)
-      }
-
-      if (hasMorningRitual) {
-        query = query.not('morning_completed_at', 'is', null)
-      }
-
-      if (hasEveningReflection) {
-        query = query.not('evening_completed_at', 'is', null)
-      }
-
-      // Apply pagination
-      const offset = (page - 1) * limit
-      query = query.range(offset, offset + limit - 1)
-
-      const { data, error, count } = await query
-
-      if (error) throw error
-
-      const totalPages = Math.ceil((count || 0) / limit)
+      const totalPages = Math.ceil(count / limit)
 
       const response: APIResponse = {
         success: true,
         data: {
-          data: data || [],
+          data: data,
           pagination: {
             page,
             limit,
-            total: count || 0,
+            total: count,
             total_pages: totalPages,
             has_next: page < totalPages,
             has_prev: page > 1
@@ -499,13 +477,7 @@ export class DailyEntriesController {
         return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' })
       }
 
-      const { error } = await supabaseServiceClient
-        .from('daily_entries')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('date', date)
-
-      if (error) throw error
+      await DatabaseService.deleteDailyEntry(user.id, date)
 
       const response: APIResponse = {
         success: true,
