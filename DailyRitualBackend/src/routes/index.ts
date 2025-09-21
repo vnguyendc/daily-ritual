@@ -3,6 +3,7 @@ import { Router } from 'express'
 import { DailyEntriesController } from '../controllers/dailyEntries.js'
 import { TrainingPlansController } from '../controllers/trainingPlans.js'
 import { InsightsController } from '../controllers/insights.js'
+import { authenticateToken } from '../middleware/auth.js'
 // Trim to MVP routes only for initial deploy
 
 const router = Router()
@@ -19,6 +20,7 @@ router.get('/health', (req, res) => {
 // Dashboard routes (TODO – trimmed for MVP)
 
 // Daily entries routes
+router.use(['/daily-entries', '/training-plans', '/insights'], authenticateToken)
 router.get('/daily-entries', DailyEntriesController.getDailyEntries)
 router.get('/daily-entries/:date', DailyEntriesController.getDailyEntry)
 router.get('/daily-entries/:date/with-plans', DailyEntriesController.getDailyEntryWithPlans)

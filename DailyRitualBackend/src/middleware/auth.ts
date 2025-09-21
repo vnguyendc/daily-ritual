@@ -21,14 +21,27 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
     const authHeader = req.headers.authorization
     const token = authHeader && authHeader.split(' ')[1] // Bearer TOKEN
 
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        error: { error: 'Unauthorized', message: 'Access token required' }
-      })
-    }
+    // Dev-friendly fallback: allow mock or DEV_USER_ID without token
+    const useMock = process.env.USE_MOCK === 'true'
+    const devUserId = process.env.DEV_USER_ID
 
-    const user = await getUserFromToken(token)
+    let user: any
+    if (!token) {
+      if (useMock) {
+        console.log('🔓 [auth] No token provided, using mock user (dev mode)')
+        user = { id: 'mock-user-id', email: null }
+      } else if (devUserId) {
+        console.log('👤 [auth] Using DEV_USER_ID for development without auth')
+        user = { id: devUserId, email: null }
+      } else {
+        return res.status(401).json({
+          success: false,
+          error: { error: 'Unauthorized', message: 'Access token required' }
+        })
+      }
+    } else {
+      user = await getUserFromToken(token)
+    }
     // Ensure profile row exists in public.users
     try { await DatabaseService.ensureUserRecord(user as any) } catch (e) {
       console.warn('ensureUserRecord failed:', e)

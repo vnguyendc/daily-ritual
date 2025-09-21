@@ -1,7 +1,7 @@
 // Daily Entries Controller
 import { Request, Response } from 'express'
 import { z } from 'zod'
-import { DatabaseService, getUserFromToken } from '../services/supabase.js'
+import { DatabaseService, getUserFromToken, supabaseServiceClient } from '../services/supabase.js'
 import type { MorningRitualRequest, EveningReflectionRequest, APIResponse } from '../types/api.js'
 
 // Validation schemas
@@ -32,20 +32,21 @@ export class DailyEntriesController {
       const useMock = process.env.USE_MOCK === 'true'
       const devUserId = process.env.DEV_USER_ID
       
-      // For development, allow mock or a configured DEV_USER_ID when no token
-      let user: any
-      if (!token) {
-        if (useMock) {
-          console.log('🔓 No auth token provided, using mock user for development')
-          user = { id: 'mock-user-id' }
-        } else if (devUserId) {
-          console.log('👤 Using DEV_USER_ID from environment for development without auth')
-          user = { id: devUserId }
+      let user: any = (req as any).user
+      if (!user) {
+        if (!token) {
+          if (useMock) {
+            console.log('🔓 No auth token provided, using mock user for development')
+            user = { id: 'mock-user-id' }
+          } else if (devUserId) {
+            console.log('👤 Using DEV_USER_ID from environment for development without auth')
+            user = { id: devUserId }
+          } else {
+            return res.status(401).json({ error: 'Authorization token required' })
+          }
         } else {
-          return res.status(401).json({ error: 'Authorization token required' })
+          user = await getUserFromToken(token)
         }
-      } else {
-        user = await getUserFromToken(token)
       }
       const date = req.params.date as string
 
@@ -86,17 +87,19 @@ export class DailyEntriesController {
       const useMock = process.env.USE_MOCK === 'true'
       const devUserId = process.env.DEV_USER_ID
       
-      let user: any
-      if (!token) {
-        if (useMock) {
-          user = { id: 'mock-user-id' }
-        } else if (devUserId) {
-          user = { id: devUserId }
+      let user: any = (req as any).user
+      if (!user) {
+        if (!token) {
+          if (useMock) {
+            user = { id: 'mock-user-id' }
+          } else if (devUserId) {
+            user = { id: devUserId }
+          } else {
+            return res.status(401).json({ error: 'Authorization token required' })
+          }
         } else {
-          return res.status(401).json({ error: 'Authorization token required' })
+          user = await getUserFromToken(token)
         }
-      } else {
-        user = await getUserFromToken(token)
       }
       const date = req.params.date as string
       if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -133,17 +136,19 @@ export class DailyEntriesController {
       const useMock = process.env.USE_MOCK === 'true'
       const devUserId = process.env.DEV_USER_ID
       
-      let user: any
-      if (!token) {
-        if (useMock) {
-          user = { id: 'mock-user-id' }
-        } else if (devUserId) {
-          user = { id: devUserId }
+      let user: any = (req as any).user
+      if (!user) {
+        if (!token) {
+          if (useMock) {
+            user = { id: 'mock-user-id' }
+          } else if (devUserId) {
+            user = { id: devUserId }
+          } else {
+            return res.status(401).json({ error: 'Authorization token required' })
+          }
         } else {
-          return res.status(401).json({ error: 'Authorization token required' })
+          user = await getUserFromToken(token)
         }
-      } else {
-        user = await getUserFromToken(token)
       }
       const date = req.params.date as string
       if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -174,20 +179,21 @@ export class DailyEntriesController {
       const useMock = process.env.USE_MOCK === 'true'
       const devUserId = process.env.DEV_USER_ID
       
-      // For development, allow mock or a configured DEV_USER_ID when no token
-      let user: any
-      if (!token) {
-        if (useMock) {
-          console.log('🔓 No auth token provided, using mock user for development')
-          user = { id: 'mock-user-id' }
-        } else if (devUserId) {
-          console.log('👤 Using DEV_USER_ID from environment for development without auth')
-          user = { id: devUserId }
+      let user: any = (req as any).user
+      if (!user) {
+        if (!token) {
+          if (useMock) {
+            console.log('🔓 No auth token provided, using mock user for development')
+            user = { id: 'mock-user-id' }
+          } else if (devUserId) {
+            console.log('👤 Using DEV_USER_ID from environment for development without auth')
+            user = { id: devUserId }
+          } else {
+            return res.status(401).json({ error: 'Authorization token required' })
+          }
         } else {
-          return res.status(401).json({ error: 'Authorization token required' })
+          user = await getUserFromToken(token)
         }
-      } else {
-        user = await getUserFromToken(token)
       }
       const date = req.params.date as string
 
@@ -304,20 +310,21 @@ export class DailyEntriesController {
       const useMock = process.env.USE_MOCK === 'true'
       const devUserId = process.env.DEV_USER_ID
       
-      // For development, allow mock or a configured DEV_USER_ID when no token
-      let user: any
-      if (!token) {
-        if (useMock) {
-          console.log('🔓 No auth token provided, using mock user for development')
-          user = { id: 'mock-user-id' }
-        } else if (devUserId) {
-          console.log('👤 Using DEV_USER_ID from environment for development without auth')
-          user = { id: devUserId }
+      let user: any = (req as any).user
+      if (!user) {
+        if (!token) {
+          if (useMock) {
+            console.log('🔓 No auth token provided, using mock user for development')
+            user = { id: 'mock-user-id' }
+          } else if (devUserId) {
+            console.log('👤 Using DEV_USER_ID from environment for development without auth')
+            user = { id: devUserId }
+          } else {
+            return res.status(401).json({ error: 'Authorization token required' })
+          }
         } else {
-          return res.status(401).json({ error: 'Authorization token required' })
+          user = await getUserFromToken(token)
         }
-      } else {
-        user = await getUserFromToken(token)
       }
       const date = req.params.date as string
 
@@ -398,12 +405,14 @@ export class DailyEntriesController {
   // Get daily entries with pagination and filtering
   static async getDailyEntries(req: Request, res: Response) {
     try {
-      const token = req.headers.authorization?.replace('Bearer ', '')
-      if (!token) {
-        return res.status(401).json({ error: 'Authorization token required' })
+      let user: any = (req as any).user
+      if (!user) {
+        const token = req.headers.authorization?.replace('Bearer ', '')
+        if (!token) {
+          return res.status(401).json({ error: 'Authorization token required' })
+        }
+        user = await getUserFromToken(token)
       }
-
-      const user = await getUserFromToken(token)
       
       // Parse query parameters
       const page = parseInt(req.query.page as string) || 1
@@ -475,12 +484,14 @@ export class DailyEntriesController {
   // Delete a daily entry
   static async deleteDailyEntry(req: Request, res: Response) {
     try {
-      const token = req.headers.authorization?.replace('Bearer ', '')
-      if (!token) {
-        return res.status(401).json({ error: 'Authorization token required' })
+      let user: any = (req as any).user
+      if (!user) {
+        const token = req.headers.authorization?.replace('Bearer ', '')
+        if (!token) {
+          return res.status(401).json({ error: 'Authorization token required' })
+        }
+        user = await getUserFromToken(token)
       }
-
-      const user = await getUserFromToken(token)
       const date = req.params.date as string
 
       // Validate date format
