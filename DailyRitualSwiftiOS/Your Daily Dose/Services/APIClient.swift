@@ -89,8 +89,21 @@ struct APIClient {
         return try makeDecoder().decode(T.self, from: data)
     }
 
+    // Raw JSON variants for bodies that aren't Encodable models
+    func postRaw<T: Decodable>(_ path: String, json: [String: Any]?) async throws -> T {
+        let bodyData = try json.map { try JSONSerialization.data(withJSONObject: $0, options: []) }
+        let data = try await request(path: path, method: "POST", body: bodyData)
+        return try makeDecoder().decode(T.self, from: data)
+    }
+
     func put<T: Decodable, Body: Encodable>(_ path: String, body: Body?) async throws -> T {
         let bodyData = try body.map { try JSONEncoder().encode($0) }
+        let data = try await request(path: path, method: "PUT", body: bodyData)
+        return try makeDecoder().decode(T.self, from: data)
+    }
+
+    func putRaw<T: Decodable>(_ path: String, json: [String: Any]?) async throws -> T {
+        let bodyData = try json.map { try JSONSerialization.data(withJSONObject: $0, options: []) }
         let data = try await request(path: path, method: "PUT", body: bodyData)
         return try makeDecoder().decode(T.self, from: data)
     }

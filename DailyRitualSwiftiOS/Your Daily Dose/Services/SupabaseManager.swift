@@ -643,7 +643,7 @@ class SupabaseManager: NSObject, ObservableObject {
         ].compactMapValues { $0 }
 
         do {
-            let apiResponse: APIResponse<TrainingPlan> = try await api.put("training-plans/\(plan.id)", body: requestBody)
+            let apiResponse: APIResponse<TrainingPlan> = try await api.putRaw("training-plans/\(plan.id)", json: requestBody)
             return apiResponse.data ?? plan
         } catch {
             print("Error updating training plan:", error)
