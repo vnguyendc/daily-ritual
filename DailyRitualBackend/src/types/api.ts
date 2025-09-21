@@ -39,6 +39,8 @@ export interface MorningRitualRequest {
   planned_intensity?: string
   planned_duration?: number
   planned_notes?: string
+  // Alias accepted by API; mapped to planned_notes on write
+  morning_notes?: string
 }
 
 export interface MorningRitualResponse {

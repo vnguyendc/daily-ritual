@@ -1,0 +1,186 @@
+---
+description: Create Kiro-style spec with review gates (requirements, design, tasks)
+globs:
+alwaysApply: false
+---
+
+Create-spec workflow (inspired by Kiro Specs Concepts)
+
+Source of truth: https://kiro.dev/docs/specs/concepts/
+
+Intent
+
+When the user mentions "create-spec" with a feature/refactor/task idea, automatically scaffold a Kiro-style specification under `docs/spec/` consisting of:
+- requirements.md (EARS requirements)
+- design.md (architecture, diagrams, considerations)
+- tasks.md (implementation plan)
+
+This rule enforces review gates between each artifact.
+
+Inputs expected from the user (ask only if missing):
+- Brief title (short, user-facing)
+- 1–3 sentence problem/goal statement
+- Primary owner (optional)
+- Success criteria (optional)
+
+Folder naming
+
+- Create a new folder under `docs/spec/` named: `<YYYY-MM-DD>-<kebab-slug>` where `<kebab-slug>` is derived from the title.
+- Example: `docs/spec/2025-09-17-smart-sync`.
+
+Workflow (with review gates)
+
+1) Create spec folder
+   - Create directory: `docs/spec/<YYYY-MM-DD>-<slug>`
+   - Add a minimal `README.md` linking to the three artifacts
+
+2) Draft requirements.md (STOP for review)
+   - Use EARS style from Kiro:
+     WHEN <condition/event>
+     THE SYSTEM SHALL <expected behavior>
+   - Include user stories, acceptance criteria, constraints, out of scope
+   - Present the draft to the user for review and sign-off before continuing
+
+3) Draft design.md (STOP for review)
+   - Document technical architecture, components, data flows, sequence/activity diagrams, risks, and alternatives
+   - Clearly call out implementation considerations and dependencies
+   - Present to the user for review and sign-off before continuing
+
+4) Draft tasks.md (STOP for review)
+   - Break implementation into discrete, trackable tasks with clear outcomes
+   - Include owners (if known), dependencies, estimation (optional), and verification notes
+   - Present to the user for final review
+
+5) Execution
+   - After approval, proceed to implement tasks, tracking status as in-progress/completed
+
+File templates
+
+README.md (auto-generate)
+
+```
+# <TITLE>
+
+This spec follows the Kiro-style workflow (requirements → design → implementation plan) with review gates.
+
+- requirements.md
+- design.md
+- tasks.md
+
+Source: https://kiro.dev/docs/specs/concepts/
+```
+
+requirements.md template
+
+```
+# Requirements
+
+Context
+
+- Title: <TITLE>
+- Date: <YYYY-MM-DD>
+- Owner: <NAME/TEAM>
+- Problem/Goal: <1–3 sentences>
+- Success Criteria: <bullet list>
+- Scope: <in-scope / out-of-scope>
+
+EARS requirements
+
+WHEN <condition/event>
+THE SYSTEM SHALL <expected behavior>
+
+WHEN <another condition>
+THE SYSTEM SHALL <expected behavior>
+
+Acceptance criteria
+
+- <Given/When/Then …>
+- <Edge cases …>
+
+Constraints & assumptions
+
+- <Tech constraints>
+- <Operational constraints>
+- <Assumptions>
+
+References
+
+- Kiro Concepts: https://kiro.dev/docs/specs/concepts/
+```
+
+design.md template
+
+```
+# Design
+
+Overview
+
+- Summary: <short paragraph>
+- Goals / Non-goals
+- Key risks and mitigations
+
+Architecture
+
+- Components and responsibilities
+- Data model changes
+- External services / integrations
+
+Flows
+
+- Sequence diagram(s)
+- State transitions
+
+Implementation considerations
+
+- Error handling strategy
+- Telemetry/metrics
+- Performance considerations
+- Security & privacy
+
+Alternatives considered
+
+- Option A — pros/cons
+- Option B — pros/cons
+
+References
+
+- Kiro Concepts: https://kiro.dev/docs/specs/concepts/
+```
+
+tasks.md template
+
+```
+# Implementation Tasks
+
+Plan
+
+- Milestones
+- Dependencies
+
+Tasks
+
+- [ ] Task: <actionable, outcome-focused>
+  - Outcome: <what changes>
+  - Owner: <optional>
+  - Depends on: <tasks>
+  - Verification: <tests/acceptance checks>
+
+- [ ] Task: …
+
+Tracking
+
+- Status definitions: pending / in_progress / completed / cancelled
+- Reporting cadence and owners
+
+References
+
+- Kiro Concepts: https://kiro.dev/docs/specs/concepts/
+```
+
+Operational guidance for the assistant
+
+- If any required input is missing, propose sensible defaults from the task title and ask only targeted follow-ups.
+- After creating each file draft, STOP and present a concise summary plus key questions, then wait for approval.
+- Use absolute paths when writing files in this repository.
+- Maintain existing indentation and formatting style; do not reformat unrelated content.
+
