@@ -561,43 +561,9 @@ class SupabaseManager: NSObject, ObservableObject {
         df.dateFormat = "yyyy-MM-dd"
         let dateString = df.string(from: date)
 
-        guard let url = URL(string: "\(baseURL)/training-plans?date=\(dateString)") else {
-            throw SupabaseError.invalidData
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        let hasToken = (authToken?.isEmpty == false)
-        if let token = authToken { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-
         do {
-            print("GET:", url.absoluteString)
-            let (data, response) = try await URLSession.shared.data(for: request)
-            if let httpResponse = response as? HTTPURLResponse {
-                let bodyString = String(data: data, encoding: .utf8) ?? "<non-utf8>"
-                print("GET status:", httpResponse.statusCode, "token:", hasToken, "body:", bodyString.prefix(300))
-                if httpResponse.statusCode == 401 || (httpResponse.statusCode == 500 && bodyString.contains("Invalid or expired token")) {
-                    try await refreshAuthToken()
-                    var retryReq = URLRequest(url: url)
-                    retryReq.httpMethod = "GET"
-                    if let token = authToken { retryReq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-                    let (retryData, retryResp) = try await URLSession.shared.data(for: retryReq)
-                    if let retryHttp = retryResp as? HTTPURLResponse, retryHttp.statusCode == 200 {
-                        let apiResponse = try makeAPIDecoder().decode(APIResponse<[TrainingPlan]>.self, from: retryData)
-                        let plans = apiResponse.data ?? []
-                        LocalStore.upsertCachedPlans(plans, for: dateString)
-                        return plans
-                    } else {
-                        clearSession()
-                        throw SupabaseError.notAuthenticated
-                    }
-                } else if httpResponse.statusCode != 200 {
-                    throw SupabaseError.networkError
-                }
-            }
-
-            let apiResponse = try makeAPIDecoder().decode(APIResponse<[TrainingPlan]>.self, from: data)
-            let plans = apiResponse.data ?? []
+            let response: APIResponse<[TrainingPlan]> = try await api.get("training-plans", query: [URLQueryItem(name: "date", value: dateString)])
+            let plans = response.data ?? []
             LocalStore.upsertCachedPlans(plans, for: dateString)
             return plans
         } catch {
@@ -615,10 +581,6 @@ class SupabaseManager: NSObject, ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        guard let url = URL(string: "\(baseURL)/training-plans") else {
-            throw SupabaseError.invalidData
-        }
-
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
         let dateString = df.string(from: plan.date)
@@ -633,39 +595,8 @@ class SupabaseManager: NSObject, ObservableObject {
             "notes": plan.notes as Any
         ].compactMapValues { $0 }
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if let token = authToken { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
-
         do {
-            print("POST:", url.absoluteString)
-            let (data, response) = try await URLSession.shared.data(for: request)
-            if let httpResponse = response as? HTTPURLResponse {
-                let bodyString = String(data: data, encoding: .utf8) ?? "<non-utf8>"
-                print("POST status:", httpResponse.statusCode, "body:", bodyString.prefix(300))
-                if httpResponse.statusCode == 401 || (httpResponse.statusCode == 500 && bodyString.contains("Invalid or expired token")) {
-                    try await refreshAuthToken()
-                    var retryReq = URLRequest(url: url)
-                    retryReq.httpMethod = "POST"
-                    retryReq.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                    if let token = authToken { retryReq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-                    retryReq.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
-                    let (retryData, retryResp) = try await URLSession.shared.data(for: retryReq)
-                    if let retryHttp = retryResp as? HTTPURLResponse, retryHttp.statusCode == 200 {
-                        let apiResponse = try makeAPIDecoder().decode(APIResponse<TrainingPlan>.self, from: retryData)
-                        return apiResponse.data ?? plan
-                    } else {
-                        clearSession()
-                        throw SupabaseError.notAuthenticated
-                    }
-                } else if httpResponse.statusCode != 200 {
-                    throw SupabaseError.networkError
-                }
-            }
-
-            let apiResponse = try makeAPIDecoder().decode(APIResponse<TrainingPlan>.self, from: data)
+            let apiResponse: APIResponse<TrainingPlan> = try await api.post("training-plans", body: requestBody)
             return apiResponse.data ?? plan
         } catch {
             print("Error creating training plan:", error)
@@ -697,10 +628,6 @@ class SupabaseManager: NSObject, ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        guard let url = URL(string: "\(baseURL)/training-plans/\(plan.id)") else {
-            throw SupabaseError.invalidData
-        }
-
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
         let dateString = df.string(from: plan.date)
@@ -715,39 +642,8 @@ class SupabaseManager: NSObject, ObservableObject {
             "notes": plan.notes as Any
         ].compactMapValues { $0 }
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "PUT"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if let token = authToken { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
-
         do {
-            print("PUT:", url.absoluteString)
-            let (data, response) = try await URLSession.shared.data(for: request)
-            if let httpResponse = response as? HTTPURLResponse {
-                let bodyString = String(data: data, encoding: .utf8) ?? "<non-utf8>"
-                print("PUT status:", httpResponse.statusCode, "body:", bodyString.prefix(300))
-                if httpResponse.statusCode == 401 || (httpResponse.statusCode == 500 && bodyString.contains("Invalid or expired token")) {
-                    try await refreshAuthToken()
-                    var retryReq = URLRequest(url: url)
-                    retryReq.httpMethod = "PUT"
-                    retryReq.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                    if let token = authToken { retryReq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-                    retryReq.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
-                    let (retryData, retryResp) = try await URLSession.shared.data(for: retryReq)
-                    if let retryHttp = retryResp as? HTTPURLResponse, retryHttp.statusCode == 200 {
-                        let apiResponse = try makeAPIDecoder().decode(APIResponse<TrainingPlan>.self, from: retryData)
-                        return apiResponse.data ?? plan
-                    } else {
-                        clearSession()
-                        throw SupabaseError.notAuthenticated
-                    }
-                } else if httpResponse.statusCode != 200 {
-                    throw SupabaseError.networkError
-                }
-            }
-
-            let apiResponse = try makeAPIDecoder().decode(APIResponse<TrainingPlan>.self, from: data)
+            let apiResponse: APIResponse<TrainingPlan> = try await api.put("training-plans/\(plan.id)", body: requestBody)
             return apiResponse.data ?? plan
         } catch {
             print("Error updating training plan:", error)
@@ -780,32 +676,9 @@ class SupabaseManager: NSObject, ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        guard let url = URL(string: "\(baseURL)/training-plans/\(planId)") else {
-            throw SupabaseError.invalidData
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "DELETE"
-        if let token = authToken { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-
         do {
-            print("DELETE:", url.absoluteString)
-            let (_, response) = try await URLSession.shared.data(for: request)
-            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 401 {
-                try await refreshAuthToken()
-                var retryReq = URLRequest(url: url)
-                retryReq.httpMethod = "DELETE"
-                if let token = authToken { retryReq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-                let (_, retryResp) = try await URLSession.shared.data(for: retryReq)
-                if let retryHttp = retryResp as? HTTPURLResponse, retryHttp.statusCode == 200 {
-                    return
-                } else {
-                    clearSession()
-                    throw SupabaseError.notAuthenticated
-                }
-            } else if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
-                throw SupabaseError.networkError
-            }
+            let _: APIResponse<TrainingPlan> = try await api.delete("training-plans/\(planId)")
+            return
         } catch {
             print("Error deleting training plan:", error)
             // Enqueue delete for replay (date unknown; use today's by default)
@@ -950,112 +823,24 @@ class SupabaseManager: NSObject, ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        var components = URLComponents(string: "\(baseURL)/insights")!
         var query: [URLQueryItem] = [URLQueryItem(name: "limit", value: String(limit))]
         if let t = type { query.append(URLQueryItem(name: "type", value: t)) }
         if unreadOnly { query.append(URLQueryItem(name: "unread_only", value: "true")) }
-        components.queryItems = query
-
-        var request = URLRequest(url: components.url!)
-        request.httpMethod = "GET"
-        if let token = authToken { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-
-        do {
-            print("GET:", components.url!.absoluteString)
-            let (data, response) = try await URLSession.shared.data(for: request)
-            if let http = response as? HTTPURLResponse {
-                let body = String(data: data, encoding: .utf8) ?? "<non-utf8>"
-                print("GET status:", http.statusCode, "body:", body.prefix(200))
-                if http.statusCode == 401 || (http.statusCode == 500 && body.contains("Invalid or expired token")) {
-                    try await refreshAuthToken()
-                    var retryReq = URLRequest(url: components.url!)
-                    retryReq.httpMethod = "GET"
-                    if let token = authToken { retryReq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-                    let (retryData, retryResp) = try await URLSession.shared.data(for: retryReq)
-                    if let retryHttp = retryResp as? HTTPURLResponse, retryHttp.statusCode == 200 {
-                        let apiResponse = try makeAPIDecoder().decode(APIResponse<[Insight]>.self, from: retryData)
-                        return apiResponse.data ?? []
-                    } else {
-                        clearSession()
-                        throw SupabaseError.notAuthenticated
-                    }
-                } else if http.statusCode != 200 {
-                    throw SupabaseError.networkError
-                }
-            }
-            let apiResponse = try makeAPIDecoder().decode(APIResponse<[Insight]>.self, from: data)
-            return apiResponse.data ?? []
-        } catch {
-            print("Error fetching insights:", error)
-            throw error
-        }
+        let apiResponse: APIResponse<[Insight]> = try await api.get("insights", query: query)
+        return apiResponse.data ?? []
     }
 
     func fetchInsightStats() async throws -> InsightStats? {
         isLoading = true
         defer { isLoading = false }
-        guard let url = URL(string: "\(baseURL)/insights/stats") else { throw SupabaseError.invalidData }
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        if let token = authToken { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-        do {
-            print("GET:", url.absoluteString)
-            let (data, response) = try await URLSession.shared.data(for: request)
-            if let http = response as? HTTPURLResponse {
-                let body = String(data: data, encoding: .utf8) ?? "<non-utf8>"
-                print("GET status:", http.statusCode, "body:", body.prefix(200))
-                if http.statusCode == 401 || (http.statusCode == 500 && body.contains("Invalid or expired token")) {
-                    try await refreshAuthToken()
-                    var retryReq = URLRequest(url: url)
-                    retryReq.httpMethod = "GET"
-                    if let token = authToken { retryReq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-                    let (retryData, retryResp) = try await URLSession.shared.data(for: retryReq)
-                    if let retryHttp = retryResp as? HTTPURLResponse, retryHttp.statusCode == 200 {
-                        let apiResponse = try makeAPIDecoder().decode(APIResponse<InsightStats>.self, from: retryData)
-                        return apiResponse.data
-                    } else {
-                        clearSession()
-                        throw SupabaseError.notAuthenticated
-                    }
-                } else if http.statusCode != 200 {
-                    throw SupabaseError.networkError
-                }
-            }
-            let apiResponse = try makeAPIDecoder().decode(APIResponse<InsightStats>.self, from: data)
-            return apiResponse.data
-        } catch {
-            print("Error fetching insights stats:", error)
-            return nil
-        }
+        let apiResponse: APIResponse<InsightStats> = try await api.get("insights/stats")
+        return apiResponse.data
     }
 
     func markInsightRead(_ id: UUID) async throws {
         isLoading = true
         defer { isLoading = false }
-        guard let url = URL(string: "\(baseURL)/insights/\(id.uuidString)/read") else { throw SupabaseError.invalidData }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        if let token = authToken { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-        do {
-            print("POST:", url.absoluteString)
-            let (_, response) = try await URLSession.shared.data(for: request)
-            if let http = response as? HTTPURLResponse, http.statusCode == 401 {
-                try await refreshAuthToken()
-                var retryReq = URLRequest(url: url)
-                retryReq.httpMethod = "POST"
-                if let token = authToken { retryReq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-                let (_, retryResp) = try await URLSession.shared.data(for: retryReq)
-                if let retryHttp = retryResp as? HTTPURLResponse, retryHttp.statusCode == 200 {
-                    return
-                } else {
-                    clearSession()
-                    throw SupabaseError.notAuthenticated
-                }
-            }
-        } catch {
-            print("Error marking insight read:", error)
-            throw error
-        }
+        let _: APIResponse<Empty> = try await api.post("insights/\(id.uuidString)/read", body: Optional<[String: String]>.none)
     }
 }
 
