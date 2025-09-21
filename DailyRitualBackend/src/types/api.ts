@@ -188,6 +188,15 @@ export interface APIResponse<T = any> {
   message?: string
 }
 
+// Helpers
+export function ok<T>(data: T, message?: string): APIResponse<T> {
+  return { success: true, data, ...(message ? { message } : {}) }
+}
+
+export function fail(message: string, code?: string, details?: Record<string, any>): APIResponse<null> {
+  return { success: false, error: { error: 'Error', message, code, details } }
+}
+
 // Pagination
 export interface PaginationParams {
   page?: number
