@@ -15,7 +15,11 @@ class TodayViewModel: ObservableObject {
     @Published var quoteAuthor: String? = nil
     @Published var trainingPlans: [TrainingPlan] = []
     
-    private let supabase = SupabaseManager.shared
+    private let dailyEntries: DailyEntriesServiceProtocol
+
+    init(service: DailyEntriesServiceProtocol = DailyEntriesService()) {
+        self.dailyEntries = service
+    }
     
     var shouldShowEvening: Bool {
         // Show in the evening by time OR immediately after morning completion
@@ -27,18 +31,18 @@ class TodayViewModel: ObservableObject {
         defer { isLoading = false }
         
         do {
-            if let e = try await supabase.getEntry(for: date) {
+            if let e = try await dailyEntries.getEntry(for: date) {
                 entry = e
             } else {
                 // Create a new entry for today if none exists
-                entry = DailyEntry(userId: supabase.currentUser?.id ?? UUID(), date: Calendar.current.startOfDay(for: date))
+                entry = DailyEntry(userId: SupabaseManager.shared.currentUser?.id ?? UUID(), date: Calendar.current.startOfDay(for: date))
             }
             // Load training plans for the date
-            trainingPlans = (try? await supabase.getTrainingPlans(for: date)) ?? []
+            trainingPlans = (try? await dailyEntries.getTrainingPlans(for: date)) ?? []
         } catch {
             print("Failed to load today's entry: \(error)")
             // Fallback to a new entry
-            entry = DailyEntry(userId: supabase.currentUser?.id ?? UUID(), date: Calendar.current.startOfDay(for: date))
+            entry = DailyEntry(userId: SupabaseManager.shared.currentUser?.id ?? UUID(), date: Calendar.current.startOfDay(for: date))
             trainingPlans = []
         }
     }
@@ -75,7 +79,7 @@ class TodayViewModel: ObservableObject {
     func preloadQuoteIfNeeded(for date: Date) async {
         if entry.dailyQuote?.isEmpty == false { return }
         do {
-            if let q = try await supabase.getQuote(for: date) {
+            if let q = try await dailyEntries.getQuote(for: date) {
                 await MainActor.run {
                     entry.dailyQuote = q.quote_text
                     quoteAuthor = q.author
