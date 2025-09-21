@@ -1,6 +1,7 @@
 // Integration services index
 export { WhoopService } from './whoop.js'
 export { StravaService } from './strava.js'
+export { SupabaseEdgeFunctions } from './supabaseEdgeFunctions.js'
 
 // Apple Health integration would be handled client-side (iOS app)
 // but we can provide utilities for processing the data sent from the app

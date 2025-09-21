@@ -2,6 +2,7 @@
 import { Request, Response } from 'express'
 import { z } from 'zod'
 import { DatabaseService, getUserFromToken, supabaseServiceClient } from '../services/supabase.js'
+import { SupabaseEdgeFunctions } from '../services/integrations/index.js'
 import type { MorningRitualRequest, EveningReflectionRequest, APIResponse } from '../types/api.js'
 
 // Validation schemas
@@ -225,26 +226,14 @@ export class DailyEntriesController {
 
       // Generate AI affirmation
       let affirmation = "I am prepared, focused, and ready to give my best effort today."
-      try {
-        // Call the generate-affirmation Edge Function
-        const affirmationResponse = await fetch(`${process.env.SUPABASE_URL}/functions/v1/generate-affirmation`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            recent_goals: morningData.goals,
-            next_workout_type: morningData.planned_training_type
-          })
-        })
-
-        if (affirmationResponse.ok) {
-          const affirmationData = await affirmationResponse.json()
-          affirmation = affirmationData.affirmation || affirmation
-        }
-      } catch (error) {
-        console.warn('Failed to generate AI affirmation, using default:', error)
+      const gen = await SupabaseEdgeFunctions.generateAffirmation({
+        supabaseUrl: process.env.SUPABASE_URL || '',
+        authToken: token,
+        recent_goals: morningData.goals,
+        next_workout_type: morningData.planned_training_type
+      })
+      if (gen.affirmation) {
+        affirmation = gen.affirmation
       }
 
       // Update daily entry
@@ -266,21 +255,12 @@ export class DailyEntriesController {
       await DatabaseService.updateUserStreak(user.id, 'morning_ritual', date)
 
       // Generate morning insight
-      try {
-        await fetch(`${process.env.SUPABASE_URL}/functions/v1/generate-insights`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            insight_type: 'morning',
-            data_period_end: date
-          })
-        })
-      } catch (error) {
-        console.warn('Failed to generate morning insight:', error)
-      }
+      await SupabaseEdgeFunctions.generateInsights({
+        supabaseUrl: process.env.SUPABASE_URL || '',
+        authToken: token,
+        insight_type: 'morning',
+        data_period_end: date
+      })
 
       const response: APIResponse = {
         success: true,
@@ -369,21 +349,12 @@ export class DailyEntriesController {
       }
 
       // Generate evening insight
-      try {
-        await fetch(`${process.env.SUPABASE_URL}/functions/v1/generate-insights`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            insight_type: 'evening',
-            data_period_end: date
-          })
-        })
-      } catch (error) {
-        console.warn('Failed to generate evening insight:', error)
-      }
+      await SupabaseEdgeFunctions.generateInsights({
+        supabaseUrl: process.env.SUPABASE_URL || '',
+        authToken: token,
+        insight_type: 'evening',
+        data_period_end: date
+      })
 
       const response: APIResponse = {
         success: true,
