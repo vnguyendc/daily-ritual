@@ -110,7 +110,7 @@ struct InsightsListView: View {
                 // List of insights
                 if viewModel.insights.isEmpty && viewModel.isLoading {
                     // Show loading card when initially loading
-                    LoadingCard(message: "Loading your insights...")
+                    LoadingCard(message: "Loading your insights...", progress: nil, cancelAction: nil, useMaterialBackground: false)
                         .padding(.top, DesignSystem.Spacing.xxxl)
                 } else if viewModel.insights.isEmpty && !viewModel.isLoading {
                     PremiumPlaceholderView(

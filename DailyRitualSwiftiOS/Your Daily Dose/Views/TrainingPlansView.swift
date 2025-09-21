@@ -67,7 +67,7 @@ struct TrainingPlansView: View {
             }
             .overlay {
                 if isLoading && plans.isEmpty { 
-                    LoadingCard(message: "Loading training plans...")
+                    LoadingCard(message: "Loading training plans...", progress: nil, cancelAction: nil, useMaterialBackground: false)
                 }
             }
             .task { await load() }

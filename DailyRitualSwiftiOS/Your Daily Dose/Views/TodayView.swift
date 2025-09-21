@@ -298,7 +298,7 @@ struct TodayView: View {
                 
                 // Loading overlay when fetching data
                 if viewModel.isLoading {
-                    LoadingCard(message: "Loading your daily ritual...")
+                    LoadingCard(message: "Loading your daily ritual...", progress: nil, cancelAction: nil, useMaterialBackground: false)
                         .transition(.scale.combined(with: .opacity))
                 }
             }
