@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { DatabaseService, getUserFromToken, supabaseServiceClient } from '../services/supabase.js'
+import { DatabaseService, getUserFromToken } from '../services/supabase.js'
 import type { APIResponse } from '../types/api.js'
 import type { Database } from '../types/database.js'
 
@@ -38,15 +38,8 @@ export class TrainingPlansController {
         console.warn('ensureUserRecord failed:', e)
       }
 
-      const { data, error } = await (supabaseServiceClient as any)
-        .from('training_plans')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('date', date)
-        .order('sequence', { ascending: true })
-
-      if (error) throw error
-      const response: APIResponse = { success: true, data: data || [] }
+      const plans = await DatabaseService.listTrainingPlans(user.id, date)
+      const response: APIResponse = { success: true, data: plans }
       res.json(response)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
@@ -90,61 +83,18 @@ export class TrainingPlansController {
         console.warn('ensureUserRecord failed:', e)
       }
 
-      // Determine sequence: if not provided, auto-assign next available for the date
-      let planSequence = typeof sequence === 'number' && Number.isFinite(sequence) && sequence > 0 ? sequence : undefined
-      if (!planSequence) {
-        const { data: last, error: lastErr } = await (supabaseServiceClient as any)
-          .from('training_plans')
-          .select('sequence')
-          .eq('user_id', user.id)
-          .eq('date', date)
-          .order('sequence', { ascending: false })
-          .limit(1)
-        if (lastErr) throw lastErr
-        planSequence = ((last && last[0]?.sequence) || 0) + 1
-      }
-
-      const insertData: TrainingPlanInsert = {
+      const payload: TrainingPlanInsert = {
         user_id: user.id,
         date,
-        sequence: planSequence,
+        sequence,
         type,
         start_time,
         intensity,
         duration_minutes,
         notes
       }
-
-      // Try insert; if unique violation on (user_id,date,sequence), bump sequence and retry once
-      const tryInsert = async (payload: any) => {
-        return (supabaseServiceClient as any)
-          .from('training_plans')
-          .insert(payload)
-          .select()
-          .single()
-      }
-
-      let { data, error } = await tryInsert(insertData)
-      if (error && (error.code === '23505' || (error.message && error.message.includes('duplicate key')))) {
-        // compute next sequence and retry once
-        const { data: last2, error: lastErr2 } = await (supabaseServiceClient as any)
-          .from('training_plans')
-          .select('sequence')
-          .eq('user_id', user.id)
-          .eq('date', date)
-          .order('sequence', { ascending: false })
-          .limit(1)
-        if (!lastErr2) {
-          const nextSeq = ((last2 && last2[0]?.sequence) || planSequence || 0) + 1
-          insertData.sequence = nextSeq
-          const retry = await tryInsert(insertData)
-          data = retry.data
-          error = retry.error
-        }
-      }
-
-      if (error) throw error
-      const response: APIResponse = { success: true, data }
+      const created = await DatabaseService.createTrainingPlan(user.id, payload)
+      const response: APIResponse = { success: true, data: created }
       res.json(response)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
@@ -177,21 +127,9 @@ export class TrainingPlansController {
         return res.status(400).json({ error: 'Training plan ID required' })
       }
 
-      const updates: TrainingPlanUpdate = { 
-        ...req.body, 
-        updated_at: new Date().toISOString() 
-      }
-
-      const { data, error } = await (supabaseServiceClient as any)
-        .from('training_plans')
-        .update(updates)
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .select()
-        .single()
-
-      if (error) throw error
-      const response: APIResponse = { success: true, data }
+      const updates: TrainingPlanUpdate = { ...req.body }
+      const updated = await DatabaseService.updateTrainingPlanById(id, user.id, updates)
+      const response: APIResponse = { success: true, data: updated }
       res.json(response)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
@@ -224,13 +162,7 @@ export class TrainingPlansController {
         return res.status(400).json({ error: 'Training plan ID required' })
       }
 
-      const { error } = await (supabaseServiceClient as any)
-        .from('training_plans')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id)
-
-      if (error) throw error
+      await DatabaseService.deleteTrainingPlanById(id, user.id)
       const response: APIResponse = { success: true, message: 'Training plan deleted successfully' }
       res.json(response)
     } catch (error) {

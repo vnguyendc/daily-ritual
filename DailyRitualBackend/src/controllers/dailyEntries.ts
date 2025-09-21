@@ -1,7 +1,7 @@
 // Daily Entries Controller
 import { Request, Response } from 'express'
 import { z } from 'zod'
-import { DatabaseService, getUserFromToken, supabaseServiceClient } from '../services/supabase.js'
+import { DatabaseService, getUserFromToken } from '../services/supabase.js'
 import type { MorningRitualRequest, EveningReflectionRequest, APIResponse } from '../types/api.js'
 
 // Validation schemas
@@ -110,13 +110,7 @@ export class DailyEntriesController {
       }
 
       const entry = await DatabaseService.getDailyEntry(user.id, date)
-      const { data: plans, error: plansError } = await supabaseServiceClient
-        .from('training_plans')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('date', date)
-        .order('sequence', { ascending: true })
-      if (plansError) throw plansError
+      const plans = await DatabaseService.listTrainingPlans(user.id, date)
 
       const response: APIResponse = {
         success: true,

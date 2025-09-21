@@ -4,6 +4,11 @@ dotenv.config()
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../types/database.js'
 
+// Local type aliases for clarity
+type TrainingPlanRow = Database['public']['Tables']['training_plans']['Row']
+type TrainingPlanInsert = Database['public']['Tables']['training_plans']['Insert']
+type TrainingPlanUpdate = Database['public']['Tables']['training_plans']['Update']
+
 // For development, allow explicit mock mode or placeholder values if env vars are missing
 const supabaseUrl = process.env.SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key'
@@ -263,6 +268,137 @@ export class DatabaseService {
 
     if (error) throw error
     return data || []
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────────
+  // Training Plans
+  // ──────────────────────────────────────────────────────────────────────────────
+  static async listTrainingPlans(userId: string, date: string): Promise<TrainingPlanRow[]> {
+    if (useMock) {
+      return []
+    }
+    const { data, error } = await supabaseServiceClient
+      .from('training_plans')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('date', date)
+      .order('sequence', { ascending: true })
+
+    if (error) throw error
+    return (data as unknown as TrainingPlanRow[]) || []
+  }
+
+  private static async getNextTrainingPlanSequence(userId: string, date: string): Promise<number> {
+    if (useMock) return 1
+    const { data, error } = await supabaseServiceClient
+      .from('training_plans')
+      .select('sequence')
+      .eq('user_id', userId)
+      .eq('date', date)
+      .order('sequence', { ascending: false })
+      .limit(1)
+    if (error) throw error
+    const last = (data as any)?.[0]?.sequence || 0
+    return Number(last) + 1
+  }
+
+  static async createTrainingPlan(
+    userId: string,
+    payload: Omit<TrainingPlanInsert, 'user_id'> & { user_id?: string }
+  ): Promise<TrainingPlanRow> {
+    if (useMock) {
+      return {
+        id: 'mock-plan-id',
+        user_id: userId,
+        date: payload.date,
+        sequence: payload.sequence || 1,
+        type: payload.type,
+        start_time: payload.start_time ?? null,
+        intensity: payload.intensity ?? null,
+        duration_minutes: payload.duration_minutes ?? null,
+        notes: payload.notes ?? null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as unknown as TrainingPlanRow
+    }
+
+    const insertData: TrainingPlanInsert = {
+      user_id: userId,
+      date: payload.date,
+      sequence: payload.sequence,
+      type: payload.type,
+      start_time: payload.start_time ?? null,
+      intensity: payload.intensity ?? null,
+      duration_minutes: payload.duration_minutes ?? null,
+      notes: payload.notes ?? null
+    }
+
+    if (!insertData.sequence) {
+      insertData.sequence = await this.getNextTrainingPlanSequence(userId, payload.date)
+    }
+
+    const tryInsert = async (body: TrainingPlanInsert) => {
+      return (supabaseServiceClient as any)
+        .from('training_plans')
+        .insert(body)
+        .select()
+        .single()
+    }
+
+    let { data, error } = await tryInsert(insertData)
+    if (error && ((error as any).code === '23505' || (error as any).message?.includes('duplicate key'))) {
+      // Bump sequence and retry once
+      const nextSeq = await this.getNextTrainingPlanSequence(userId, payload.date)
+      insertData.sequence = nextSeq
+      const retry = await tryInsert(insertData)
+      data = retry.data
+      error = retry.error as any
+    }
+    if (error) throw error
+    return data as unknown as TrainingPlanRow
+  }
+
+  static async updateTrainingPlanById(
+    id: string,
+    userId: string,
+    updates: TrainingPlanUpdate
+  ): Promise<TrainingPlanRow> {
+    if (useMock) {
+      return {
+        id,
+        user_id: userId,
+        date: updates.date || new Date().toISOString().split('T')[0],
+        sequence: updates.sequence || 1,
+        type: (updates as any).type || 'strength',
+        start_time: (updates as any).start_time ?? null,
+        intensity: updates.intensity ?? null,
+        duration_minutes: updates.duration_minutes ?? null,
+        notes: updates.notes ?? null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as unknown as TrainingPlanRow
+    }
+
+    const { data, error } = await (supabaseServiceClient as any)
+      .from('training_plans')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data as unknown as TrainingPlanRow
+  }
+
+  static async deleteTrainingPlanById(id: string, userId: string): Promise<void> {
+    if (useMock) return
+    const { error } = await supabaseServiceClient
+      .from('training_plans')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId)
+    if (error) throw error
   }
 
   static async markInsightAsRead(insightId: string, userId: string) {
