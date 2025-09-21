@@ -14,14 +14,14 @@ final class InsightsViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
 
-    private let supabase = SupabaseManager.shared
+    private let insightsService: InsightsServiceProtocol = InsightsService()
 
     func load(unreadOnly: Bool = false) async {
         isLoading = true
         defer { isLoading = false }
         do {
-            async let listTask = supabase.fetchInsights(type: nil, limit: 10, unreadOnly: unreadOnly)
-            async let statsTask = supabase.fetchInsightStats()
+            async let listTask = insightsService.list(type: nil, limit: 10, unreadOnly: unreadOnly)
+            async let statsTask = insightsService.stats()
             let (list, s) = try await (listTask, statsTask)
             insights = list
             stats = s
@@ -32,7 +32,7 @@ final class InsightsViewModel: ObservableObject {
 
     func markRead(_ id: UUID) async {
         do {
-            try await supabase.markInsightRead(id)
+            try await insightsService.markRead(id)
             // Update local state optimistically
             if let idx = insights.firstIndex(where: { $0.id == id }) {
                 var updated = insights[idx]
@@ -50,7 +50,7 @@ final class InsightsViewModel: ObservableObject {
                 insights[idx] = updated
             }
             // Refresh stats
-            stats = try await supabase.fetchInsightStats()
+            stats = try await insightsService.stats()
         } catch {
             errorMessage = error.localizedDescription
         }
