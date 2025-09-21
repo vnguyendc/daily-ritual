@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 protocol AuthServiceProtocol: AnyObject {
     var currentUser: User? { get }
     var isAuthenticated: Bool { get }
@@ -12,6 +13,7 @@ protocol AuthServiceProtocol: AnyObject {
     func refreshAuthToken() async throws
 }
 
+@MainActor
 final class AuthService: AuthServiceProtocol {
     static let shared = AuthService()
     private init() {}
