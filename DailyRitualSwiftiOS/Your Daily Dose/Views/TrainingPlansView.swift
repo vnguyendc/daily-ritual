@@ -12,7 +12,7 @@ struct TrainingPlansView: View {
     @State private var isLoading = false
     @State private var showAddSheet = false
     @State private var selectedDate: Date = Calendar.current.startOfDay(for: Date())
-    @ObservedObject private var supabase = SupabaseManager.shared
+    private let plansService: TrainingPlansServiceProtocol = TrainingPlansService()
 
     var body: some View {
         NavigationView {
@@ -44,7 +44,7 @@ struct TrainingPlansView: View {
                     Task {
                         for index in indexSet {
                             let id = plans[index].id
-                            try? await supabase.deleteTrainingPlan(id)
+                            try? await plansService.remove(id)
                         }
                         await load()
                     }
@@ -87,7 +87,7 @@ struct TrainingPlansView: View {
         isLoading = true
         defer { isLoading = false }
         do {
-            plans = try await supabase.getTrainingPlans(for: selectedDate)
+            plans = try await plansService.list(for: selectedDate)
         } catch {
             print("Failed to load training plans:", error)
         }
@@ -99,7 +99,7 @@ private struct AddTrainingPlanSheet: View {
     var onSaved: () async -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @ObservedObject private var supabase = SupabaseManager.shared
+    private let plansService: TrainingPlansServiceProtocol = TrainingPlansService()
 
     @State private var trainingType: String = "strength"
     @State private var intensity: String = "moderate"
@@ -149,7 +149,7 @@ private struct AddTrainingPlanSheet: View {
         do {
             let plan = TrainingPlan(
                 id: UUID(),
-                userId: supabase.currentUser?.id ?? UUID(),
+                userId: SupabaseManager.shared.currentUser?.id ?? UUID(),
                 date: date,
                 sequence: sequence,
                 trainingType: trainingType,
@@ -160,7 +160,7 @@ private struct AddTrainingPlanSheet: View {
                 createdAt: nil,
                 updatedAt: nil
             )
-            _ = try await supabase.createTrainingPlan(plan)
+            _ = try await plansService.create(plan)
             await onSaved()
             dismiss()
         } catch {
