@@ -22,6 +22,12 @@ struct Your_Daily_DoseApp: App {
                 }
             }
             .environmentObject(supabaseManager)
+            .environment(\ .services, AppServices(
+                auth: AuthService.shared,
+                dailyEntries: DailyEntriesService(),
+                trainingPlans: TrainingPlansService(),
+                insights: InsightsService()
+            ))
             .preferredColorScheme(.dark)
             .edgesIgnoringSafeArea(.all)
             .onOpenURL { url in
