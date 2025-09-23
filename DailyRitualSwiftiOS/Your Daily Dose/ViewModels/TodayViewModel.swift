@@ -15,8 +15,11 @@ class TodayViewModel: ObservableObject {
     @Published var quoteAuthor: String? = nil
     @Published var trainingPlans: [TrainingPlan] = []
     
-    @Environment(\.services) private var services
-    private var dailyEntries: DailyEntriesServiceProtocol { services.dailyEntries }
+    private let dailyEntries: DailyEntriesServiceProtocol
+
+    init(service: DailyEntriesServiceProtocol = DailyEntriesService()) {
+        self.dailyEntries = service
+    }
     
     var shouldShowEvening: Bool {
         // Show in the evening by time OR immediately after morning completion
