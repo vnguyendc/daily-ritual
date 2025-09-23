@@ -178,7 +178,7 @@ struct EveningReflectionView: View {
         isSaving = true
         
         do {
-            let updatedEntry = try await viewModel.completeEveningReflection(entry)
+            let updatedEntry = try await DailyEntriesService().completeEvening(for: entry)
             await MainActor.run {
                 entry = updatedEntry
                 showingCompletion = true

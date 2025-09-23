@@ -5,6 +5,7 @@ protocol DailyEntriesServiceProtocol {
     func getTrainingPlans(for date: Date) async throws -> [TrainingPlan]
     func getQuote(for date: Date) async throws -> Quote?
     func completeMorning(for entry: DailyEntry) async throws -> DailyEntry
+    func completeEvening(for entry: DailyEntry) async throws -> DailyEntry
 }
 
 struct DailyEntriesService: DailyEntriesServiceProtocol {
@@ -24,6 +25,10 @@ struct DailyEntriesService: DailyEntriesServiceProtocol {
 
     func completeMorning(for entry: DailyEntry) async throws -> DailyEntry {
         try await api.completeMorning(for: entry)
+    }
+
+    func completeEvening(for entry: DailyEntry) async throws -> DailyEntry {
+        try await api.completeEvening(for: entry)
     }
 }
 
