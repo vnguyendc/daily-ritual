@@ -151,7 +151,7 @@ struct MorningRitualView: View {
         Task {
             defer { isSaving = false }
             do {
-                let updated = try await SupabaseManager.shared.completeMorning(for: entry)
+                let updated = try await DailyEntriesService().completeMorning(for: entry)
                 entry = updated
                 entry.morningCompletedAt = Date()
                 showingCompletion = true
