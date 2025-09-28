@@ -30,25 +30,21 @@ struct TodayView: View {
             ZStack {
                 ScrollView {
                     VStack(spacing: DesignSystem.Spacing.sectionSpacing) {
-                    if !viewModel.isLoading {
-                        SyncStatusBanner(timeContext: timeContext)
-                        Spacer(minLength: DesignSystem.Spacing.xl)
-                        // Premium Header with time-based theming
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                            Text("Daily Ritual")
-                                .font(DesignSystem.Typography.displayMediumSafe)
-                                .foregroundColor(DesignSystem.Colors.primaryText)
-                            
-                            Text(selectedDate, format: .dateTime.weekday(.wide).month(.wide).day())
-                                .font(DesignSystem.Typography.headlineMedium)
-                                .foregroundColor(DesignSystem.Colors.secondaryText)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                        // Week header showing current week range
-                        WeekHeaderView(selectedDate: selectedDate)
-                            .padding(.bottom, DesignSystem.Spacing.xs)
+                    // Premium Header with time-based theming (always visible)
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                        Text("Daily Ritual")
+                            .font(DesignSystem.Typography.displayMediumSafe)
+                            .foregroundColor(DesignSystem.Colors.primaryText)
+                        
+                        Text(selectedDate, format: .dateTime.weekday(.wide).month(.wide).day())
+                            .font(DesignSystem.Typography.headlineMedium)
+                            .foregroundColor(DesignSystem.Colors.secondaryText)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    // Week header showing current week range (always visible)
+                    WeekHeaderView(selectedDate: selectedDate)
+                        .padding(.bottom, DesignSystem.Spacing.sm)
                     
                     // Enhanced date slider with centered current date
                     DateSlider(selectedDate: $selectedDate)
@@ -315,12 +311,14 @@ struct TodayView: View {
                             .animation(DesignSystem.Animation.gentle, value: viewModel.entry.isFullyComplete)
                         }
                         
-                            Spacer(minLength: DesignSystem.Spacing.xxxl)
                     }
-                    .padding(DesignSystem.Spacing.cardPadding)
+                    Spacer(minLength: DesignSystem.Spacing.xxxl)
                 }
+                .padding(DesignSystem.Spacing.cardPadding)
                 
                 // Removed popout loading card overlay in favor of inline spinner
+            }
+            
             }
             .premiumBackgroundGradient(timeContext)
             .animation(DesignSystem.Animation.gentle, value: viewModel.isLoading)
