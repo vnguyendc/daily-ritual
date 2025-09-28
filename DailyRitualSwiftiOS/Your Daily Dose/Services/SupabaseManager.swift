@@ -842,6 +842,58 @@ class SupabaseManager: NSObject, ObservableObject {
         defer { isLoading = false }
         let _: APIResponse<EmptyJSON> = try await api.postRaw("insights/\(id.uuidString)/read", json: nil)
     }
+
+    // MARK: - Profile API
+    func fetchProfile() async throws -> User? {
+        isLoading = true
+        defer { isLoading = false }
+        let response: APIResponse<User> = try await api.get("profile")
+        if let user = response.data {
+            currentUser = user
+            return user
+        }
+        return currentUser
+    }
+
+    func updateProfile(_ updates: [String: Any]) async throws -> User? {
+        isLoading = true
+        defer { isLoading = false }
+        if updates.isEmpty { return currentUser }
+        let response: APIResponse<User> = try await api.putRaw("profile", json: updates)
+        if let user = response.data {
+            currentUser = user
+            return user
+        }
+        return currentUser
+    }
+
+    // MARK: - Time helpers
+    func timeString(from date: Date, in timeZone: TimeZone) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = timeZone
+        formatter.dateFormat = "HH:mm:ss"
+        return formatter.string(from: date)
+    }
+
+    func date(fromTimeString time: String, in timeZone: TimeZone) -> Date? {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = timeZone
+        formatter.dateFormat = "HH:mm:ss"
+        guard let t = formatter.date(from: time) else { return nil }
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = timeZone
+        let today = Date()
+        let d = cal.dateComponents([.year, .month, .day], from: today)
+        let tc = cal.dateComponents([.hour, .minute, .second], from: t)
+        var c = DateComponents()
+        c.year = d.year; c.month = d.month; c.day = d.day
+        c.hour = tc.hour; c.minute = tc.minute; c.second = tc.second
+        return cal.date(from: c)
+    }
 }
 
 // MARK: - API Models

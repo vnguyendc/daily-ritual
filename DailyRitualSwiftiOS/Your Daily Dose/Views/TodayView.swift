@@ -7,14 +7,19 @@
 //
 
 import SwiftUI
+\#if canImport(UIKit)
+import UIKit
+\#endif
 
 struct TodayView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var viewModel = TodayViewModel()
     @State private var showingMorningRitual = false
     @State private var showingEveningReflection = false
     @State private var showingTrainingPlans = false
     @State private var completedGoals: Set<Int> = []
     @State private var selectedDate: Date = Date()
+    @State private var currentDay: Date = Calendar.current.startOfDay(for: Date())
     
     private var timeContext: DesignSystem.TimeContext {
         DesignSystem.TimeContext.current()
@@ -231,6 +236,9 @@ struct TodayView: View {
                                             let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
                                             let dateString = df.string(from: viewModel.entry.date)
                                             LocalStore.setCompletedGoals(completedGoals, for: dateString)
+                                            \#if canImport(UIKit)
+                                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                            \#endif
                                         }) {
                                             HStack(spacing: DesignSystem.Spacing.md) {
                                                 ZStack {
@@ -284,7 +292,7 @@ struct TodayView: View {
                                         .font(DesignSystem.Typography.bodyLargeSafe)
                                         .foregroundColor(DesignSystem.Colors.secondaryText)
                                         .multilineTextAlignment(.center)
-                                        .lineSpacing(DesignSystem.Spacing.lineHeightRelaxed - 1.0)
+                                        .lineSpacing(DesignSystem.Spacing.lineSpacingRelaxed)
                                 }
                             }
                         }
@@ -318,6 +326,9 @@ struct TodayView: View {
                     } else {
                         showingMorningRitual = true
                     }
+                    \#if canImport(UIKit)
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    \#endif
                 } label: {
                     ZStack {
                         Circle()
@@ -330,6 +341,8 @@ struct TodayView: View {
                     }
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Quick Action")
+                .accessibilityHint("Opens your next ritual")
                 .padding(.trailing, DesignSystem.Spacing.lg)
                 .padding(.bottom, DesignSystem.Spacing.lg)
             }
@@ -342,6 +355,9 @@ struct TodayView: View {
                 let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
                 let dateString = df.string(from: selectedDate)
                 completedGoals = LocalStore.getCompletedGoals(for: dateString)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
+                handlePotentialDayChange()
             }
             .sheet(isPresented: $showingMorningRitual) {
                 MorningRitualView(entry: $viewModel.entry)
@@ -376,12 +392,31 @@ struct TodayView: View {
                     }
                 }
             }
+            .onChange(of: scenePhase) { phase in
+                if phase == .active {
+                    handlePotentialDayChange()
+                }
+            }
         }
     }
 }
 
 // MARK: - Helpers
 extension TodayView {
+    private func handlePotentialDayChange() {
+        let calendar = Calendar.current
+        let newDay = calendar.startOfDay(for: Date())
+        guard newDay != currentDay else { return }
+        currentDay = newDay
+        selectedDate = newDay
+        Task {
+            await viewModel.load(date: newDay)
+            let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
+            let dateString = df.string(from: newDay)
+            completedGoals = LocalStore.getCompletedGoals(for: dateString)
+        }
+    }
+    
     @ViewBuilder
     func planRow(icon: String, label: String, value: String) -> some View {
         HStack(spacing: DesignSystem.Spacing.md) {

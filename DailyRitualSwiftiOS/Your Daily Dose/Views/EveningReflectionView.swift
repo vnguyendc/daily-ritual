@@ -7,6 +7,9 @@
 //
 
 import SwiftUI
+\#if canImport(UIKit)
+import UIKit
+\#endif
 
 struct EveningReflectionView: View {
     @Binding var entry: DailyEntry
@@ -139,7 +142,7 @@ struct EveningReflectionView: View {
             .navigationTitle("Evening Reflection")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(DesignSystem.Colors.cardBackground.opacity(0.95), for: .navigationBar)
-            .toolbarColorScheme(.light, for: .navigationBar)
+            // Inherit theme; remove forced light scheme for better contrast
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
@@ -183,6 +186,9 @@ struct EveningReflectionView: View {
                 entry = updatedEntry
                 showingCompletion = true
                 isSaving = false
+                \#if canImport(UIKit)
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                \#endif
             }
         } catch {
             print("Error completing evening reflection: \(error)")
@@ -191,6 +197,9 @@ struct EveningReflectionView: View {
                 entry.eveningCompletedAt = Date()
                 showingCompletion = true
                 isSaving = false
+                \#if canImport(UIKit)
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                \#endif
             }
         }
     }
@@ -227,7 +236,7 @@ struct PremiumQuoteApplicationView: View {
                 }
                 
                 if application?.isEmpty ?? true {
-                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, hasShadow: false) {
+                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, showsBorder: false) {
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                             HStack {
                                 Text("✨")
@@ -279,7 +288,7 @@ struct PremiumWentWellView: View {
                 }
                 
                 if wentWell?.isEmpty ?? true {
-                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, hasShadow: false) {
+                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, showsBorder: false) {
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                             HStack {
                                 Text("🎉")
@@ -333,7 +342,7 @@ struct PremiumToImproveView: View {
                 }
                 
                 if toImprove?.isEmpty ?? true {
-                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, hasShadow: false) {
+                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, showsBorder: false) {
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                             HStack {
                                 Text("🌱")

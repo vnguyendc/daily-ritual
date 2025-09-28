@@ -111,7 +111,7 @@ struct MorningRitualView: View {
             .navigationTitle("Morning Ritual")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(DesignSystem.Colors.cardBackground.opacity(0.95), for: .navigationBar)
-            .toolbarColorScheme(.light, for: .navigationBar)
+            // Inherit theme; remove forced light scheme for better contrast
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
@@ -201,17 +201,20 @@ struct PremiumGoalsStepView: View {
                 )
                 
                 PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md) {
-                    TextEditor(text: $displayGoals)
-                    .font(DesignSystem.Typography.journalTextSafe)
-                    .foregroundColor(DesignSystem.Colors.primaryText)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
-                    .frame(minHeight: 150)
-                    .onChange(of: displayGoals) { newValue in
-                        let result = enforceNumbering(newValue)
-                        if result.display != newValue { displayGoals = result.display }
-                        goalsText = result.lines.isEmpty ? nil : result.lines.joined(separator: "\n")
-                    }
+                    PremiumTextEditor(
+                        nil,
+                        placeholder: numberedPlaceholder,
+                        text: $displayGoals,
+                        timeContext: timeContext,
+                        minHeight: 150,
+                        contentFont: DesignSystem.Typography.journalTextSafe,
+                        accessibilityHint: "Enter three numbered goals",
+                        onChange: { newValue in
+                            let result = enforceNumbering(newValue)
+                            if result.display != newValue { displayGoals = result.display }
+                            goalsText = result.lines.isEmpty ? nil : result.lines.joined(separator: "\n")
+                        }
+                    )
                     .onAppear {
                         let existing = goalsText?.components(separatedBy: "\n").joined(separator: "\n") ?? ""
                         displayGoals = enforceNumbering(existing).display
@@ -219,14 +222,14 @@ struct PremiumGoalsStepView: View {
                 }
                 
                 if goalsText?.isEmpty ?? true {
-                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, hasShadow: false) {
+                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, showsBorder: false) {
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                             HStack {
                                 Text("💡")
                                     .font(DesignSystem.Typography.headlineSmall)
                                 Text("Tip: Type on new lines — we'll number them for you")
                                     .font(DesignSystem.Typography.buttonMedium)
-                                    .foregroundColor(timeContext.primaryColor)
+                                    .foregroundColor(DesignSystem.Colors.primaryText)
                             }
                             
                             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
@@ -277,17 +280,20 @@ struct PremiumGratitudeStepView: View {
                 )
                 
                 PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md) {
-                    TextEditor(text: $displayGratitudes)
-                    .font(DesignSystem.Typography.journalTextSafe)
-                    .foregroundColor(DesignSystem.Colors.primaryText)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
-                    .frame(minHeight: 150)
-                    .onChange(of: displayGratitudes) { newValue in
-                        let result = enforceNumbering(newValue)
-                        if result.display != newValue { displayGratitudes = result.display }
-                        gratitudeText = result.lines.isEmpty ? nil : result.lines.joined(separator: "\n")
-                    }
+                    PremiumTextEditor(
+                        nil,
+                        placeholder: numberedPlaceholder,
+                        text: $displayGratitudes,
+                        timeContext: timeContext,
+                        minHeight: 150,
+                        contentFont: DesignSystem.Typography.journalTextSafe,
+                        accessibilityHint: "Enter three gratitudes",
+                        onChange: { newValue in
+                            let result = enforceNumbering(newValue)
+                            if result.display != newValue { displayGratitudes = result.display }
+                            gratitudeText = result.lines.isEmpty ? nil : result.lines.joined(separator: "\n")
+                        }
+                    )
                     .onAppear {
                         let existing = gratitudeText?.components(separatedBy: "\n").joined(separator: "\n") ?? ""
                         displayGratitudes = enforceNumbering(existing).display
@@ -295,14 +301,14 @@ struct PremiumGratitudeStepView: View {
                 }
                 
                 if gratitudeText?.isEmpty ?? true {
-                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, hasShadow: false) {
+                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, showsBorder: false) {
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                             HStack {
                                 Text("🙏")
                                     .font(DesignSystem.Typography.headlineSmall)
                                 Text("Tip: Type on new lines — we'll number them for you")
                                     .font(DesignSystem.Typography.buttonMedium)
-                                    .foregroundColor(timeContext.primaryColor)
+                                    .foregroundColor(DesignSystem.Colors.primaryText)
                             }
                             
                             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
@@ -334,26 +340,29 @@ struct PremiumAffirmationStepView: View {
                 )
                 
                 PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md) {
-                    TextEditor(text: Binding(
-                        get: { affirmation ?? "" },
-                        set: { affirmation = $0.isEmpty ? nil : $0 }
-                    ))
-                    .font(DesignSystem.Typography.affirmationText)
-                    .foregroundColor(DesignSystem.Colors.primaryText)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
-                    .frame(minHeight: 150)
+                    PremiumTextEditor(
+                        nil,
+                        placeholder: "Write your affirmation",
+                        text: Binding(
+                            get: { affirmation ?? "" },
+                            set: { affirmation = $0.isEmpty ? nil : $0 }
+                        ),
+                        timeContext: timeContext,
+                        minHeight: 150,
+                        contentFont: DesignSystem.Typography.affirmationTextSafe,
+                        accessibilityHint: "Write your personal affirmation"
+                    )
                 }
                 
                 if let suggestion = suggestedText, (affirmation?.isEmpty ?? true) {
-                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, hasShadow: false) {
+                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, showsBorder: false) {
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                             HStack {
                                 Text("💪")
                                     .font(DesignSystem.Typography.headlineSmall)
                                 Text("Suggested affirmation:")
                                     .font(DesignSystem.Typography.buttonMedium)
-                                    .foregroundColor(timeContext.primaryColor)
+                                    .foregroundColor(DesignSystem.Colors.primaryText)
                             }
                             
                             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
@@ -384,19 +393,22 @@ struct PremiumOtherThoughtsStepView: View {
                 )
                 
                 PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md) {
-                    TextEditor(text: Binding(
-                        get: { otherThoughts ?? "" },
-                        set: { otherThoughts = $0.isEmpty ? nil : $0 }
-                    ))
-                    .font(DesignSystem.Typography.journalTextSafe)
-                    .foregroundColor(DesignSystem.Colors.primaryText)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
-                    .frame(minHeight: 200)
+                    PremiumTextEditor(
+                        nil,
+                        placeholder: "Notes for the day",
+                        text: Binding(
+                            get: { otherThoughts ?? "" },
+                            set: { otherThoughts = $0.isEmpty ? nil : $0 }
+                        ),
+                        timeContext: timeContext,
+                        minHeight: 200,
+                        contentFont: DesignSystem.Typography.journalTextSafe,
+                        accessibilityHint: "Add any other thoughts for today"
+                    )
                 }
                 
                 if otherThoughts?.isEmpty ?? true {
-                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, hasShadow: false) {
+                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, showsBorder: false) {
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                             HStack {
                                 Text("💭")
@@ -436,7 +448,7 @@ struct PremiumQuoteDisplayStepView: View {
                 )
                 
                 if let quote = quote, !quote.isEmpty {
-                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, hasShadow: false) {
+                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, showsBorder: false) {
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                             Text(quote)
                                 .font(DesignSystem.Typography.quoteText)
@@ -596,7 +608,7 @@ struct PremiumCompletionView: View {
                         .font(DesignSystem.Typography.bodyLargeSafe)
                         .foregroundColor(DesignSystem.Colors.secondaryText)
                         .multilineTextAlignment(.center)
-                        .lineSpacing(DesignSystem.Spacing.lineHeightRelaxed - 1.0)
+                        .lineSpacing(DesignSystem.Spacing.lineSpacingRelaxed)
                 }
             }
             

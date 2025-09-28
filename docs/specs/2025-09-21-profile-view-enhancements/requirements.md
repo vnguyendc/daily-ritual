@@ -79,3 +79,4 @@ References
 - Backend: `DailyRitualBackend/src/types/database.ts` (users table fields)
 
 
+

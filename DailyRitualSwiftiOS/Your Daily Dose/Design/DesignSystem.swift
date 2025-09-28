@@ -7,7 +7,9 @@
 //
 
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#endif
 
 // MARK: - Elite Performance Design System
 // Dual theme architecture supporting both dark and light modes for optimal athletic performance
@@ -218,48 +220,41 @@ struct DesignSystem {
         static let quoteTextFallback = Font.system(size: 18, weight: .regular, design: .serif).italic()
         
         // MARK: - Font Loading Helpers
-        /// Safe font loading with automatic fallback
-        static func safeFont(name: String, size: CGFloat, relativeTo textStyle: Font.TextStyle, fallback: Font) -> Font {
-            // For now, just return the fallback to avoid UIFont issues
-                return fallback
+        /// Checks if a UIFont with given name can be created (iOS only)
+        private static func isFontAvailable(_ name: String) -> Bool {
+            #if canImport(UIKit)
+            return UIFont(name: name, size: 12) != nil
+            #else
+            return false
+            #endif
         }
-        
-        // MARK: - Safe Font Variants (with automatic fallbacks)
-        static var displayLargeSafe: Font {
-                return Font.system(size: 34, weight: .semibold, design: .default)
+
+        /// Safe font loading with automatic fallback and dynamic type scaling
+        static func safeFont(name: String, size: CGFloat, relativeTo textStyle: Font.TextStyle, fallbackDesign: Font.Design = .default, weight: Font.Weight? = nil, italic: Bool = false) -> Font {
+            if isFontAvailable(name) {
+                var f = Font.custom(name, size: size, relativeTo: textStyle)
+                if let w = weight { f = f.weight(w) }
+                if italic { f = f.italic() }
+                return f
+            } else {
+                var f = Font.system(textStyle, design: fallbackDesign)
+                if let w = weight { f = f.weight(w) }
+                if italic { f = f.italic() }
+                return f
+            }
         }
-        
-        static var displayMediumSafe: Font {
-                return Font.system(size: 28, weight: .semibold, design: .default)
-        }
-        
-        static var displaySmallSafe: Font {
-                return Font.system(size: 22, weight: .medium, design: .default)
-        }
-        
-        static var headlineLargeSafe: Font {
-                return Font.system(size: 20, weight: .semibold, design: .default)
-        }
-        
-        static var bodyLargeSafe: Font {
-                return Font.system(size: 17, weight: .regular, design: .default)
-        }
-        
-        static var quoteTextSafe: Font {
-                return Font.system(size: 18, weight: .regular, design: .serif).italic()
-        }
-        
-        static var journalTitleSafe: Font {
-                return Font.system(size: 20, weight: .medium, design: .default)
-        }
-        
-        static var journalTextSafe: Font {
-                return Font.system(size: 16, weight: .regular, design: .default)
-        }
-        
-        static var buttonLargeSafe: Font {
-                return Font.system(size: 17, weight: .medium, design: .default)
-        }
+
+        // MARK: - Safe Font Variants (dynamic)
+        static var displayLargeSafe: Font { safeFont(name: "Instrument Sans", size: 34, relativeTo: .largeTitle, weight: .semibold) }
+        static var displayMediumSafe: Font { safeFont(name: "Instrument Sans", size: 28, relativeTo: .title, weight: .semibold) }
+        static var displaySmallSafe: Font { safeFont(name: "Instrument Sans", size: 22, relativeTo: .title2, weight: .medium) }
+        static var headlineLargeSafe: Font { safeFont(name: "Instrument Sans", size: 20, relativeTo: .title3, weight: .semibold) }
+        static var bodyLargeSafe: Font { safeFont(name: "Instrument Sans", size: 17, relativeTo: .body) }
+        static var quoteTextSafe: Font { safeFont(name: "Crimson Pro", size: 18, relativeTo: .body, fallbackDesign: .serif, italic: true) }
+        static var journalTitleSafe: Font { safeFont(name: "Instrument Sans", size: 20, relativeTo: .title3, weight: .medium) }
+        static var journalTextSafe: Font { safeFont(name: "Instrument Sans", size: 16, relativeTo: .body) }
+        static var affirmationTextSafe: Font { safeFont(name: "Crimson Pro", size: 16, relativeTo: .body, fallbackDesign: .serif, italic: true) }
+        static var buttonLargeSafe: Font { safeFont(name: "Instrument Sans", size: 17, relativeTo: .headline, weight: .medium) }
     }
     
     // MARK: - Spacing System - Generous & Mindful
@@ -284,10 +279,10 @@ struct DesignSystem {
         static let minTouchTarget: CGFloat = 44
         static let preferredTouchTarget: CGFloat = 50
         
-        // Line heights for enhanced readability
-        static let lineHeightTight: CGFloat = 1.2
-        static let lineHeightNormal: CGFloat = 1.4
-        static let lineHeightRelaxed: CGFloat = 1.6  // For journal text
+        // Line spacing for enhanced readability (points)
+        static let lineSpacingTight: CGFloat = 2
+        static let lineSpacingNormal: CGFloat = 4
+        static let lineSpacingRelaxed: CGFloat = 6  // For journal text
     }
     
     // MARK: - Corner Radius - Soft & Modern
@@ -308,43 +303,43 @@ struct DesignSystem {
     struct Shadow {
         // Theme-aware shadows that work in both light and dark modes
         static let subtle = (
-            color: Color.primary.opacity(0.08),                // Adapts to theme
+            color: Color.primary.opacity(0.08),
             radius: CGFloat(4),
             x: CGFloat(0),
             y: CGFloat(1)
         )
         
         static let card = (
-            color: Color.primary.opacity(0.12),                // Adapts to theme
+            color: Color.primary.opacity(0.12),
             radius: CGFloat(8),
             x: CGFloat(0),
             y: CGFloat(2)
         )
         
         static let elevated = (
-            color: Color.primary.opacity(0.16),                // Adapts to theme
+            color: Color.primary.opacity(0.16),
             radius: CGFloat(12),
             x: CGFloat(0),
             y: CGFloat(4)
         )
         
         static let floating = (
-            color: Color.primary.opacity(0.20),                // Adapts to theme
+            color: Color.primary.opacity(0.20),
             radius: CGFloat(16),
             x: CGFloat(0),
             y: CGFloat(6)
         )
         
-        // Elite performance shadows for special states
+        // Elite performance shadows for special states (still used for floating controls)
         static let achievement = (
-            color: DesignSystem.Colors.eliteGold.opacity(0.3),  // Gold glow
+            color: DesignSystem.Colors.eliteGold.opacity(0.3),
             radius: CGFloat(20),
             x: CGFloat(0),
             y: CGFloat(8)
         )
         
         static let success = (
-            color: DesignSystem.Colors.powerGreen.opacity(0.3), // Green glow
+            color: DesignSystem.Colors.powerGreen.opacity(0.3),
             radius: CGFloat(16),
             x: CGFloat(0),
             y: CGFloat(6)
@@ -419,18 +414,18 @@ struct PremiumCard<Content: View>: View {
     let content: Content
     let timeContext: DesignSystem.TimeContext
     let padding: CGFloat
-    let hasShadow: Bool
+    let showsBorder: Bool
     
     init(
         timeContext: DesignSystem.TimeContext = .neutral,
         padding: CGFloat = DesignSystem.Spacing.cardPadding,
-        hasShadow: Bool = true,
+        showsBorder: Bool = true,
         @ViewBuilder content: () -> Content
     ) {
         self.content = content()
         self.timeContext = timeContext
         self.padding = padding
-        self.hasShadow = hasShadow
+        self.showsBorder = showsBorder
     }
     
     var body: some View {
@@ -438,11 +433,9 @@ struct PremiumCard<Content: View>: View {
             .padding(padding)
             .background(timeContext.cardBackgroundColor)
             .cornerRadius(DesignSystem.CornerRadius.card)
-            .shadow(
-                color: hasShadow ? DesignSystem.Shadow.card.color : .clear,
-                radius: hasShadow ? DesignSystem.Shadow.card.radius : 0,
-                x: hasShadow ? DesignSystem.Shadow.card.x : 0,
-                y: hasShadow ? DesignSystem.Shadow.card.y : 0
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                    .stroke(showsBorder ? DesignSystem.Colors.border : .clear, lineWidth: 1)
             )
     }
 }
@@ -473,7 +466,7 @@ struct PremiumSectionHeader: View {
                 Text(subtitle)
                     .font(DesignSystem.Typography.bodyLargeSafe)
                     .foregroundColor(DesignSystem.Colors.secondaryText)
-                    .lineSpacing(DesignSystem.Spacing.lineHeightRelaxed - 1.0)
+                    .lineSpacing(DesignSystem.Spacing.lineSpacingRelaxed)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -633,7 +626,7 @@ struct PremiumQuoteDisplay: View {
             Text("\"\(quote)\"")
                 .font(DesignSystem.Typography.quoteTextSafe)
                 .foregroundColor(DesignSystem.Colors.primaryText)
-                .lineSpacing(DesignSystem.Spacing.lineHeightRelaxed - 1.0)
+                .lineSpacing(DesignSystem.Spacing.lineSpacingRelaxed)
                 .fixedSize(horizontal: false, vertical: true)
             
             if let attribution = attribution {
@@ -652,6 +645,223 @@ struct PremiumQuoteDisplay: View {
             x: DesignSystem.Shadow.subtle.x,
             y: DesignSystem.Shadow.subtle.y
         )
+    }
+}
+
+// MARK: - Premium Input Components
+
+struct PremiumTextField: View {
+    private let label: String?
+    private let placeholder: String
+    @Binding private var text: String
+    private let timeContext: DesignSystem.TimeContext
+    private let isSecure: Bool
+    private let contentFont: Font
+    private let accessibilityHint: String?
+#if canImport(UIKit)
+    private let keyboardType: UIKeyboardType
+    private let textContentType: UITextContentType?
+#endif
+    #if canImport(UIKit)
+    private let autocapitalization: TextInputAutocapitalization
+    #endif
+    private let disableAutocorrection: Bool
+    private let submitLabel: SubmitLabel
+    private let onSubmit: (() -> Void)?
+    @FocusState private var isFocused: Bool
+    
+    private var borderColor: Color {
+        isFocused ? timeContext.primaryColor : DesignSystem.Colors.border
+    }
+    
+#if canImport(UIKit)
+    init(
+        _ label: String? = nil,
+        placeholder: String,
+        text: Binding<String>,
+        timeContext: DesignSystem.TimeContext = .neutral,
+        isSecure: Bool = false,
+        contentFont: Font = DesignSystem.Typography.bodyLargeSafe,
+        keyboardType: UIKeyboardType = .default,
+        textContentType: UITextContentType? = nil,
+        autocapitalization: TextInputAutocapitalization = .sentences,
+        disableAutocorrection: Bool = false,
+        submitLabel: SubmitLabel = .done,
+        onSubmit: (() -> Void)? = nil
+    ) {
+        self.label = label
+        self.placeholder = placeholder
+        self._text = text
+        self.timeContext = timeContext
+        self.isSecure = isSecure
+        self.contentFont = contentFont
+        self.accessibilityHint = nil
+        self.keyboardType = keyboardType
+        self.textContentType = textContentType
+        self.autocapitalization = autocapitalization
+        self.disableAutocorrection = disableAutocorrection
+        self.submitLabel = submitLabel
+        self.onSubmit = onSubmit
+    }
+#else
+    init(
+        _ label: String? = nil,
+        placeholder: String,
+        text: Binding<String>,
+        timeContext: DesignSystem.TimeContext = .neutral,
+        isSecure: Bool = false,
+        contentFont: Font = DesignSystem.Typography.bodyLargeSafe,
+        disableAutocorrection: Bool = false,
+        submitLabel: SubmitLabel = .done,
+        onSubmit: (() -> Void)? = nil
+    ) {
+        self.label = label
+        self.placeholder = placeholder
+        self._text = text
+        self.timeContext = timeContext
+        self.isSecure = isSecure
+        self.contentFont = contentFont
+        self.accessibilityHint = nil
+        self.disableAutocorrection = disableAutocorrection
+        self.submitLabel = submitLabel
+        self.onSubmit = onSubmit
+    }
+#endif
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+            if let label = label {
+                Text(label)
+                    .font(DesignSystem.Typography.buttonMedium)
+                    .foregroundColor(DesignSystem.Colors.secondaryText)
+            }
+            inputField
+                .padding(.horizontal, DesignSystem.Spacing.md)
+                .padding(.vertical, DesignSystem.Spacing.sm)
+                .frame(minHeight: DesignSystem.Spacing.preferredTouchTarget)
+                .background(
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.input)
+                        .fill(DesignSystem.Colors.cardBackground)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.input)
+                        .stroke(borderColor, lineWidth: 1.5)
+                )
+                .animation(DesignSystem.Animation.quick, value: isFocused)
+                .accessibilityLabel(label ?? placeholder)
+                .accessibilityHint(accessibilityHint ?? "")
+        }
+    }
+    
+    @ViewBuilder
+    private var inputField: some View {
+        if isSecure {
+            SecureField(placeholder, text: $text)
+                .focused($isFocused)
+                #if canImport(UIKit)
+                .textInputAutocapitalization(autocapitalization)
+                #endif
+                .autocorrectionDisabled(disableAutocorrection)
+                .submitLabel(submitLabel)
+                .onSubmit { onSubmit?() }
+#if canImport(UIKit)
+                .textContentType(textContentType)
+#endif
+        } else {
+            TextField(placeholder, text: $text)
+                .focused($isFocused)
+                #if canImport(UIKit)
+                .textInputAutocapitalization(autocapitalization)
+                #endif
+                .autocorrectionDisabled(disableAutocorrection)
+                .submitLabel(submitLabel)
+                .onSubmit { onSubmit?() }
+#if canImport(UIKit)
+                .keyboardType(keyboardType)
+                .textContentType(textContentType)
+#endif
+                .font(contentFont)
+        }
+    }
+}
+
+struct PremiumTextEditor: View {
+    private let label: String?
+    private let placeholder: String
+    @Binding private var text: String
+    private let timeContext: DesignSystem.TimeContext
+    private let minHeight: CGFloat
+    private let contentFont: Font
+    private let accessibilityHint: String?
+    private let onChange: ((String) -> Void)?
+    @FocusState private var isFocused: Bool
+    
+    private var borderColor: Color {
+        isFocused ? timeContext.primaryColor : DesignSystem.Colors.border
+    }
+    
+    init(
+        _ label: String? = nil,
+        placeholder: String,
+        text: Binding<String>,
+        timeContext: DesignSystem.TimeContext = .neutral,
+        minHeight: CGFloat = 150,
+        contentFont: Font = DesignSystem.Typography.journalTextSafe,
+        accessibilityHint: String? = nil,
+        onChange: ((String) -> Void)? = nil
+    ) {
+        self.label = label
+        self.placeholder = placeholder
+        self._text = text
+        self.timeContext = timeContext
+        self.minHeight = minHeight
+        self.contentFont = contentFont
+        self.accessibilityHint = accessibilityHint
+        self.onChange = onChange
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+            if let label = label {
+                Text(label)
+                    .font(DesignSystem.Typography.buttonMedium)
+                    .foregroundColor(DesignSystem.Colors.secondaryText)
+            }
+            ZStack(alignment: .topLeading) {
+                if text.isEmpty {
+                    Text(placeholder)
+                        .font(contentFont)
+                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                        .padding(.horizontal, DesignSystem.Spacing.md)
+                        .padding(.vertical, DesignSystem.Spacing.sm)
+                        .accessibilityHidden(true)
+                }
+                TextEditor(text: $text)
+                    .focused($isFocused)
+                    .font(contentFont)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+                    .padding(.horizontal, DesignSystem.Spacing.md - 2)
+                    .padding(.vertical, DesignSystem.Spacing.sm - 2)
+                    .frame(minHeight: minHeight)
+                    .scrollContentBackground(.hidden)
+                    .background(Color.clear)
+                    .onChange(of: text) { _, newValue in
+                        onChange?(newValue)
+                    }
+            }
+            .frame(minHeight: max(minHeight, DesignSystem.Spacing.preferredTouchTarget))
+            .background(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.input)
+                    .fill(DesignSystem.Colors.cardBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.input)
+                    .stroke(borderColor, lineWidth: 1.5)
+            )
+            .animation(DesignSystem.Animation.quick, value: isFocused)
+            .accessibilityLabel(label ?? placeholder)
+            .accessibilityHint(accessibilityHint ?? "")
+        }
     }
 }
 
@@ -677,17 +887,15 @@ extension View {
     func premiumCard(
         timeContext: DesignSystem.TimeContext = .neutral,
         padding: CGFloat = DesignSystem.Spacing.cardPadding,
-        hasShadow: Bool = true
+        showsBorder: Bool = true
     ) -> some View {
         self
             .padding(padding)
             .background(timeContext.cardBackgroundColor)
             .cornerRadius(DesignSystem.CornerRadius.card)
-            .shadow(
-                color: hasShadow ? DesignSystem.Shadow.card.color : .clear,
-                radius: hasShadow ? DesignSystem.Shadow.card.radius : 0,
-                x: hasShadow ? DesignSystem.Shadow.card.x : 0,
-                y: hasShadow ? DesignSystem.Shadow.card.y : 0
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                    .stroke(showsBorder ? DesignSystem.Colors.border : .clear, lineWidth: 1)
             )
     }
     
@@ -741,6 +949,17 @@ extension DesignSystem.TimeContext {
 // MARK: - Elite Performance Color Helpers
 
 extension DesignSystem.Colors {
+    /// Returns an accent color that maintains sufficient contrast on the given surface.
+    /// For light surfaces, use a darker elite gold variant to meet contrast; for dark, keep elite gold.
+    static func accentOnSurface(for scheme: ColorScheme) -> Color {
+        switch scheme {
+        case .light:
+            // Darker gold variant for better contrast on light backgrounds
+            return Color(red: 0.80, green: 0.57, blue: 0.00)
+        default:
+            return eliteGold
+        }
+    }
     /// Returns the appropriate success color based on context
     static func successColor(for achievement: AchievementType) -> Color {
         switch achievement {

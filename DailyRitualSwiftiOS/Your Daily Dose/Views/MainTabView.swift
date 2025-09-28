@@ -14,9 +14,20 @@ struct ProfileView: View {
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var errorMessage: String?
-    
+
+    // Editable fields
+    @State private var name: String = ""
+    @State private var primarySport: String = ""
+    @State private var reminderDate: Date = Date()
+    @State private var timezoneId: String = TimeZone.current.identifier
+
+    @State private var isSavingName = false
+    @State private var isSavingPrefs = false
+
+    private let sports: [String] = ["running", "cycling", "strength", "cross_training", "recovery", "rest"]
+
     private var timeContext: DesignSystem.TimeContext { .morning }
-    
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
@@ -25,22 +36,117 @@ struct ProfileView: View {
                     subtitle: "Sign in to sync your data across devices.",
                     timeContext: timeContext
                 )
-                
+
                 if supabase.isAuthenticated, let user = supabase.currentUser {
                     PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md) {
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                            // Account
                             Text(user.email)
                                 .font(DesignSystem.Typography.bodyLarge)
-                            if let name = user.name {
-                                Text(name)
-                                    .font(DesignSystem.Typography.bodyMedium)
-                                    .foregroundColor(DesignSystem.Colors.secondaryText)
+
+                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                                Text("Name").font(DesignSystem.Typography.metadata)
+                                TextField("Your name", text: $name)
+                                    .textInputAutocapitalization(.words)
+                                    .autocorrectionDisabled()
+                            HStack {
+                                PremiumPrimaryButton(isSavingName ? "Saving…" : "Save Name") {
+                                        Task {
+                                            guard name.trimmingCharacters(in: .whitespacesAndNewlines).count <= 80 else {
+                                                errorMessage = "Name too long (max 80)"; return
+                                            }
+                                            isSavingName = true
+                                            defer { isSavingName = false }
+                                            do { _ = try await supabase.updateProfile(["name": name]) }
+                                            catch { errorMessage = error.localizedDescription }
+                                        }
+                                }
+                                .disabled(isSavingName)
+                                }
                             }
-                            Button("Sign Out") {
+
+                            Divider().opacity(0.3)
+
+                            // Preferences
+                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                                Text("Preferences").font(DesignSystem.Typography.bodyLarge)
+
+                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                                    Text("Primary Sport").font(DesignSystem.Typography.metadata)
+                                    Picker("Primary Sport", selection: $primarySport) {
+                                        ForEach(sports, id: \.self) { s in
+                                            Text(s.replacingOccurrences(of: "_", with: " ").capitalized).tag(s)
+                                        }
+                                    }
+                                    .pickerStyle(.segmented)
+                                }
+
+                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                                    Text("Morning Reminder Time").font(DesignSystem.Typography.metadata)
+                                    DatePicker("Reminder", selection: $reminderDate, displayedComponents: .hourAndMinute)
+                                        .labelsHidden()
+                                }
+
+                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                                    Text("Timezone").font(DesignSystem.Typography.metadata)
+                                    Picker("Timezone", selection: $timezoneId) {
+                                        ForEach(TimeZone.knownTimeZoneIdentifiers.prefix(100), id: \.self) { tz in
+                                            Text(tz).tag(tz)
+                                        }
+                                    }
+                                }
+
+                                HStack {
+                                    PremiumPrimaryButton(isSavingPrefs ? "Saving…" : "Save Preferences") {
+                                        Task {
+                                            isSavingPrefs = true
+                                            defer { isSavingPrefs = false }
+                                            let tz = TimeZone(identifier: timezoneId) ?? .current
+                                            let timeStr = supabase.timeString(from: reminderDate, in: tz)
+                                            var updates: [String: Any] = [
+                                                "primary_sport": primarySport,
+                                                "morning_reminder_time": timeStr,
+                                                "timezone": timezoneId
+                                            ]
+                                            updates = updates.compactMapValues { val in
+                                                if let str = val as? String { return str.isEmpty ? nil : str }
+                                                return val
+                                            }
+                                            do { _ = try await supabase.updateProfile(updates) }
+                                            catch { errorMessage = error.localizedDescription }
+                                        }
+                                    }
+                                    .disabled(isSavingPrefs)
+                                }
+                            }
+
+                            if let status = user.subscriptionStatus as String? {
+                                Divider().opacity(0.3)
+                                Text("Subscription: \(status.capitalized)")
+                                    .font(DesignSystem.Typography.bodyMedium)
+                            }
+
+                            if let err = errorMessage {
+                                Text(err)
+                                    .font(DesignSystem.Typography.metadata)
+                                    .foregroundColor(DesignSystem.Colors.alertRed)
+                            }
+
+                            PremiumSecondaryButton("Sign Out") {
                                 Task { try? await supabase.signOut() }
                             }
-                            .buttonStyle(.borderedProminent)
                         }
+                    }
+                    .onAppear {
+                        // Seed editable fields from current user
+                        name = user.name ?? ""
+                        primarySport = user.primarySport ?? ""
+                        timezoneId = user.timezone
+                        if let d = supabase.date(fromTimeString: user.morningReminderTime, in: TimeZone(identifier: user.timezone) ?? .current) {
+                            reminderDate = d
+                        }
+                        // Fetch latest profile once
+                        Task { try? await supabase.fetchProfile() }
                     }
                 } else {
                     PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md) {
@@ -55,37 +161,24 @@ struct ProfileView: View {
                                     .font(DesignSystem.Typography.metadata)
                                     .foregroundColor(DesignSystem.Colors.alertRed)
                             }
-                            Button("Sign In") {
+                            PremiumPrimaryButton("Sign In") {
                                 Task {
                                     do { try await supabase.signIn(email: email, password: password) }
                                     catch { errorMessage = error.localizedDescription }
                                 }
                             }
-                            .buttonStyle(.borderedProminent)
 
                             Divider().opacity(0.3)
 
                             HStack(spacing: DesignSystem.Spacing.md) {
-                                Button {
+                                PremiumSecondaryButton("Sign in with Apple") {
                                     Task { try? await supabase.signInWithApple() }
-                                } label: {
-                                    HStack {
-                                        Image(systemName: "apple.logo")
-                                        Text("Sign in with Apple")
-                                    }
                                 }
-                                .buttonStyle(.bordered)
                             }
                             HStack(spacing: DesignSystem.Spacing.md) {
-                                Button {
+                                PremiumSecondaryButton("Sign in with Google") {
                                     Task { try? await supabase.signInWithGoogle() }
-                                } label: {
-                                    HStack {
-                                        Image(systemName: "g.circle")
-                                        Text("Sign in with Google")
-                                    }
                                 }
-                                .buttonStyle(.bordered)
                             }
                         }
                     }
@@ -213,7 +306,7 @@ struct PremiumPlaceholderView: View {
                         .font(DesignSystem.Typography.bodyLargeSafe)
                         .foregroundColor(DesignSystem.Colors.secondaryText)
                         .multilineTextAlignment(.center)
-                        .lineSpacing(DesignSystem.Spacing.lineHeightRelaxed - 1.0)
+                        .lineSpacing(DesignSystem.Spacing.lineSpacingRelaxed)
                 }
                 
                 PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md) {

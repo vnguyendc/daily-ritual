@@ -131,7 +131,7 @@ struct EntryDetailView: View {
                         Text("Affirmation")
                             .font(DesignSystem.Typography.journalTitleSafe)
                         Text(entry.affirmation ?? "—")
-                            .font(DesignSystem.Typography.affirmationText)
+                            .font(DesignSystem.Typography.affirmationTextSafe)
                     }
                 }
                 PremiumCard(timeContext: timeContext) {
