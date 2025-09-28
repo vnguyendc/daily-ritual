@@ -8,34 +8,38 @@
 
 import SwiftUI
 
-// MARK: - Simple Journal Entry Component
+// MARK: - DS-styled Journal Entry Component (legacy-compatible)
 
 struct JournalEntry: View {
     let title: String
     let prompt: String
     @Binding var text: String?
+    private let timeContext: DesignSystem.TimeContext = .neutral
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .font(.headline)
-                .foregroundColor(.primary)
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+            PremiumSectionHeader(
+                title,
+                subtitle: prompt,
+                timeContext: timeContext
+            )
             
-            Text(prompt)
-                .font(.body)
-                .foregroundColor(.secondary)
-            
-            TextEditor(text: Binding(
-                get: { text ?? "" },
-                set: { text = $0.isEmpty ? nil : $0 }
-            ))
-            .font(.body)
-            .padding(8)
-            .background(Color(.systemGray6))
-            .cornerRadius(8)
-            .frame(minHeight: 150)
+            PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md) {
+                PremiumTextEditor(
+                    nil,
+                    placeholder: prompt,
+                    text: Binding(
+                        get: { text ?? "" },
+                        set: { text = $0.isEmpty ? nil : $0 }
+                    ),
+                    timeContext: timeContext,
+                    minHeight: 150,
+                    contentFont: DesignSystem.Typography.journalTextSafe,
+                    accessibilityHint: "Enter your journal entry"
+                )
+            }
         }
-        .padding()
+        .padding(DesignSystem.Spacing.cardPadding)
     }
 }
 

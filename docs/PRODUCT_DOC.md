@@ -48,85 +48,109 @@ Athletes know mental training matters, but existing solutions are:
 
 ## Product Plan
 
-Athlete microjournaling and training planner app
-Core user experience
-Morning dashboard
-Morning reflection cards: Quick prompts for daily goals, gratitude, affirmations, and thoughts
-Training plan card: Shows scheduled training for the day (from Planner view) or prompts to create one
-Daily intention setter: AI-generated quote or insight based on previous reflections and mood patterns
-Evening and post-workout experience
-Post-workout reflection
-Automatic trigger: Notification appears 1 hour after scheduled workout time
-Quick reflection prompts: Rate energy levels, what went well, what can be improved next session
-Natural language focus: Emphasis on written reflection over numerical metrics
-Evening reflection
-End-of-day card: Accessible anytime in the evening for daily wrap-up
-Comprehensive review: Reflect on the full day's training and mental state
-Habit reinforcement
-Celebration animations: Positive feedback after completing each reflection
-Streak tracking: Visual counter showing consecutive days of reflection practice
-Progress gamification: Build momentum through consistent daily engagement
-Planner view
-Goal setting
-Long-term objectives: Monthly and yearly goals to maintain focus on bigger picture
-Goal visibility: Integration with daily reflections to keep athletes connected to their larger purpose
-Training schedule management
-Recurring workouts: Set up repeating training sessions (e.g., "Tuesday track workouts")
-Weekly planning: Flexible weekly schedule creation and modification
-Training session details: Workout type, duration, intensity, and specific focuses
-Technical requirements
-Platform and stack
-iOS mobile app as primary platform (MVP)
-Supabase backend for data storage and user management
-Swift for iOS development
-Core data storage
-User profiles: Demographics, sport, training preferences
-Daily reflections: Morning goals, gratitude, thoughts, post-workout notes
-Training plans: Scheduled workouts, recurring sessions, goal tracking
-Streak and progress data: Completion rates, habit tracking
-Future integrations (post-MVP)
-Apple HealthKit: Sync with Apple Fitness for automatic workout detection
-Whoop API: Trigger post-workout reflections based on detected activities
-Automated workout logging: Reduce manual entry by detecting completed sessions
-AI features
-Natural language processing: Analyze reflection patterns and mood
-Content generation: Personalized quotes, insights, and affirmations
-Pattern recognition: Identify training and mood correlations over time
-User onboarding and flows
-Hybrid onboarding strategy
-Immediate value: Sample morning routine with brief guides explaining why each step matters
-Context setting: Clear positioning as mental wellness app for performance improvement, not another fitness tracker
-Progressive setup: Gradually introduce features over 3-4 days as habits form
-Assessment: Sport, demographics, training habits, challenges, inspiration sources
-Nutrition tracking
-Simplified meal logging
-Photo-based entries: Upload images of breakfast, lunch, dinner, and snacks
-Supplement tracking: Log daily supplements and timing
-No calorie counting: Focus on visual documentation rather than detailed macros
-Reflection integration: Connect nutrition choices with energy levels in post-workout reflections
-Insights and analytics
-Progress visualization
-Weekly summaries: Training consistency, reflection completion rates, mood patterns
-Monthly reports: Goal progress tracking, performance trends, habit formation metrics
-Pattern recognition: Correlations between nutrition, training, mood, and performance
-Sharing capabilities
-Exportable reports: PDF or image format for coaches and accountability partners
-Privacy controls: Choose what data to include when sharing
-Coach collaboration: Optional sharing permissions for ongoing coaching relationships
-Feature prioritization roadmap
-Phase 1 (Core MVP)
-Daily morning routine + evening reflection
-Basic training planning
-Post-workout reflection triggers
-Habit tracking with streaks and celebrations
-Phase 2 (Enhanced engagement)
-Weekly planning system
-Basic insights and progress visualization
-Phase 3 (Advanced features)
-AI insights and personalized content generation
-Nutrition tracking
-Export/sharing capabilities
-Device integrations
+## Core user experience
+
+### Morning dashboard
+- **Morning reflection cards**: Quick prompts for daily goals, gratitude, affirmations, and thoughts
+- **Training plan card**: Shows scheduled training for the day (from Planner view) or prompts to create one
+- **Daily intention setter**: AI-generated quote or insight based on previous reflections and mood patterns
+
+## Evening and post-workout experience
+
+### Post-workout reflection
+- **Automatic trigger**: Notification appears 1 hour after scheduled workout time
+- **Quick reflection prompts**: Rate energy levels, what went well, what can be improved next session
+- **Natural language focus**: Emphasis on written reflection over numerical metrics
+
+### Evening reflection
+- **End-of-day card**: Accessible anytime in the evening for daily wrap-up
+- **Comprehensive review**: Reflect on the full day's training and mental state
+
+### Habit reinforcement
+- **Celebration animations**: Positive feedback after completing each reflection
+- **Streak tracking**: Visual counter showing consecutive days of reflection practice
+- **Progress gamification**: Build momentum through consistent daily engagement
+
+## Planner view
+
+### Goal setting
+- **Long-term objectives**: Monthly and yearly goals to maintain focus on bigger picture
+- **Goal visibility**: Integration with daily reflections to keep athletes connected to their larger purpose
+
+### Training schedule management
+- **Recurring workouts**: Set up repeating training sessions (e.g., "Tuesday track workouts")
+- **Weekly planning**: Flexible weekly schedule creation and modification
+- **Training session details**: Workout type, duration, intensity, and specific focuses
+
+## Technical requirements
+
+### Platform and stack
+- **iOS mobile app** as primary platform (MVP)
+- **Supabase backend** for data storage and user management
+- **Swift** for iOS development
+
+### Core data storage
+- **User profiles**: Demographics, sport, training preferences
+- **Daily reflections**: Morning goals, gratitude, thoughts, post-workout notes
+- **Training plans**: Scheduled workouts, recurring sessions, goal tracking
+- **Streak and progress data**: Completion rates, habit tracking
+
+### Future integrations (post-MVP)
+- **Apple HealthKit**: Sync with Apple Fitness for automatic workout detection
+- **Whoop API**: Trigger post-workout reflections based on detected activities
+- **Automated workout logging**: Reduce manual entry by detecting completed sessions
+
+### AI features
+- **Natural language processing**: Analyze reflection patterns and mood
+- **Content generation**: Personalized quotes, insights, and affirmations
+- **Pattern recognition**: Identify training and mood correlations over time
+
+## User onboarding and flows
+
+### Hybrid onboarding strategy
+- **Immediate value**: Sample morning routine with brief guides explaining why each step matters
+- **Context setting**: Clear positioning as mental wellness app for performance improvement, not another fitness tracker
+- **Progressive setup**: Gradually introduce features over 3-4 days as habits form
+- **Assessment**: Sport, demographics, training habits, challenges, inspiration sources
+
+## Nutrition tracking
+
+### Simplified meal logging
+- **Photo-based entries**: Upload images of breakfast, lunch, dinner, and snacks
+- **Supplement tracking**: Log daily supplements and timing
+- **No calorie counting**: Focus on visual documentation rather than detailed macros
+- **Reflection integration**: Connect nutrition choices with energy levels in post-workout reflections
+
+## Insights and analytics
+
+### Progress visualization
+- **Weekly summaries**: Training consistency, reflection completion rates, mood patterns
+- **Monthly reports**: Goal progress tracking, performance trends, habit formation metrics
+- **Pattern recognition**: Correlations between nutrition, training, mood, and performance
+
+### Sharing capabilities
+- **Exportable reports**: PDF or image format for coaches and accountability partners
+- **Privacy controls**: Choose what data to include when sharing
+- **Coach collaboration**: Optional sharing permissions for ongoing coaching relationships
+
+## Feature prioritization roadmap
+
+### Phase 1 (Core MVP)
+- Daily morning routine + evening reflection
+- Basic training planning 
+- Post-workout reflection triggers
+- Habit tracking with streaks and celebrations
+
+### Phase 2 (Enhanced engagement)
+- Weekly planning system
+- Basic insights and progress visualization
+
+### Phase 3 (Advanced features)
+- AI insights and personalized content generation
+- Nutrition tracking
+- Export/sharing capabilities
+- Device integrations
+
 
 ## User Stories & Use Cases
 
