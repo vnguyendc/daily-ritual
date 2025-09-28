@@ -55,11 +55,11 @@ struct DesignSystem {
             dark: Color.white                                                // #FFFFFF (dark)
         )
         static let secondaryText = Color(
-            light: Color(red: 0.29, green: 0.31, blue: 0.34),              // #495057 (light)
+            light: Color(red: 0.20, green: 0.23, blue: 0.25),              // Darker for higher contrast (approx #343A40)
             dark: Color(red: 0.72, green: 0.74, blue: 0.78)                // #B8BCC8 (dark)
         )
         static let tertiaryText = Color(
-            light: Color(red: 0.42, green: 0.46, blue: 0.49),              // #6C757D (light)
+            light: Color(red: 0.35, green: 0.38, blue: 0.42),              // Darker for higher contrast (approx #5C636A)
             dark: Color(red: 0.42, green: 0.45, blue: 0.50)                // #6B7280 (dark)
         )
         static let invertedText = Color(
@@ -182,11 +182,11 @@ struct DesignSystem {
         // Headers & Display - Instrument Sans Variable Font with weights
         static let displayLarge = Font.custom("Instrument Sans", size: 34, relativeTo: .largeTitle).weight(.semibold)
         static let displayMedium = Font.custom("Instrument Sans", size: 28, relativeTo: .title).weight(.semibold)
-        static let displaySmall = Font.custom("Instrument Sans", size: 22, relativeTo: .title2).weight(.medium)
+        static let displaySmall = Font.custom("Instrument Sans", size: 22, relativeTo: .title2).weight(.semibold)
         
         // Headlines - Instrument Sans Medium for clear hierarchy
         static let headlineLarge = Font.custom("Instrument Sans", size: 20, relativeTo: .title3).weight(.semibold)
-        static let headlineMedium = Font.custom("Instrument Sans", size: 18, relativeTo: .headline).weight(.medium)
+        static let headlineMedium = Font.custom("Instrument Sans", size: 18, relativeTo: .headline).weight(.semibold)
         static let headlineSmall = Font.custom("Instrument Sans", size: 16, relativeTo: .headline).weight(.medium)
         
         // Body Text - Instrument Sans Regular (weight 400) for optimal readability
@@ -200,13 +200,13 @@ struct DesignSystem {
         static let affirmationText = Font.custom("Crimson Pro", size: 16, relativeTo: .body).italic()
         
         // Specialized for journaling - Instrument Sans Regular for extended reading/writing
-        static let journalTitle = Font.custom("Instrument Sans", size: 20, relativeTo: .title3).weight(.medium)
+        static let journalTitle = Font.custom("Instrument Sans", size: 20, relativeTo: .title3).weight(.semibold)
         static let journalPrompt = Font.custom("Instrument Sans", size: 15, relativeTo: .body).weight(.regular)
         static let journalText = Font.custom("Instrument Sans", size: 16, relativeTo: .body).weight(.regular)
         static let journalPlaceholder = Font.custom("Instrument Sans", size: 16, relativeTo: .body).weight(.regular)
         
         // UI Elements & Buttons - Instrument Sans Medium (weight 500)
-        static let buttonLarge = Font.custom("Instrument Sans", size: 17, relativeTo: .headline).weight(.medium)
+        static let buttonLarge = Font.custom("Instrument Sans", size: 17, relativeTo: .headline).weight(.semibold)
         static let buttonMedium = Font.custom("Instrument Sans", size: 15, relativeTo: .body).weight(.medium)
         static let buttonSmall = Font.custom("Instrument Sans", size: 13, relativeTo: .subheadline).weight(.medium)
         
@@ -437,6 +437,12 @@ struct PremiumCard<Content: View>: View {
                 RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
                     .stroke(showsBorder ? DesignSystem.Colors.border : .clear, lineWidth: 1)
             )
+            .shadow(
+                color: DesignSystem.Shadow.subtle.color,
+                radius: DesignSystem.Shadow.subtle.radius,
+                x: DesignSystem.Shadow.subtle.x,
+                y: DesignSystem.Shadow.subtle.y
+            )
     }
 }
 
@@ -556,14 +562,32 @@ struct PremiumPrimaryButton: View {
             .frame(maxWidth: .infinity)
             .frame(height: DesignSystem.Spacing.preferredTouchTarget)
             .background(
+                Group {
+                    if isDisabled {
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
+                            .fill(DesignSystem.Colors.tertiaryText)
+                    } else {
+                        // Subtle vertical gradient for depth
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
+                            .fill(
+                                LinearGradient(
+                                    colors: [timeContext.primaryColor.opacity(0.95), timeContext.primaryColor],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                    }
+                }
+            )
+            .overlay(
                 RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
-                    .fill(isDisabled ? DesignSystem.Colors.tertiaryText : timeContext.primaryColor)
+                    .stroke(DesignSystem.Colors.background.opacity(isDisabled ? 0.0 : 0.15), lineWidth: 1)
             )
             .shadow(
-                color: isDisabled ? .clear : DesignSystem.Shadow.subtle.color,
-                radius: isDisabled ? 0 : DesignSystem.Shadow.subtle.radius,
-                x: isDisabled ? 0 : DesignSystem.Shadow.subtle.x,
-                y: isDisabled ? 0 : DesignSystem.Shadow.subtle.y
+                color: isDisabled ? .clear : DesignSystem.Shadow.card.color,
+                radius: isDisabled ? 0 : DesignSystem.Shadow.card.radius,
+                x: isDisabled ? 0 : DesignSystem.Shadow.card.x,
+                y: isDisabled ? 0 : DesignSystem.Shadow.card.y
             )
         }
         .disabled(isDisabled || isLoading)

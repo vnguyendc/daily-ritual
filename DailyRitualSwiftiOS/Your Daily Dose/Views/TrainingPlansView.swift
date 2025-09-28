@@ -54,7 +54,12 @@ struct TrainingPlansView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showAddSheet = true }) {
-                        Image(systemName: "plus")
+                        HStack(spacing: DesignSystem.Spacing.xs) {
+                            Image(systemName: "plus.circle.fill")
+                            Text("Add Plan")
+                        }
+                        .font(DesignSystem.Typography.buttonMedium)
+                        .foregroundColor(DesignSystem.TimeContext.current().primaryColor)
                     }
                 }
                 ToolbarItem(placement: .navigationBarLeading) {

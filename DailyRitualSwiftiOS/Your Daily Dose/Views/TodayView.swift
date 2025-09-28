@@ -30,23 +30,25 @@ struct TodayView: View {
             ZStack {
                 ScrollView {
                     VStack(spacing: DesignSystem.Spacing.sectionSpacing) {
-                    SyncStatusBanner(timeContext: timeContext)
-                    Spacer(minLength: DesignSystem.Spacing.xl)
-                    // Premium Header with time-based theming
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                        Text("Daily Ritual")
-                            .font(DesignSystem.Typography.displayMediumSafe)
-                            .foregroundColor(DesignSystem.Colors.primaryText)
-                        
-                        Text(selectedDate, format: .dateTime.weekday(.wide).month(.wide).day())
-                            .font(DesignSystem.Typography.headlineMedium)
-                            .foregroundColor(DesignSystem.Colors.secondaryText)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    if !viewModel.isLoading {
+                        SyncStatusBanner(timeContext: timeContext)
+                        Spacer(minLength: DesignSystem.Spacing.xl)
+                        // Premium Header with time-based theming
+                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                            Text("Daily Ritual")
+                                .font(DesignSystem.Typography.displayMediumSafe)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
+                            
+                            Text(selectedDate, format: .dateTime.weekday(.wide).month(.wide).day())
+                                .font(DesignSystem.Typography.headlineMedium)
+                                .foregroundColor(DesignSystem.Colors.secondaryText)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
-                    // Week header showing current week range
-                    WeekHeaderView(selectedDate: selectedDate)
-                        .padding(.bottom, DesignSystem.Spacing.xs)
+                        // Week header showing current week range
+                        WeekHeaderView(selectedDate: selectedDate)
+                            .padding(.bottom, DesignSystem.Spacing.xs)
+                    }
                     
                     // Enhanced date slider with centered current date
                     DateSlider(selectedDate: $selectedDate)
@@ -60,103 +62,38 @@ struct TodayView: View {
                             }
                         }
                     
-                    // Quote card hidden for POC V1
-                    
-                    // Premium Morning ritual card
-                    if !viewModel.entry.isMorningComplete {
-                        Button(action: { showingMorningRitual = true }) {
-                            PremiumCard(timeContext: .morning) {
-                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                                    HStack {
-                                        Image(systemName: "sun.max.fill")
-                                            .foregroundColor(DesignSystem.Colors.morningAccent)
-                                            .font(DesignSystem.Typography.headlineLargeSafe)
-                                        
-                                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                            Text("Morning Ritual")
-                                                .font(DesignSystem.Typography.journalTitleSafe)
-                                                .foregroundColor(DesignSystem.Colors.primaryText)
-                                            
-                                            Text("Start your day with intention")
-                                                .font(DesignSystem.Typography.bodyMedium)
-                                                .foregroundColor(DesignSystem.Colors.secondaryText)
-                                        }
-                                        
-                                        Spacer()
-                                        
-                                        Image(systemName: "arrow.right.circle.fill")
-                                            .foregroundColor(DesignSystem.Colors.morningAccent)
-                                            .font(DesignSystem.Typography.headlineMedium)
-                                    }
-                                    
-                                    // Premium progress indicator
-                                    let completedSteps = viewModel.entry.completedMorningSteps
-                                    HStack {
-                                        Text("\(completedSteps)/4 steps completed")
-                                            .font(DesignSystem.Typography.metadata)
-                                            .foregroundColor(DesignSystem.Colors.tertiaryText)
-                                        
-                                        Spacer()
-                                        
-                                        PremiumProgressRing(
-                                            progress: Double(completedSteps) / 4.0,
-                                            size: 32,
-                                            lineWidth: 3,
-                                            timeContext: .morning
-                                        )
-                                    }
-                                }
-                            }
+                    if viewModel.isLoading {
+                        VStack(spacing: DesignSystem.Spacing.md) {
+                            ProgressView()
+                                .scaleEffect(1.0)
+                                .tint(timeContext.primaryColor)
+                            Text("Loading your daily ritual...")
+                                .font(DesignSystem.Typography.bodyMedium)
+                                .foregroundColor(DesignSystem.Colors.secondaryText)
                         }
-                        .buttonStyle(.plain)
-                        .animation(DesignSystem.Animation.gentle, value: viewModel.entry.completedMorningSteps)
-                    } else {
-                        // Premium completed morning card
-                        PremiumCard(timeContext: .morning) {
-                            HStack {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(DesignSystem.Colors.success)
-                                    .font(DesignSystem.Typography.headlineLargeSafe)
-                                
-                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                    Text("Morning Ritual Complete")
-                                        .font(DesignSystem.Typography.journalTitleSafe)
-                                        .foregroundColor(DesignSystem.Colors.primaryText)
-                                    
-                                    Text("Great start to your day!")
-                                        .font(DesignSystem.Typography.bodyMedium)
-                                        .foregroundColor(DesignSystem.Colors.secondaryText)
-                                }
-                                
-                                Spacer()
-                                
-                                PremiumProgressRing(
-                                    progress: 1.0,
-                                    size: 32,
-                                    lineWidth: 3,
-                                    timeContext: .morning
-                                )
-                            }
-                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, DesignSystem.Spacing.xl)
                     }
                     
-                    // Premium Evening reflection card (show after 5 PM)
-                    if viewModel.shouldShowEvening {
-                        if !viewModel.entry.isEveningComplete {
-                            Button(action: { showingEveningReflection = true }) {
-                                PremiumCard(timeContext: .evening) {
+                    // Quote card hidden for POC V1
+                    
+                    if !viewModel.isLoading {
+                        // Premium Morning ritual card
+                        if !viewModel.entry.isMorningComplete {
+                            Button(action: { showingMorningRitual = true }) {
+                                PremiumCard(timeContext: .morning) {
                                     VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                                         HStack {
-                                            Image(systemName: "moon.fill")
-                                                .foregroundColor(DesignSystem.Colors.eveningAccent)
+                                            Image(systemName: "sun.max.fill")
+                                                .foregroundColor(DesignSystem.Colors.morningAccent)
                                                 .font(DesignSystem.Typography.headlineLargeSafe)
                                             
                                             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                                Text("Evening Reflection")
+                                                Text("Morning Ritual")
                                                     .font(DesignSystem.Typography.journalTitleSafe)
                                                     .foregroundColor(DesignSystem.Colors.primaryText)
                                                 
-                                                Text("Reflect on your day")
+                                                Text("Start your day with intention")
                                                     .font(DesignSystem.Typography.bodyMedium)
                                                     .foregroundColor(DesignSystem.Colors.secondaryText)
                                             }
@@ -164,45 +101,45 @@ struct TodayView: View {
                                             Spacer()
                                             
                                             Image(systemName: "arrow.right.circle.fill")
-                                                .foregroundColor(DesignSystem.Colors.eveningAccent)
+                                                .foregroundColor(DesignSystem.Colors.morningAccent)
                                                 .font(DesignSystem.Typography.headlineMedium)
                                         }
                                         
                                         // Premium progress indicator
-                                        let completedSteps = viewModel.entry.completedEveningSteps
+                                        let completedSteps = viewModel.entry.completedMorningSteps
                                         HStack {
-                                            Text("\(completedSteps)/3 steps completed")
+                                            Text("\(completedSteps)/4 steps completed")
                                                 .font(DesignSystem.Typography.metadata)
                                                 .foregroundColor(DesignSystem.Colors.tertiaryText)
                                             
                                             Spacer()
                                             
                                             PremiumProgressRing(
-                                                progress: Double(completedSteps) / 3.0,
+                                                progress: Double(completedSteps) / 4.0,
                                                 size: 32,
                                                 lineWidth: 3,
-                                                timeContext: .evening
+                                                timeContext: .morning
                                             )
                                         }
                                     }
                                 }
                             }
                             .buttonStyle(.plain)
-                            .animation(DesignSystem.Animation.gentle, value: viewModel.entry.completedEveningSteps)
+                            .animation(DesignSystem.Animation.gentle, value: viewModel.entry.completedMorningSteps)
                         } else {
-                            // Premium completed evening card
-                            PremiumCard(timeContext: .evening) {
+                            // Premium completed morning card
+                            PremiumCard(timeContext: .morning) {
                                 HStack {
                                     Image(systemName: "checkmark.circle.fill")
                                         .foregroundColor(DesignSystem.Colors.success)
                                         .font(DesignSystem.Typography.headlineLargeSafe)
                                     
                                     VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                        Text("Evening Reflection Complete")
+                                        Text("Morning Ritual Complete")
                                             .font(DesignSystem.Typography.journalTitleSafe)
                                             .foregroundColor(DesignSystem.Colors.primaryText)
                                         
-                                        Text("Perfect end to your day!")
+                                        Text("Great start to your day!")
                                             .font(DesignSystem.Typography.bodyMedium)
                                             .foregroundColor(DesignSystem.Colors.secondaryText)
                                     }
@@ -213,102 +150,177 @@ struct TodayView: View {
                                         progress: 1.0,
                                         size: 32,
                                         lineWidth: 3,
-                                        timeContext: .evening
+                                        timeContext: .morning
                                     )
                                 }
                             }
                         }
-                    }
-
-                    // Today's Goals (read-only summary)
-                    if let goals = viewModel.entry.goals, !goals.isEmpty {
-                        PremiumCard(timeContext: timeContext) {
-                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                                Text("Today's Goals")
-                                    .font(DesignSystem.Typography.journalTitleSafe)
-                                    .foregroundColor(DesignSystem.Colors.primaryText)
-
-                                VStack(spacing: DesignSystem.Spacing.md) {
-                                    ForEach(Array(goals.prefix(3).enumerated()), id: \.offset) { idx, goal in
-                                        Button(action: {
-                                            let isChecked = completedGoals.contains(idx)
-                                            if isChecked { completedGoals.remove(idx) } else { completedGoals.insert(idx) }
-                                            let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
-                                            let dateString = df.string(from: viewModel.entry.date)
-                                            LocalStore.setCompletedGoals(completedGoals, for: dateString)
-                                            #if canImport(UIKit)
-                                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                            #endif
-                                        }) {
-                                            HStack(spacing: DesignSystem.Spacing.md) {
-                                                ZStack {
-                                                    Circle()
-                                                        .fill(DesignSystem.Colors.evening.opacity(0.6))
-                                                        .frame(width: 36, height: 36)
-                                                    Text("\(idx + 1)")
-                                                        .font(DesignSystem.Typography.buttonMedium)
+                        
+                        // Premium Evening reflection card (show after 5 PM)
+                        if viewModel.shouldShowEvening {
+                            if !viewModel.entry.isEveningComplete {
+                                Button(action: { showingEveningReflection = true }) {
+                                    PremiumCard(timeContext: .evening) {
+                                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                                            HStack {
+                                                Image(systemName: "moon.fill")
+                                                    .foregroundColor(DesignSystem.Colors.eveningAccent)
+                                                    .font(DesignSystem.Typography.headlineLargeSafe)
+                                                
+                                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                                                    Text("Evening Reflection")
+                                                        .font(DesignSystem.Typography.journalTitleSafe)
                                                         .foregroundColor(DesignSystem.Colors.primaryText)
+                                                    
+                                                    Text("Reflect on your day")
+                                                        .font(DesignSystem.Typography.bodyMedium)
+                                                        .foregroundColor(DesignSystem.Colors.secondaryText)
                                                 }
-                                                Text(goal)
-                                                    .font(DesignSystem.Typography.bodyLargeSafe)
-                                                    .foregroundColor(DesignSystem.Colors.primaryText)
-                                                    .strikethrough(completedGoals.contains(idx), color: DesignSystem.Colors.secondaryText)
+                                                
                                                 Spacer()
-                                                Image(systemName: completedGoals.contains(idx) ? "checkmark.square.fill" : "square")
-                                                    .foregroundColor(completedGoals.contains(idx) ? DesignSystem.Colors.morningAccent : DesignSystem.Colors.secondaryText)
+                                                
+                                                Image(systemName: "arrow.right.circle.fill")
+                                                    .foregroundColor(DesignSystem.Colors.eveningAccent)
                                                     .font(DesignSystem.Typography.headlineMedium)
                                             }
+                                            
+                                            // Premium progress indicator
+                                            let completedSteps = viewModel.entry.completedEveningSteps
+                                            HStack {
+                                                Text("\(completedSteps)/3 steps completed")
+                                                    .font(DesignSystem.Typography.metadata)
+                                                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+                                                
+                                                Spacer()
+                                                
+                                                PremiumProgressRing(
+                                                    progress: Double(completedSteps) / 3.0,
+                                                    size: 32,
+                                                    lineWidth: 3,
+                                                    timeContext: .evening
+                                                )
+                                            }
                                         }
-                                        .buttonStyle(.plain)
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                .animation(DesignSystem.Animation.gentle, value: viewModel.entry.completedEveningSteps)
+                            } else {
+                                // Premium completed evening card
+                                PremiumCard(timeContext: .evening) {
+                                    HStack {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(DesignSystem.Colors.success)
+                                            .font(DesignSystem.Typography.headlineLargeSafe)
+                                        
+                                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                                            Text("Evening Reflection Complete")
+                                                .font(DesignSystem.Typography.journalTitleSafe)
+                                                .foregroundColor(DesignSystem.Colors.primaryText)
+                                            
+                                            Text("Perfect end to your day!")
+                                                .font(DesignSystem.Typography.bodyMedium)
+                                                .foregroundColor(DesignSystem.Colors.secondaryText)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        PremiumProgressRing(
+                                            progress: 1.0,
+                                            size: 32,
+                                            lineWidth: 3,
+                                            timeContext: .evening
+                                        )
                                     }
                                 }
                             }
                         }
-                    }
 
-                    // Today's Training Plan
-                    PremiumCard(timeContext: timeContext) {
-                        TrainingPlansSection(
-                            plans: viewModel.sortedTrainingPlans,
-                            entry: viewModel.entry,
-                            timeContext: timeContext,
-                            onManage: { showingTrainingPlans = true }
-                        )
-                    }
-
-                    // Premium celebration card for full completion
-                    if viewModel.entry.isFullyComplete {
-                        PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.xl) {
-                            VStack(spacing: DesignSystem.Spacing.lg) {
-                                Text("🎉")
-                                    .font(.system(size: 60))
-                                
-                                VStack(spacing: DesignSystem.Spacing.sm) {
-                                    Text("Day Complete!")
-                                        .font(DesignSystem.Typography.displaySmallSafe)
-                                        .foregroundColor(timeContext.primaryColor)
-                                    
-                                    Text("You've completed your full daily practice")
-                                        .font(DesignSystem.Typography.bodyLargeSafe)
-                                        .foregroundColor(DesignSystem.Colors.secondaryText)
-                                        .multilineTextAlignment(.center)
-                                        .lineSpacing(DesignSystem.Spacing.lineSpacingRelaxed)
+                        // Today's Goals (read-only summary)
+                        if let goals = viewModel.entry.goals, !goals.isEmpty {
+                            PremiumCard(timeContext: timeContext) {
+                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                                    Text("Today's Goals")
+                                        .font(DesignSystem.Typography.journalTitleSafe)
+                                        .foregroundColor(DesignSystem.Colors.primaryText)
+                
+                                    VStack(spacing: DesignSystem.Spacing.md) {
+                                        ForEach(Array(goals.prefix(3).enumerated()), id: \.offset) { idx, goal in
+                                            Button(action: {
+                                                let isChecked = completedGoals.contains(idx)
+                                                if isChecked { completedGoals.remove(idx) } else { completedGoals.insert(idx) }
+                                                let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
+                                                let dateString = df.string(from: viewModel.entry.date)
+                                                LocalStore.setCompletedGoals(completedGoals, for: dateString)
+                                                #if canImport(UIKit)
+                                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                                #endif
+                                            }) {
+                                                HStack(spacing: DesignSystem.Spacing.md) {
+                                                    ZStack {
+                                                        Circle()
+                                                            .fill(DesignSystem.Colors.evening.opacity(0.6))
+                                                            .frame(width: 36, height: 36)
+                                                        Text("\(idx + 1)")
+                                                            .font(DesignSystem.Typography.buttonMedium)
+                                                            .foregroundColor(DesignSystem.Colors.primaryText)
+                                                    }
+                                                    Text(goal)
+                                                        .font(DesignSystem.Typography.bodyLargeSafe)
+                                                        .foregroundColor(DesignSystem.Colors.primaryText)
+                                                        .strikethrough(completedGoals.contains(idx), color: DesignSystem.Colors.secondaryText)
+                                                    Spacer()
+                                                    Image(systemName: completedGoals.contains(idx) ? "checkmark.square.fill" : "square")
+                                                        .foregroundColor(completedGoals.contains(idx) ? DesignSystem.Colors.morningAccent : DesignSystem.Colors.secondaryText)
+                                                        .font(DesignSystem.Typography.headlineMedium)
+                                                }
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                    }
                                 }
                             }
                         }
-                        .animation(DesignSystem.Animation.gentle, value: viewModel.entry.isFullyComplete)
-                    }
-                    
-                        Spacer(minLength: DesignSystem.Spacing.xxxl)
+
+                        // Today's Training Plan
+                        PremiumCard(timeContext: timeContext) {
+                            TrainingPlansSection(
+                                plans: viewModel.sortedTrainingPlans,
+                                entry: viewModel.entry,
+                                timeContext: timeContext,
+                                onManage: { showingTrainingPlans = true }
+                            )
+                        }
+
+                        // Premium celebration card for full completion
+                        if viewModel.entry.isFullyComplete {
+                            PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.xl) {
+                                VStack(spacing: DesignSystem.Spacing.lg) {
+                                    Text("🎉")
+                                        .font(.system(size: 60))
+                                    
+                                    VStack(spacing: DesignSystem.Spacing.sm) {
+                                        Text("Day Complete!")
+                                            .font(DesignSystem.Typography.displaySmallSafe)
+                                            .foregroundColor(timeContext.primaryColor)
+                                        
+                                        Text("You've completed your full daily practice")
+                                            .font(DesignSystem.Typography.bodyLargeSafe)
+                                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                                            .multilineTextAlignment(.center)
+                                            .lineSpacing(DesignSystem.Spacing.lineSpacingRelaxed)
+                                    }
+                                }
+                            }
+                            .animation(DesignSystem.Animation.gentle, value: viewModel.entry.isFullyComplete)
+                        }
+                        
+                            Spacer(minLength: DesignSystem.Spacing.xxxl)
                     }
                     .padding(DesignSystem.Spacing.cardPadding)
                 }
                 
-                // Loading overlay when fetching data
-                if viewModel.isLoading {
-                    LoadingCard(message: "Loading your daily ritual...", progress: nil, cancelAction: nil, useMaterialBackground: false)
-                        .transition(.scale.combined(with: .opacity))
-                }
+                // Removed popout loading card overlay in favor of inline spinner
             }
             .premiumBackgroundGradient(timeContext)
             .animation(DesignSystem.Animation.gentle, value: viewModel.isLoading)
@@ -317,34 +329,36 @@ struct TodayView: View {
             .navigationBarHidden(true)
             // Floating + action button
             .overlay(alignment: .bottomTrailing) {
-                Button {
-                    // Quick action: open Morning or Evening depending on state
-                    if !viewModel.entry.isMorningComplete {
-                        showingMorningRitual = true
-                    } else if viewModel.shouldShowEvening && !viewModel.entry.isEveningComplete {
-                        showingEveningReflection = true
-                    } else {
-                        showingMorningRitual = true
+                if !viewModel.isLoading {
+                    Button {
+                        // Quick action: open Morning or Evening depending on state
+                        if !viewModel.entry.isMorningComplete {
+                            showingMorningRitual = true
+                        } else if viewModel.shouldShowEvening && !viewModel.entry.isEveningComplete {
+                            showingEveningReflection = true
+                        } else {
+                            showingMorningRitual = true
+                        }
+                        #if canImport(UIKit)
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        #endif
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .fill(timeContext.primaryColor)
+                                .frame(width: 56, height: 56)
+                                .shadow(color: DesignSystem.Colors.background.opacity(0.3), radius: 8, x: 0, y: 4)
+                            Image(systemName: "plus")
+                                .foregroundColor(DesignSystem.Colors.invertedText)
+                                .font(.system(size: 22, weight: .bold))
+                        }
                     }
-                    #if canImport(UIKit)
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    #endif
-                } label: {
-                    ZStack {
-                        Circle()
-                            .fill(timeContext.primaryColor)
-                            .frame(width: 56, height: 56)
-                            .shadow(color: DesignSystem.Colors.background.opacity(0.3), radius: 8, x: 0, y: 4)
-                        Image(systemName: "plus")
-                            .foregroundColor(DesignSystem.Colors.invertedText)
-                            .font(.system(size: 22, weight: .bold))
-                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Quick Action")
+                    .accessibilityHint("Opens your next ritual")
+                    .padding(.trailing, DesignSystem.Spacing.lg)
+                    .padding(.bottom, DesignSystem.Spacing.lg)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Quick Action")
-                .accessibilityHint("Opens your next ritual")
-                .padding(.trailing, DesignSystem.Spacing.lg)
-                .padding(.bottom, DesignSystem.Spacing.lg)
             }
             .refreshable {
                 await SupabaseManager.shared.replayPendingOpsWithBackoff()
@@ -535,15 +549,9 @@ extension TodayView {
                         Text("No plan set yet")
                             .font(DesignSystem.Typography.bodyMedium)
                             .foregroundColor(DesignSystem.Colors.secondaryText)
-                        Button(action: onManage) {
-                            HStack(spacing: DesignSystem.Spacing.xs) {
-                                Image(systemName: "plus.circle.fill")
-                                Text("Add training plan")
-                            }
-                            .font(DesignSystem.Typography.buttonMedium)
-                            .foregroundColor(timeContext.primaryColor)
+                        PremiumPrimaryButton("Add training plan", timeContext: timeContext) {
+                            onManage()
                         }
-                        .buttonStyle(.plain)
                     }
                 }
             }
