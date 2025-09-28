@@ -7,9 +7,9 @@
 //
 
 import SwiftUI
-\#if canImport(UIKit)
+#if canImport(UIKit)
 import UIKit
-\#endif
+#endif
 
 struct EveningReflectionView: View {
     @Binding var entry: DailyEntry
@@ -186,9 +186,7 @@ struct EveningReflectionView: View {
                 entry = updatedEntry
                 showingCompletion = true
                 isSaving = false
-                \#if canImport(UIKit)
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
-                \#endif
+                successHaptic()
             }
         } catch {
             print("Error completing evening reflection: \(error)")
@@ -197,12 +195,17 @@ struct EveningReflectionView: View {
                 entry.eveningCompletedAt = Date()
                 showingCompletion = true
                 isSaving = false
-                \#if canImport(UIKit)
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
-                \#endif
+                successHaptic()
             }
         }
     }
+}
+
+// MARK: - Private helpers
+private func successHaptic() {
+#if canImport(UIKit)
+    UINotificationFeedbackGenerator().notificationOccurred(.success)
+#endif
 }
 
 // MARK: - Premium Step Views

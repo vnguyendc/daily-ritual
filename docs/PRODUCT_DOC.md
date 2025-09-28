@@ -46,450 +46,87 @@ Athletes know mental training matters, but existing solutions are:
 
 ---
 
-## MVP Feature Set (Weekend Build)
-
-### Morning Reflection Ritual (5 minutes)
-
-```
-Daily Practice:
-1. Today's 3 Goals
-   - Performance goal (technique, PR, etc.)
-   - Process goal (effort, focus, etc.)
-   - Personal goal (recovery, nutrition, etc.)
-
-2. 3 Things I'm Grateful For
-   - Physical abilities, opportunities, support system
-   - Quick-select common options + free text
-
-3. Today's Training Plan
-   - Training type (strength, cardio, skills, competition, rest)
-   - Scheduled time (triggers auto-reflection notification)
-   - Expected intensity/duration for context
-   - Notes (free text for specifics like focus, location, coach cues)
-
-4. AI-Generated Affirmation (For MVP, just user inputted affirmation)
-   - Based on recent goals, mood patterns, upcoming training, Whoop recovery
-   - Sport-specific language and scenarios
-   - Option to regenerate or edit
-
-```
-
-### Whoop-Integrated OR scheduled Post-Training Reflection (2 minutes)
-
-```
-Auto-triggered based on Whoop strain/planned training:
-1. How did training feel? (1-5 scale: 1=Terrible, 5=Amazing)
-2. What went well? (free text)
-3. What could I have improved? (free text)
-
-```
-
-### Evening Reflection (3 minutes)
-
-```
-End-of-day practice:
-1. Reflect on today's quote - how did it apply to your day? (free text)
-2. What went well today? (free text)
-3. What could I have improved today? (free text)
-4. Overall mood today (1-5 scale: 1=Poor, 5=Excellent)
-
-```
-
-### AI Insights
-
-- **Quick Morning Insight** (after morning reflection): "Based on your 85% recovery and confidence goals, focus on technique over intensity today"
-- **Quick Evening Insight** (after evening reflection): "Your mood was highest on days when you hit 2+ of your morning goals"
-
-### Anytime Features
-
-- **History Review**: View past morning rituals, training reflections, evening entries with search/filter
-- **Anytime Journaling**: Open text field for any thoughts, concerns, breakthroughs
-- **Competition Preparation**: Set upcoming competitions and get tailored mental preparation in days leading up
-
-### Competition Preparation Mode
-
-```
-When competition is set (e.g., "Marathon in 14 days"):
-- Morning affirmations become competition-focused
-- Training reflections include competition readiness assessment (1-5 scale)
-- Evening reflections include confidence tracking and mental preparation notes
-- AI provides competition-specific insights and mental wellness monitoring
-- Final week includes specialized pre-competition mental protocols
-
-```
-
-### AI Insights (Daily + Weekly + Historical)
-
-- **Morning AI Insight**: "With today's recovery and ambitious goals, try focusing on process over outcomes"
-- **Evening AI Insight**: "Your best days happen when you complete morning reflections + hit 2+ daily goals"
-- **Competition Preparation**: "Your anxiety is optimal at 2-3/5 during final week - current 4/5 suggests need for relaxation techniques"
-- **Historical Patterns**: "Looking at your last 30 days: mood averages 4.2/5 when you complete morning gratitude vs. 3.1/5 without"
-- **Pre-Competition Confidence**: "Based on your training history, you're 85% prepared - focus on trust over perfection"
-- **Weekly Trends**: "Your training satisfaction is 40% higher when you set specific technique goals vs. general performance goals"
-
----
-
-## User Flow
-
-### Onboarding (2 minutes)
-
-1. Select primary sport
-2. Connect Apple Health/Strava
-3. Set morning reminder time
-4. Apple Sign-in
-5. Complete first morning reflection
-
-### Daily Usage
-
-**Morning (5 minutes):**
-
-- Push notification → Open app → Complete 5-step morning ritual → Get AI insight → "Ready for today"
-
-**Post-Training (2 minutes):**
-
-- Scheduled/strain-triggered notification → Quick 3-question reflection → Done
-
-**Evening (3 minutes):**
-
-- Push notification → Evening reflection (quote + day review + mood) → Get AI daily insight → Done
-
-**History Review (anytime):**
-
-- Browse past entries by date/week/month → Filter by training type or mood → Review patterns and progress
-
-**Competition Preparation (ongoing):**
-
-- Set upcoming competition → Receive tailored prep content → Track mental readiness → Get pre-competition protocols
-
-**Anytime:**
-
-- Tap + to add journal entry → Free writing → Save
-
-**Weekly Insights:**
-
-- Push notification → View AI analysis of patterns → Plan adjustments
-
----
-
-## Technical Implementation
-
-### MVP Database Schema
-
-```sql
-CREATE TABLE users (
-    id UUID PRIMARY KEY,
-    email TEXT,
-    name TEXT,
-    primary_sport TEXT,
-    morning_reminder_time TIME,
-    fitness_connected BOOLEAN DEFAULT false,
-    created_at TIMESTAMP
-);
-
-CREATE TABLE daily_entries (
-    id UUID PRIMARY KEY,
-    user_id UUID REFERENCES users(id),
-    date DATE,
-
-    -- Morning ritual
-    goals TEXT[] CHECK (array_length(goals, 1) = 3),
-    affirmation TEXT,
-    gratitudes TEXT[] CHECK (array_length(gratitudes, 1) = 3),
-    daily_quote TEXT,
-    quote_reflection TEXT,
-
-    -- Training plan
-    planned_training_type TEXT, -- strength, cardio, skills, competition, rest
-    planned_training_time TIME,
-    planned_intensity TEXT, -- light, moderate, hard
-    planned_duration INTEGER, -- minutes
-    planned_notes TEXT,
-
-    morning_completed_at TIMESTAMP,
-
-    -- Evening reflection
-    quote_application TEXT, -- How did today's quote apply?
-    day_went_well TEXT,
-    day_improve TEXT,
-    overall_mood INTEGER, -- 1-5 scale
-    evening_completed_at TIMESTAMP,
-
-    UNIQUE(user_id, date)
-);
-
-CREATE TABLE workout_reflections (
-    id UUID PRIMARY KEY,
-    user_id UUID REFERENCES users(id),
-    date DATE,
-
-    -- Whoop data
-    strain_score DECIMAL,
-    recovery_score DECIMAL,
-    sleep_performance DECIMAL,
-    hrv DECIMAL,
-    resting_hr INTEGER,
-
-    -- Reflection (simplified)
-    training_feeling INTEGER, -- 1-5 scale (1=Terrible, 5=Amazing)
-    what_went_well TEXT,
-    what_to_improve TEXT,
-
-    created_at TIMESTAMP
-);
-
-CREATE TABLE journal_entries (
-    id UUID PRIMARY KEY,
-    user_id UUID REFERENCES users(id),
-    content TEXT,
-    mood INTEGER, -- optional 1-10
-    energy INTEGER, -- optional 1-10
-    created_at TIMESTAMP
-);
-
-```
-
-### Hybrid Data Model (Planned)
-
-- We will keep `daily_entries` as the canonical, unique-per-day record powering Today/Morning/Evening flows for performance and invariants.
-- We plan to introduce a flexible `journal_items` table for granular, typed content (goals, affirmation, gratitude, training_plan, workout_reflection, quote_reflection, note), enabling fast iteration without schema churn.
-- The API can aggregate `journal_items` into day-level responses; partial unique indexes will enforce singletons where needed (e.g., one affirmation per day).
-
-Planned schema (abridged):
-
-```sql
--- Enum is optional; could also be TEXT + CHECK
-CREATE TYPE journal_item_kind AS ENUM (
-  'goal','affirmation','gratitude','workout_reflection','quote_reflection','note'
-);
-
-CREATE TABLE journal_items (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  date DATE NOT NULL,
-  kind journal_item_kind NOT NULL,
-  payload JSONB NOT NULL,
-  is_private BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Example guardrail: ensure one affirmation per day
-CREATE UNIQUE INDEX one_affirmation_per_day
-  ON journal_items(user_id, date)
-  WHERE kind = 'affirmation';
-```
-
-### Integration Points
-
-```swift
-// Whoop API Integration
-import WhoopSDK
-
-class WhoopIntegrationManager {
-    func authenticateUser() async throws
-    func getCurrentRecovery() async throws -> WhoopRecovery
-    func getTodayStrain() async throws -> WhoopStrain
-    func getRecentSleep() async throws -> [WhoopSleep]
-    func setupWebhooks() // Real-time strain/recovery updates
-}
-
-struct WhoopRecovery {
-    let score: Double // 0-100%
-    let hrv: Double
-    let restingHR: Double
-    let sleepPerformance: Double
-}
-
-struct WhoopStrain {
-    let score: Double // 0-21
-    let maxHR: Double
-    let averageHR: Double
-    let kilojoules: Double
-}
-
-```
-
----
-
-## Weekend Implementation Plan (MVP scope)
-
-This section tracks the MVP features and testing status. Legend: [Done], [In Progress], [Todo], [Future]
-
-### MVP Features & Testing
-- Supabase setup and database schema — [Done]
-- SwiftUI screens (Onboarding, Morning, Evening, Today dashboard) — [In Progress]
-- Basic history viewing (list of past entries by date) — [Todo]
-- Historical entry detail view — [Todo]
-- Polish, notifications, TestFlight readiness — [Todo]
-
-### Moved out of MVP
-- Competition setup flow (add competition + prep mode) — [Future]
-
-### Future/Optional (post-MVP)
-- Weekly/Monthly Planner (SwiftUI): plan training per-day and monthly goals — [Future]
-- Basic AI Weekly Insights on Insights page (brainstorm session needed) — [Future]
-- Whoop/Strava/Apple Health integrations — [Future]
-
----
-
-## AI Features (Powered by Claude)
-
-### Morning Affirmation Generation
-
-```tsx
-// Supabase Edge Function
-const generateAffirmation = async (user) => {
-  const prompt = `Generate a powerful affirmation for a ${user.sport} athlete.
-
-  Context:
-  - Recent goals: ${user.recent_goals.join(', ')}
-  - Upcoming training type: ${user.next_workout_type}
-  - Recent challenges: ${user.recent_improvements.join(', ')}
-
-  Create a present-tense, specific, confident affirmation (15-25 words).
-  Use sport-specific language and scenarios.`;
-
-  // Call Claude API
-};
-
-```
-
-### Weekly Insight Generation
-
-```tsx
-const generateWeeklyInsights = async (user) => {
-  const weekData = await getWeeklyUserData(user.id);
-
-  const prompt = `Analyze this athlete's week of data:
-
-  Goals completed: ${weekData.goalCompletionRate}%
-  Workout satisfaction average: ${weekData.avgSatisfaction}/10
-  Most common gratitudes: ${weekData.topGratitudes}
-  Energy patterns: ${weekData.energyByTimeOfDay}
-
-  Provide 3 specific insights about patterns and 2 actionable recommendations.`;
-};
-
-```
-
----
-
-## Monetization
-
-### Freemium Model
-
-- **Free:** Basic morning ritual, 7-day history, simple reflection prompts
-- **Premium ($29.99/month):** Whoop integration, AI correlations, unlimited history, recovery-informed insights
-
-### Why $29.99?
-
-- Whoop users already pay $30/month for biometrics - proven willingness to invest in optimization
-- Mental training consultants charge $200+/hour - massive value compared to 1-on-1 coaching
-- Positions as essential companion to Whoop, not competitor
-- Premium pricing for premium audience focused on marginal gains
-
----
-
-## Success Metrics
-
-### Week 1: Habit Formation
-
-- **Morning Ritual Completion:** 60%+ users complete morning practice
-- **Workout Integration:** 40%+ users connect Apple Health/Strava
-- **Return Rate:** 50%+ return after Day 3
-
-### Month 1: Engagement Depth
-
-- **Weekly Active Users:** 70%+ of registered users
-- **Average Sessions:** 5+ per week (morning + 2-3 workouts)
-- **Premium Conversion:** 15%+ upgrade to paid
-
-### Month 3: Performance Impact
-
-- **User Testimonials:** Athletes report mental game improvements
-- **Goal Achievement:** Users report higher goal completion rates
-- **Retention:** 60%+ still active after 90 days
-
----
-
-## Key Technical Integrations
-
-### Apple HealthKit
-
-```swift
-// Request permissions
-let workoutType = HKObjectType.workoutType()
-let healthStore = HKHealthStore()
-
-// Detect new workouts
-let workoutQuery = HKObserverQuery(sampleType: workoutType) { query, completionHandler, error in
-    // Trigger post-workout reflection notification
-    NotificationManager.triggerWorkoutReflection()
-}
-
-```
-
-### Strava API (Alternative)
-
-- OAuth authentication
-- Webhook for real-time activity detection
-- Activity data parsing for workout type/duration
-
-### Push Notifications
-
-- Morning ritual reminder (user-scheduled time)
-- Pre-planned training notification (based on morning training plan input)
-- Post-training reflection (triggered by Whoop strain data)
-- Weekly insights ready
-- Streak maintenance encouragement
-
-```swift
-// Scheduled Training Notification
-class NotificationManager {
-    func scheduleTrainingReminder(for time: Date, trainingType: String) {
-        let content = UNMutableNotificationContent()
-        content.title = "Training Reflection"
-        content.body = "How did your \(trainingType) session go? Quick 2-minute reflection."
-
-        // Schedule for 30 minutes after planned training time
-        let triggerTime = time.addingTimeInterval(30 * 60)
-        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerTime, repeats: false)
-
-        let request = UNNotificationRequest(identifier: "training-\(UUID())",
-                                          content: content,
-                                          trigger: trigger)
-        UNUserNotificationCenter.current().add(request)
-    }
-}
-
-```
-
----
-
-## Expansion Roadmap
-
-### Month 2-3: Enhanced Intelligence
-
-- Goal achievement prediction
-- Performance correlation analysis
-- Custom affirmation themes
-- Integration with more fitness platforms
-
-### Month 4-6: Social & Coaching
-
-- Anonymous community features (shared quotes/affirmations)
-- Coach dashboard for team accounts
-- Team challenges and shared goals
-- Integration with training calendars
-
-### Month 6+: Advanced Platform
-
-- Apple Watch native app
-- Voice journaling with transcription
-- Photo journaling for visual progress
-- Integration with competition calendars
-
----
+## Product Plan
+
+Athlete microjournaling and training planner app
+Core user experience
+Morning dashboard
+Morning reflection cards: Quick prompts for daily goals, gratitude, affirmations, and thoughts
+Training plan card: Shows scheduled training for the day (from Planner view) or prompts to create one
+Daily intention setter: AI-generated quote or insight based on previous reflections and mood patterns
+Evening and post-workout experience
+Post-workout reflection
+Automatic trigger: Notification appears 1 hour after scheduled workout time
+Quick reflection prompts: Rate energy levels, what went well, what can be improved next session
+Natural language focus: Emphasis on written reflection over numerical metrics
+Evening reflection
+End-of-day card: Accessible anytime in the evening for daily wrap-up
+Comprehensive review: Reflect on the full day's training and mental state
+Habit reinforcement
+Celebration animations: Positive feedback after completing each reflection
+Streak tracking: Visual counter showing consecutive days of reflection practice
+Progress gamification: Build momentum through consistent daily engagement
+Planner view
+Goal setting
+Long-term objectives: Monthly and yearly goals to maintain focus on bigger picture
+Goal visibility: Integration with daily reflections to keep athletes connected to their larger purpose
+Training schedule management
+Recurring workouts: Set up repeating training sessions (e.g., "Tuesday track workouts")
+Weekly planning: Flexible weekly schedule creation and modification
+Training session details: Workout type, duration, intensity, and specific focuses
+Technical requirements
+Platform and stack
+iOS mobile app as primary platform (MVP)
+Supabase backend for data storage and user management
+Swift for iOS development
+Core data storage
+User profiles: Demographics, sport, training preferences
+Daily reflections: Morning goals, gratitude, thoughts, post-workout notes
+Training plans: Scheduled workouts, recurring sessions, goal tracking
+Streak and progress data: Completion rates, habit tracking
+Future integrations (post-MVP)
+Apple HealthKit: Sync with Apple Fitness for automatic workout detection
+Whoop API: Trigger post-workout reflections based on detected activities
+Automated workout logging: Reduce manual entry by detecting completed sessions
+AI features
+Natural language processing: Analyze reflection patterns and mood
+Content generation: Personalized quotes, insights, and affirmations
+Pattern recognition: Identify training and mood correlations over time
+User onboarding and flows
+Hybrid onboarding strategy
+Immediate value: Sample morning routine with brief guides explaining why each step matters
+Context setting: Clear positioning as mental wellness app for performance improvement, not another fitness tracker
+Progressive setup: Gradually introduce features over 3-4 days as habits form
+Assessment: Sport, demographics, training habits, challenges, inspiration sources
+Nutrition tracking
+Simplified meal logging
+Photo-based entries: Upload images of breakfast, lunch, dinner, and snacks
+Supplement tracking: Log daily supplements and timing
+No calorie counting: Focus on visual documentation rather than detailed macros
+Reflection integration: Connect nutrition choices with energy levels in post-workout reflections
+Insights and analytics
+Progress visualization
+Weekly summaries: Training consistency, reflection completion rates, mood patterns
+Monthly reports: Goal progress tracking, performance trends, habit formation metrics
+Pattern recognition: Correlations between nutrition, training, mood, and performance
+Sharing capabilities
+Exportable reports: PDF or image format for coaches and accountability partners
+Privacy controls: Choose what data to include when sharing
+Coach collaboration: Optional sharing permissions for ongoing coaching relationships
+Feature prioritization roadmap
+Phase 1 (Core MVP)
+Daily morning routine + evening reflection
+Basic training planning
+Post-workout reflection triggers
+Habit tracking with streaks and celebrations
+Phase 2 (Enhanced engagement)
+Weekly planning system
+Basic insights and progress visualization
+Phase 3 (Advanced features)
+AI insights and personalized content generation
+Nutrition tracking
+Export/sharing capabilities
+Device integrations
 
 ## User Stories & Use Cases
 

@@ -7,9 +7,9 @@
 //
 
 import SwiftUI
-\#if canImport(UIKit)
+#if canImport(UIKit)
 import UIKit
-\#endif
+#endif
 
 struct TodayView: View {
     @Environment(\.scenePhase) private var scenePhase
@@ -236,9 +236,9 @@ struct TodayView: View {
                                             let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
                                             let dateString = df.string(from: viewModel.entry.date)
                                             LocalStore.setCompletedGoals(completedGoals, for: dateString)
-                                            \#if canImport(UIKit)
+                                            #if canImport(UIKit)
                                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                            \#endif
+                                            #endif
                                         }) {
                                             HStack(spacing: DesignSystem.Spacing.md) {
                                                 ZStack {
@@ -326,9 +326,9 @@ struct TodayView: View {
                     } else {
                         showingMorningRitual = true
                     }
-                    \#if canImport(UIKit)
+                    #if canImport(UIKit)
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    \#endif
+                    #endif
                 } label: {
                     ZStack {
                         Circle()
