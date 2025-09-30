@@ -17,6 +17,7 @@ struct TodayView: View {
     @State private var showingMorningRitual = false
     @State private var showingEveningReflection = false
     @State private var showingTrainingPlans = false
+    @State private var showingProfile = false
     @State private var completedGoals: Set<Int> = []
     @State private var selectedDate: Date = Date()
     @State private var currentDay: Date = Calendar.current.startOfDay(for: Date())
@@ -31,16 +32,36 @@ struct TodayView: View {
                 ScrollView {
                     VStack(spacing: DesignSystem.Spacing.sectionSpacing) {
                     // Premium Header with time-based theming (always visible)
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                        Text("Daily Ritual")
-                            .font(DesignSystem.Typography.displayMediumSafe)
-                            .foregroundColor(DesignSystem.Colors.primaryText)
-                        
-                        Text(selectedDate, format: .dateTime.weekday(.wide).month(.wide).day())
-                            .font(DesignSystem.Typography.headlineMedium)
-                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                    HStack(alignment: .center) {
+                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                            Text("Daily Ritual")
+                                .font(DesignSystem.Typography.displayMediumSafe)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
+                            
+                            Text(selectedDate, format: .dateTime.weekday(.wide).month(.wide).day())
+                                .font(DesignSystem.Typography.headlineMedium)
+                                .foregroundColor(DesignSystem.Colors.secondaryText)
+                        }
+                        Spacer()
+                        Button {
+                            showingProfile = true
+                            #if canImport(UIKit)
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            #endif
+                        } label: {
+                            ZStack {
+                                Circle()
+                                    .fill(DesignSystem.Colors.cardBackground)
+                                    .frame(width: 36, height: 36)
+                                    .shadow(color: DesignSystem.Shadow.subtle.color, radius: DesignSystem.Shadow.subtle.radius, x: DesignSystem.Shadow.subtle.x, y: DesignSystem.Shadow.subtle.y)
+                                Image(systemName: "person.crop.circle")
+                                    .foregroundColor(DesignSystem.Colors.primaryText)
+                                    .font(.system(size: 18, weight: .semibold))
+                            }
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .center)
 
                     // Week header showing current week range (always visible)
                     WeekHeaderView(selectedDate: selectedDate)
@@ -314,6 +335,7 @@ struct TodayView: View {
                     }
                     Spacer(minLength: DesignSystem.Spacing.xxxl)
                 }
+                .padding(.top, DesignSystem.Spacing.xxl)
                 .padding(DesignSystem.Spacing.cardPadding)
                 
                 // Removed popout loading card overlay in favor of inline spinner
@@ -325,6 +347,7 @@ struct TodayView: View {
             .edgesIgnoringSafeArea(.all)
             .navigationTitle("")
             .navigationBarHidden(true)
+            // Removed sticky top-right profile overlay (moved into header)
             // Floating + action button
             .overlay(alignment: .bottomTrailing) {
                 if !viewModel.isLoading {
@@ -377,6 +400,10 @@ struct TodayView: View {
             }
             .sheet(isPresented: $showingTrainingPlans) {
                 TrainingPlansView()
+                    .edgesIgnoringSafeArea(.all)
+            }
+            .sheet(isPresented: $showingProfile) {
+                ProfileView()
                     .edgesIgnoringSafeArea(.all)
             }
             .sheet(isPresented: $showingEveningReflection) {

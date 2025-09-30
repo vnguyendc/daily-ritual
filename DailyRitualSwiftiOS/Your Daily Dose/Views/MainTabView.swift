@@ -28,6 +28,8 @@ struct ProfileView: View {
 
     private var timeContext: DesignSystem.TimeContext { .morning }
 
+    @State private var showEntries = false
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
@@ -135,6 +137,13 @@ struct ProfileView: View {
                             PremiumSecondaryButton("Sign Out") {
                                 Task { try? await supabase.signOut() }
                             }
+
+                            Divider().opacity(0.3)
+
+                            // Access Entries from Profile
+                            PremiumPrimaryButton("View Entries") {
+                                showEntries = true
+                            }
                         }
                     }
                     .onAppear {
@@ -188,6 +197,13 @@ struct ProfileView: View {
         }
         .premiumBackgroundGradient(timeContext)
         .navigationTitle("Profile")
+        .sheet(isPresented: $showEntries) {
+            NavigationView {
+                HistoryListView()
+                    .navigationTitle("Entries")
+                    .navigationBarTitleDisplayMode(.inline)
+            }
+        }
     }
 }
 
@@ -228,53 +244,8 @@ struct MainTabView: View {
     }
     
     var body: some View {
-        TabView(selection: $selectedTab) {
-            TodayView()
-                .tabItem {
-                    Image(systemName: "sun.max.fill")
-                    Text("Today")
-                }
-                .tag(0)
-                .edgesIgnoringSafeArea(.all)
-            
-            // Entries tab
-            HistoryListView()
-                .tabItem {
-                    Image(systemName: "list.bullet.rectangle.portrait")
-                    Text("Entries")
-                }
-                .tag(1)
-                .edgesIgnoringSafeArea(.all)
-            
-            // Insights tab
-            InsightsListView()
-                .tabItem {
-                    Image(systemName: "brain.head.profile")
-                    Text("Insights")
-                }
-                .tag(2)
-                .edgesIgnoringSafeArea(.all)
-
-            // Basic Profile tab
-            ProfileView()
-                .tabItem {
-                    Image(systemName: "person.crop.circle")
-                    Text("Profile")
-                }
-                .tag(3)
-                .edgesIgnoringSafeArea(.all)
-        }
-        .tint(timeContext.primaryColor)
-        .onAppear {
-            // Customize tab bar appearance
-            let tabBarAppearance = UITabBarAppearance()
-            tabBarAppearance.configureWithOpaqueBackground()
-            tabBarAppearance.backgroundColor = UIColor(DesignSystem.Colors.cardBackground)
-            tabBarAppearance.shadowColor = UIColor(DesignSystem.Colors.border)
-            
-            UITabBar.appearance().standardAppearance = tabBarAppearance
-            UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
-        }
+        TodayView()
+            .edgesIgnoringSafeArea(.all)
     }
 }
 

@@ -110,39 +110,244 @@ private struct AddTrainingPlanSheet: View {
     @State private var intensity: String = "moderate"
     @State private var sequence: Int = 1
     @State private var durationMinutes: Int = 60
-    @State private var startTime: String = "07:00:00"
+    @State private var startTime: Date = Calendar.current.date(from: DateComponents(hour: 7, minute: 0)) ?? Date()
     @State private var notes: String = ""
     @State private var isSaving = false
 
     private let trainingTypes = ["strength","cardio","skills","competition","rest","cross_training","recovery"]
     private let intensities = ["light","moderate","hard","very_hard"]
+    private let durationOptions = [30, 45, 60, 90, 120, 150, 180]
+    
+    private var timeContext: DesignSystem.TimeContext { .morning }
+    
+    private func durationDisplay(_ minutes: Int) -> String {
+        if minutes < 60 { return "\(minutes) min" }
+        let hours = minutes / 60
+        let mins = minutes % 60
+        if mins == 0 { return "\(hours) hr" }
+        return "\(hours) hr \(mins) min"
+    }
 
     var body: some View {
         NavigationView {
-            Form {
-                Picker("Type", selection: $trainingType) {
-                    ForEach(trainingTypes, id: \.self) { Text($0) }
-                }
-                Stepper(value: $sequence, in: 1...6) { Text("Sequence: \(sequence)") }
-                Picker("Intensity", selection: $intensity) {
-                    ForEach(intensities, id: \.self) { Text($0) }
-                }
-                Stepper(value: $durationMinutes, in: 10...240, step: 5) { Text("Duration: \(durationMinutes) min") }
-                TextField("Start time (HH:mm:ss)", text: $startTime)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled(true)
-                TextField("Notes", text: $notes, axis: .vertical)
-            }
-            .navigationTitle("Add Plan")
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(isSaving ? "Saving…" : "Save") {
+            ScrollView {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
+                    
+                    // Training Type Section
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                        Text("Training Type")
+                            .font(DesignSystem.Typography.headlineSmall)
+                            .foregroundColor(DesignSystem.Colors.primaryText)
+                            .kerning(0.3)
+                        
+                        Picker("Type", selection: $trainingType) {
+                            ForEach(trainingTypes, id: \.self) { type in
+                                Text(type.replacingOccurrences(of: "_", with: " ").capitalized)
+                                    .tag(type)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .padding(DesignSystem.Spacing.md)
+                        .background(
+                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.input)
+                                .fill(DesignSystem.Colors.cardBackground)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.input)
+                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        )
+                    }
+                    
+                    Divider().opacity(0.3)
+                    
+                    // Sequence Section
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                        Text("Sequence in Your Day")
+                            .font(DesignSystem.Typography.headlineSmall)
+                            .foregroundColor(DesignSystem.Colors.primaryText)
+                            .kerning(0.3)
+                        
+                        HStack(spacing: DesignSystem.Spacing.md) {
+                            Button {
+                                if sequence > 1 { sequence -= 1 }
+                            } label: {
+                                ZStack {
+                                    Circle()
+                                        .fill(DesignSystem.Colors.cardBackground)
+                                        .frame(width: 44, height: 44)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                        )
+                                    Image(systemName: "minus")
+                                        .foregroundColor(timeContext.primaryColor)
+                                        .font(.system(size: 18, weight: .semibold))
+                                }
+                            }
+                            .disabled(sequence <= 1)
+                            
+                            Text("\(sequence)")
+                                .font(DesignSystem.Typography.displaySmall)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
+                                .frame(minWidth: 60)
+                            
+                            Button {
+                                if sequence < 6 { sequence += 1 }
+                            } label: {
+                                ZStack {
+                                    Circle()
+                                        .fill(DesignSystem.Colors.cardBackground)
+                                        .frame(width: 44, height: 44)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                        )
+                                    Image(systemName: "plus")
+                                        .foregroundColor(timeContext.primaryColor)
+                                        .font(.system(size: 18, weight: .semibold))
+                                }
+                            }
+                            .disabled(sequence >= 6)
+                        }
+                    }
+                    
+                    Divider().opacity(0.3)
+                    
+                    // Training Time Section
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                        Text("Training Time")
+                            .font(DesignSystem.Typography.headlineSmall)
+                            .foregroundColor(DesignSystem.Colors.primaryText)
+                            .kerning(0.3)
+                        
+                        DatePicker("Start Time", selection: $startTime, displayedComponents: .hourAndMinute)
+                            .datePickerStyle(.compact)
+                            .labelsHidden()
+                            .padding(DesignSystem.Spacing.md)
+                            .background(
+                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.input)
+                                    .fill(DesignSystem.Colors.cardBackground)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.input)
+                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                            )
+                    }
+                    
+                    Divider().opacity(0.3)
+                    
+                    // Intensity Section
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                        Text("Intensity")
+                            .font(DesignSystem.Typography.headlineSmall)
+                            .foregroundColor(DesignSystem.Colors.primaryText)
+                            .kerning(0.3)
+                        
+                        Picker("Intensity", selection: $intensity) {
+                            ForEach(intensities, id: \.self) { int in
+                                Text(int.replacingOccurrences(of: "_", with: " ").capitalized)
+                                    .tag(int)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .padding(DesignSystem.Spacing.md)
+                        .background(
+                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.input)
+                                .fill(DesignSystem.Colors.cardBackground)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.input)
+                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        )
+                    }
+                    
+                    Divider().opacity(0.3)
+                    
+                    // Duration Section
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                        Text("Duration")
+                            .font(DesignSystem.Typography.headlineSmall)
+                            .foregroundColor(DesignSystem.Colors.primaryText)
+                            .kerning(0.3)
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: DesignSystem.Spacing.sm) {
+                                ForEach(durationOptions, id: \.self) { duration in
+                                    Button {
+                                        durationMinutes = duration
+                                    } label: {
+                                        Text(durationDisplay(duration))
+                                            .font(DesignSystem.Typography.buttonMedium)
+                                            .foregroundColor(durationMinutes == duration ? DesignSystem.Colors.invertedText : DesignSystem.Colors.secondaryText.opacity(0.8))
+                                            .padding(.horizontal, DesignSystem.Spacing.md)
+                                            .padding(.vertical, DesignSystem.Spacing.sm)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
+                                                    .fill(durationMinutes == duration ? timeContext.primaryColor : DesignSystem.Colors.cardBackground)
+                                            )
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
+                                                    .stroke(durationMinutes == duration ? Color.clear : Color.white.opacity(0.12), lineWidth: 1)
+                                            )
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                    }
+                    
+                    Divider().opacity(0.3)
+                    
+                    // Notes Section
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                        Text("Notes (Optional)")
+                            .font(DesignSystem.Typography.headlineSmall)
+                            .foregroundColor(DesignSystem.Colors.primaryText)
+                            .kerning(0.3)
+                        
+                        ZStack(alignment: .topLeading) {
+                            if notes.isEmpty {
+                                Text("e.g., 5x5 squats, focus on form")
+                                    .font(DesignSystem.Typography.bodyLargeSafe)
+                                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+                                    .padding(.horizontal, DesignSystem.Spacing.md + 4)
+                                    .padding(.vertical, DesignSystem.Spacing.md + 2)
+                                    .accessibilityHidden(true)
+                            }
+                            TextEditor(text: $notes)
+                                .font(DesignSystem.Typography.bodyLargeSafe)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
+                                .padding(.horizontal, DesignSystem.Spacing.md)
+                                .padding(.vertical, DesignSystem.Spacing.md)
+                                .frame(minHeight: 100)
+                                .scrollContentBackground(.hidden)
+                                .background(Color.clear)
+                        }
+                        .background(
+                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.input)
+                                .fill(DesignSystem.Colors.cardBackground)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.input)
+                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        )
+                    }
+                    
+                    // Prominent Save Button at Bottom
+                    PremiumPrimaryButton(isSaving ? "Saving…" : "Save Training Plan", isLoading: isSaving, timeContext: timeContext) {
                         Task { await save() }
                     }
-                    .disabled(isSaving)
+                    .padding(.top, DesignSystem.Spacing.md)
                 }
+                .padding(DesignSystem.Spacing.cardPadding)
+            }
+            .background(DesignSystem.Colors.background)
+            .navigationTitle("Create Training Plan")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
                 }
             }
         }
@@ -152,16 +357,21 @@ private struct AddTrainingPlanSheet: View {
         isSaving = true
         defer { isSaving = false }
         do {
+            // Convert Date to HH:mm:ss string
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm:ss"
+            let timeString = formatter.string(from: startTime)
+            
             let plan = TrainingPlan(
                 id: UUID(),
                 userId: SupabaseManager.shared.currentUser?.id ?? UUID(),
                 date: date,
                 sequence: sequence,
                 trainingType: trainingType,
-                startTime: startTime,
+                startTime: timeString,
                 intensity: intensity,
                 durationMinutes: durationMinutes,
-                notes: notes,
+                notes: notes.isEmpty ? nil : notes,
                 createdAt: nil,
                 updatedAt: nil
             )
