@@ -108,7 +108,6 @@ struct MorningRitualView: View {
             }
             .loadingOverlay(isLoading: isSaving, message: "Saving your morning ritual...")
             .premiumBackgroundGradient(timeContext)
-            .navigationTitle("Morning Ritual")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(DesignSystem.Colors.cardBackground.opacity(0.95), for: .navigationBar)
             // Inherit theme; remove forced light scheme for better contrast
@@ -137,10 +136,30 @@ struct MorningRitualView: View {
     
     private var canProceed: Bool {
         switch currentStep {
-        case 0: return !(entry.goalsText?.isEmpty ?? true) // Goals
-        case 1: return !(entry.gratitudeText?.isEmpty ?? true) // Gratitude
-        case 2: return !(entry.affirmation?.isEmpty ?? true) // Affirmation
-        case 3: return !(entry.otherThoughts?.isEmpty ?? true) // Notes
+        case 0: 
+            // Allow proceeding if goalsText has any non-whitespace content
+            if let goals = entry.goalsText {
+                return !goals.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            }
+            return false
+        case 1: 
+            // Allow proceeding if gratitudeText has any non-whitespace content
+            if let gratitude = entry.gratitudeText {
+                return !gratitude.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            }
+            return false
+        case 2: 
+            // Allow proceeding if affirmation has any non-whitespace content
+            if let affirmation = entry.affirmation {
+                return !affirmation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            }
+            return false
+        case 3: 
+            // Allow proceeding if otherThoughts has any non-whitespace content
+            if let thoughts = entry.otherThoughts {
+                return !thoughts.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            }
+            return false
         default: return false
         }
     }
@@ -196,29 +215,27 @@ struct PremiumGoalsStepView: View {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
                 PremiumSectionHeader(
                     "Today's 3 Goals",
-                    subtitle: "Set your performance, process, and personal goals for today.",
+                    subtitle: "These are your nonnegotiable goals to complete today — they can be performance, process, or personal goals.",
                     timeContext: timeContext
                 )
                 
-                PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md) {
-                    PremiumTextEditor(
-                        nil,
-                        placeholder: numberedPlaceholder,
-                        text: $displayGoals,
-                        timeContext: timeContext,
-                        minHeight: 150,
-                        contentFont: DesignSystem.Typography.journalTextSafe,
-                        accessibilityHint: "Enter three numbered goals",
-                        onChange: { newValue in
-                            let result = enforceNumbering(newValue)
-                            if result.display != newValue { displayGoals = result.display }
-                            goalsText = result.lines.isEmpty ? nil : result.lines.joined(separator: "\n")
-                        }
-                    )
-                    .onAppear {
-                        let existing = goalsText?.components(separatedBy: "\n").joined(separator: "\n") ?? ""
-                        displayGoals = enforceNumbering(existing).display
+                PremiumTextEditor(
+                    nil,
+                    placeholder: numberedPlaceholder,
+                    text: $displayGoals,
+                    timeContext: timeContext,
+                    minHeight: 150,
+                    contentFont: DesignSystem.Typography.journalTextSafe,
+                    accessibilityHint: "Enter three numbered goals",
+                    onChange: { newValue in
+                        let result = enforceNumbering(newValue)
+                        // Don't update displayGoals here - it causes text to flicker/disappear
+                        goalsText = result.lines.isEmpty ? nil : result.lines.joined(separator: "\n")
                     }
+                )
+                .onAppear {
+                    let existing = goalsText?.components(separatedBy: "\n").joined(separator: "\n") ?? ""
+                    displayGoals = enforceNumbering(existing).display
                 }
                 
                 if goalsText?.isEmpty ?? true {
@@ -279,25 +296,23 @@ struct PremiumGratitudeStepView: View {
                     timeContext: timeContext
                 )
                 
-                PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md) {
-                    PremiumTextEditor(
-                        nil,
-                        placeholder: numberedPlaceholder,
-                        text: $displayGratitudes,
-                        timeContext: timeContext,
-                        minHeight: 150,
-                        contentFont: DesignSystem.Typography.journalTextSafe,
-                        accessibilityHint: "Enter three gratitudes",
-                        onChange: { newValue in
-                            let result = enforceNumbering(newValue)
-                            if result.display != newValue { displayGratitudes = result.display }
-                            gratitudeText = result.lines.isEmpty ? nil : result.lines.joined(separator: "\n")
-                        }
-                    )
-                    .onAppear {
-                        let existing = gratitudeText?.components(separatedBy: "\n").joined(separator: "\n") ?? ""
-                        displayGratitudes = enforceNumbering(existing).display
+                PremiumTextEditor(
+                    nil,
+                    placeholder: numberedPlaceholder,
+                    text: $displayGratitudes,
+                    timeContext: timeContext,
+                    minHeight: 150,
+                    contentFont: DesignSystem.Typography.journalTextSafe,
+                    accessibilityHint: "Enter three gratitudes",
+                    onChange: { newValue in
+                        let result = enforceNumbering(newValue)
+                        // Don't update displayGratitudes here - it causes text to flicker/disappear
+                        gratitudeText = result.lines.isEmpty ? nil : result.lines.joined(separator: "\n")
                     }
+                )
+                .onAppear {
+                    let existing = gratitudeText?.components(separatedBy: "\n").joined(separator: "\n") ?? ""
+                    displayGratitudes = enforceNumbering(existing).display
                 }
                 
                 if gratitudeText?.isEmpty ?? true {
@@ -339,20 +354,18 @@ struct PremiumAffirmationStepView: View {
                     timeContext: timeContext
                 )
                 
-                PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md) {
-                    PremiumTextEditor(
-                        nil,
-                        placeholder: "Write your affirmation",
-                        text: Binding(
-                            get: { affirmation ?? "" },
-                            set: { affirmation = $0.isEmpty ? nil : $0 }
-                        ),
-                        timeContext: timeContext,
-                        minHeight: 150,
-                        contentFont: DesignSystem.Typography.affirmationTextSafe,
-                        accessibilityHint: "Write your personal affirmation"
-                    )
-                }
+                PremiumTextEditor(
+                    nil,
+                    placeholder: "Write your affirmation",
+                    text: Binding(
+                        get: { affirmation ?? "" },
+                        set: { affirmation = $0.isEmpty ? nil : $0 }
+                    ),
+                    timeContext: timeContext,
+                    minHeight: 150,
+                    contentFont: DesignSystem.Typography.affirmationTextSafe,
+                    accessibilityHint: "Write your personal affirmation"
+                )
                 
                 if let suggestion = suggestedText, (affirmation?.isEmpty ?? true) {
                     PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, showsBorder: false) {
@@ -392,20 +405,18 @@ struct PremiumOtherThoughtsStepView: View {
                     timeContext: timeContext
                 )
                 
-                PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md) {
-                    PremiumTextEditor(
-                        nil,
-                        placeholder: "Notes for the day",
-                        text: Binding(
-                            get: { otherThoughts ?? "" },
-                            set: { otherThoughts = $0.isEmpty ? nil : $0 }
-                        ),
-                        timeContext: timeContext,
-                        minHeight: 200,
-                        contentFont: DesignSystem.Typography.journalTextSafe,
-                        accessibilityHint: "Add any other thoughts for today"
-                    )
-                }
+                PremiumTextEditor(
+                    nil,
+                    placeholder: "Notes for the day",
+                    text: Binding(
+                        get: { otherThoughts ?? "" },
+                        set: { otherThoughts = $0.isEmpty ? nil : $0 }
+                    ),
+                    timeContext: timeContext,
+                    minHeight: 200,
+                    contentFont: DesignSystem.Typography.journalTextSafe,
+                    accessibilityHint: "Add any other thoughts for today"
+                )
                 
                 if otherThoughts?.isEmpty ?? true {
                     PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, showsBorder: false) {

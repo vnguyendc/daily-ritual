@@ -421,7 +421,7 @@ class SupabaseManager: NSObject, ObservableObject {
         }
     }
     
-    func completeEvening(for entry: DailyEntry) async throws -> DailyEntry {
+    func completeEvening(for entry: DailyEntry, isRetry: Bool = false) async throws -> DailyEntry {
         isLoading = true
         defer { isLoading = false }
         
@@ -454,15 +454,20 @@ class SupabaseManager: NSObject, ObservableObject {
             LocalStore.upsertCachedEntry(updatedEntry, for: dateString)
             return updatedEntry
         } catch {
-            print("Error completing evening reflection:", error)
+            // Only print error if this is NOT a retry (reduce log noise)
+            if !isRetry {
+                print("Error completing evening reflection:", error)
+            }
             var updatedEntry = entry
             updatedEntry.eveningCompletedAt = Date()
             LocalStore.upsertCachedEntry(updatedEntry, for: dateString)
-            // Enqueue pending op
-            let payload = try? JSONSerialization.data(withJSONObject: requestBody)
-            let op = PendingOp(id: UUID(), opType: .evening, dateString: dateString, payload: payload, attemptCount: 0, lastAttemptAt: nil)
-            LocalStore.enqueue(op)
-            await MainActor.run { self.pendingOpsCount = LocalStore.countPendingOps() }
+            // Only enqueue if this is NOT already a retry (prevent infinite loop)
+            if !isRetry {
+                let payload = try? JSONSerialization.data(withJSONObject: requestBody)
+                let op = PendingOp(id: UUID(), opType: .evening, dateString: dateString, payload: payload, attemptCount: 0, lastAttemptAt: nil)
+                LocalStore.enqueue(op)
+                await MainActor.run { self.pendingOpsCount = LocalStore.countPendingOps() }
+            }
             return updatedEntry
         }
     }
@@ -699,6 +704,14 @@ class SupabaseManager: NSObject, ObservableObject {
         var ops = LocalStore.loadPendingOps()
         guard !ops.isEmpty else { return }
         for var op in ops {
+            // Skip operations that have failed too many times (max 10 attempts)
+            if op.attemptCount >= 10 {
+                print("⚠️ Removing operation after 10 failed attempts: \(op.opType)")
+                LocalStore.remove(opId: op.id)
+                await MainActor.run { self.pendingOpsCount = LocalStore.countPendingOps() }
+                continue
+            }
+            
             let attempt = op.attemptCount + 1
             op.attemptCount = attempt
             op.lastAttemptAt = Date()
@@ -730,7 +743,7 @@ class SupabaseManager: NSObject, ObservableObject {
                         entry.dayWentWell = dict["day_went_well"] as? String
                         entry.dayImprove = dict["day_improve"] as? String
                         entry.overallMood = dict["overall_mood"] as? Int
-                        _ = try await self.completeEvening(for: entry)
+                        _ = try await self.completeEvening(for: entry, isRetry: true)
                     }
                 case .trainingPlanCreate:
                     if let data = op.payload,
