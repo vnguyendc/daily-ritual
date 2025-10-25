@@ -610,3 +610,6 @@ sequenceDiagram
 - BJ Fogg Behavior Model: https://behaviormodel.org/ (Celebration as habit reinforcement)
 - Duolingo Streak Mechanics: https://blog.duolingo.com/streaks-motivate-learners/
 - SwiftUI Animation Best Practices: https://www.hackingwithswift.com/quick-start/swiftui/how-to-create-basic-animations
+
+
+

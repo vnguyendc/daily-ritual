@@ -144,33 +144,36 @@ struct TodayView: View {
                             .buttonStyle(.plain)
                             .animation(DesignSystem.Animation.gentle, value: viewModel.entry.completedMorningSteps)
                         } else {
-                            // Premium completed morning card
-                            PremiumCard(timeContext: .morning) {
-                                HStack {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(DesignSystem.Colors.success)
-                                        .font(DesignSystem.Typography.headlineLargeSafe)
-                                    
-                                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                        Text("Morning Ritual Complete")
-                                            .font(DesignSystem.Typography.journalTitleSafe)
-                                            .foregroundColor(DesignSystem.Colors.primaryText)
+                            // Premium completed morning card with edit button
+                            Button(action: { showingMorningRitual = true }) {
+                                PremiumCard(timeContext: .morning) {
+                                    HStack {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(DesignSystem.Colors.success)
+                                            .font(DesignSystem.Typography.headlineLargeSafe)
                                         
-                                        Text("Great start to your day!")
-                                            .font(DesignSystem.Typography.bodyMedium)
-                                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                                            Text("Morning Ritual Complete")
+                                                .font(DesignSystem.Typography.journalTitleSafe)
+                                                .foregroundColor(DesignSystem.Colors.primaryText)
+                                            
+                                            Text("Tap to edit")
+                                                .font(DesignSystem.Typography.bodyMedium)
+                                                .foregroundColor(DesignSystem.Colors.secondaryText)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        PremiumProgressRing(
+                                            progress: 1.0,
+                                            size: 32,
+                                            lineWidth: 3,
+                                            timeContext: .morning
+                                        )
                                     }
-                                    
-                                    Spacer()
-                                    
-                                    PremiumProgressRing(
-                                        progress: 1.0,
-                                        size: 32,
-                                        lineWidth: 3,
-                                        timeContext: .morning
-                                    )
                                 }
                             }
+                            .buttonStyle(.plain)
                         }
                         
                         // Premium Evening reflection card (show after 5 PM)
@@ -223,33 +226,36 @@ struct TodayView: View {
                                 .buttonStyle(.plain)
                                 .animation(DesignSystem.Animation.gentle, value: viewModel.entry.completedEveningSteps)
                             } else {
-                                // Premium completed evening card
-                                PremiumCard(timeContext: .evening) {
-                                    HStack {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundColor(DesignSystem.Colors.success)
-                                            .font(DesignSystem.Typography.headlineLargeSafe)
-                                        
-                                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                            Text("Evening Reflection Complete")
-                                                .font(DesignSystem.Typography.journalTitleSafe)
-                                                .foregroundColor(DesignSystem.Colors.primaryText)
+                                // Premium completed evening card with edit button
+                                Button(action: { showingEveningReflection = true }) {
+                                    PremiumCard(timeContext: .evening) {
+                                        HStack {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .foregroundColor(DesignSystem.Colors.success)
+                                                .font(DesignSystem.Typography.headlineLargeSafe)
                                             
-                                            Text("Perfect end to your day!")
-                                                .font(DesignSystem.Typography.bodyMedium)
-                                                .foregroundColor(DesignSystem.Colors.secondaryText)
+                                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                                                Text("Evening Reflection Complete")
+                                                    .font(DesignSystem.Typography.journalTitleSafe)
+                                                    .foregroundColor(DesignSystem.Colors.primaryText)
+                                                
+                                                Text("Tap to edit")
+                                                    .font(DesignSystem.Typography.bodyMedium)
+                                                    .foregroundColor(DesignSystem.Colors.secondaryText)
+                                            }
+                                            
+                                            Spacer()
+                                            
+                                            PremiumProgressRing(
+                                                progress: 1.0,
+                                                size: 32,
+                                                lineWidth: 3,
+                                                timeContext: .evening
+                                            )
                                         }
-                                        
-                                        Spacer()
-                                        
-                                        PremiumProgressRing(
-                                            progress: 1.0,
-                                            size: 32,
-                                            lineWidth: 3,
-                                            timeContext: .evening
-                                        )
                                     }
                                 }
+                                .buttonStyle(.plain)
                             }
                         }
 

@@ -7,3 +7,6 @@ This spec follows the Kiro-style workflow (requirements → design → implement
 - [tasks.md](./tasks.md)
 
 Source: https://kiro.dev/docs/specs/concepts/
+
+
+
