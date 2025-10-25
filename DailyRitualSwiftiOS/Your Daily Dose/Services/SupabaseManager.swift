@@ -97,11 +97,11 @@ class SupabaseManager: NSObject, ObservableObject {
         return decoder
     }
     
-    // Toggle for development: when true, a mock user is loaded automatically
-    private let useMockAuth = false
-    private let supabaseProjectURL = "https://bkjfyxfphwhwwonmbulj.supabase.co"
-    private let oauthCallbackScheme = "dailyritual"
-    private let oauthCallbackPath = "auth-callback"
+    // Configuration from Config.swift
+    private let useMockAuth = Config.useMockAuth
+    private let supabaseProjectURL = Config.supabaseURL
+    private let oauthCallbackScheme = Config.oauthCallbackScheme
+    private let oauthCallbackPath = Config.oauthCallbackPath
     
     private override init() {
         if useMockAuth {
@@ -131,13 +131,13 @@ class SupabaseManager: NSObject, ObservableObject {
         defer { isLoading = false }
         
         // Supabase Auth REST (email/password)
-        guard let url = URL(string: "https://bkjfyxfphwhwwonmbulj.supabase.co/auth/v1/token?grant_type=password") else {
+        guard let url = URL(string: "\(Config.authEndpoint)/token?grant_type=password") else {
             throw SupabaseError.invalidData
         }
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJramZ5eGZwaHdod3dvbm1idWxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDUxMzMsImV4cCI6MjA3MTc4MTEzM30.UCySNkl1qbBgPtN1TQynImtWdI-LQ5mv8T-SGmYUVJQ", forHTTPHeaderField: "apikey")
+        req.setValue(Config.supabaseAnonKey, forHTTPHeaderField: "apikey")
         req.httpBody = try JSONSerialization.data(withJSONObject: [
             "email": email,
             "password": password
@@ -257,13 +257,13 @@ class SupabaseManager: NSObject, ObservableObject {
     // Refresh Supabase access token using refresh token
     func refreshAuthToken() async throws {
         guard let rt = refreshToken, !rt.isEmpty else { throw SupabaseError.notAuthenticated }
-        guard let url = URL(string: "https://bkjfyxfphwhwwonmbulj.supabase.co/auth/v1/token?grant_type=refresh_token") else {
+        guard let url = URL(string: "\(Config.authEndpoint)/token?grant_type=refresh_token") else {
             throw SupabaseError.invalidData
         }
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJramZ5eGZwaHdod3dvbm1idWxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDUxMzMsImV4cCI6MjA3MTc4MTEzM30.UCySNkl1qbBgPtN1TQynImtWdI-LQ5mv8T-SGmYUVJQ", forHTTPHeaderField: "apikey")
+        req.setValue(Config.supabaseAnonKey, forHTTPHeaderField: "apikey")
         req.httpBody = try JSONSerialization.data(withJSONObject: [
             "refresh_token": rt
         ])
