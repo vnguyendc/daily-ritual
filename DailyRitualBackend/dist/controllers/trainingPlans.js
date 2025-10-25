@@ -1,4 +1,4 @@
-import { DatabaseService, getUserFromToken, supabaseServiceClient } from '../services/supabase.js';
+import { DatabaseService, getUserFromToken } from '../services/supabase.js';
 export class TrainingPlansController {
     static async list(req, res) {
         try {
@@ -30,15 +30,8 @@ export class TrainingPlansController {
             catch (e) {
                 console.warn('ensureUserRecord failed:', e);
             }
-            const { data, error } = await supabaseServiceClient
-                .from('training_plans')
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('date', date)
-                .order('sequence', { ascending: true });
-            if (error)
-                throw error;
-            const response = { success: true, data: data || [] };
+            const plans = await DatabaseService.listTrainingPlans(user.id, date);
+            const response = { success: true, data: plans };
             res.json(response);
         }
         catch (error) {
@@ -80,56 +73,18 @@ export class TrainingPlansController {
             catch (e) {
                 console.warn('ensureUserRecord failed:', e);
             }
-            let planSequence = typeof sequence === 'number' && Number.isFinite(sequence) && sequence > 0 ? sequence : undefined;
-            if (!planSequence) {
-                const { data: last, error: lastErr } = await supabaseServiceClient
-                    .from('training_plans')
-                    .select('sequence')
-                    .eq('user_id', user.id)
-                    .eq('date', date)
-                    .order('sequence', { ascending: false })
-                    .limit(1);
-                if (lastErr)
-                    throw lastErr;
-                planSequence = ((last && last[0]?.sequence) || 0) + 1;
-            }
-            const insertData = {
+            const payload = {
                 user_id: user.id,
                 date,
-                sequence: planSequence,
+                sequence,
                 type,
                 start_time,
                 intensity,
                 duration_minutes,
                 notes
             };
-            const tryInsert = async (payload) => {
-                return supabaseServiceClient
-                    .from('training_plans')
-                    .insert(payload)
-                    .select()
-                    .single();
-            };
-            let { data, error } = await tryInsert(insertData);
-            if (error && (error.code === '23505' || (error.message && error.message.includes('duplicate key')))) {
-                const { data: last2, error: lastErr2 } = await supabaseServiceClient
-                    .from('training_plans')
-                    .select('sequence')
-                    .eq('user_id', user.id)
-                    .eq('date', date)
-                    .order('sequence', { ascending: false })
-                    .limit(1);
-                if (!lastErr2) {
-                    const nextSeq = ((last2 && last2[0]?.sequence) || planSequence || 0) + 1;
-                    insertData.sequence = nextSeq;
-                    const retry = await tryInsert(insertData);
-                    data = retry.data;
-                    error = retry.error;
-                }
-            }
-            if (error)
-                throw error;
-            const response = { success: true, data };
+            const created = await DatabaseService.createTrainingPlan(user.id, payload);
+            const response = { success: true, data: created };
             res.json(response);
         }
         catch (error) {
@@ -162,20 +117,9 @@ export class TrainingPlansController {
             if (!id) {
                 return res.status(400).json({ error: 'Training plan ID required' });
             }
-            const updates = {
-                ...req.body,
-                updated_at: new Date().toISOString()
-            };
-            const { data, error } = await supabaseServiceClient
-                .from('training_plans')
-                .update(updates)
-                .eq('id', id)
-                .eq('user_id', user.id)
-                .select()
-                .single();
-            if (error)
-                throw error;
-            const response = { success: true, data };
+            const updates = { ...req.body };
+            const updated = await DatabaseService.updateTrainingPlanById(id, user.id, updates);
+            const response = { success: true, data: updated };
             res.json(response);
         }
         catch (error) {
@@ -208,13 +152,7 @@ export class TrainingPlansController {
             if (!id) {
                 return res.status(400).json({ error: 'Training plan ID required' });
             }
-            const { error } = await supabaseServiceClient
-                .from('training_plans')
-                .delete()
-                .eq('id', id)
-                .eq('user_id', user.id);
-            if (error)
-                throw error;
+            await DatabaseService.deleteTrainingPlanById(id, user.id);
             const response = { success: true, message: 'Training plan deleted successfully' };
             res.json(response);
         }

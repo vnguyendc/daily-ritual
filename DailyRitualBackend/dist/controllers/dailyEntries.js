@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { DatabaseService, getUserFromToken, supabaseServiceClient } from '../services/supabase.js';
+import { DatabaseService, getUserFromToken } from '../services/supabase.js';
+import { SupabaseEdgeFunctions } from '../services/integrations/index.js';
 const morningRitualSchema = z.object({
     goals: z.array(z.string().min(1).max(200)).min(1).max(3),
     gratitudes: z.array(z.string().min(1).max(200)).min(1).max(3),
@@ -22,22 +23,24 @@ export class DailyEntriesController {
             const token = req.headers.authorization?.replace('Bearer ', '');
             const useMock = process.env.USE_MOCK === 'true';
             const devUserId = process.env.DEV_USER_ID;
-            let user;
-            if (!token) {
-                if (useMock) {
-                    console.log('🔓 No auth token provided, using mock user for development');
-                    user = { id: 'mock-user-id' };
-                }
-                else if (devUserId) {
-                    console.log('👤 Using DEV_USER_ID from environment for development without auth');
-                    user = { id: devUserId };
+            let user = req.user;
+            if (!user) {
+                if (!token) {
+                    if (useMock) {
+                        console.log('🔓 No auth token provided, using mock user for development');
+                        user = { id: 'mock-user-id' };
+                    }
+                    else if (devUserId) {
+                        console.log('👤 Using DEV_USER_ID from environment for development without auth');
+                        user = { id: devUserId };
+                    }
+                    else {
+                        return res.status(401).json({ error: 'Authorization token required' });
+                    }
                 }
                 else {
-                    return res.status(401).json({ error: 'Authorization token required' });
+                    user = await getUserFromToken(token);
                 }
-            }
-            else {
-                user = await getUserFromToken(token);
             }
             const date = req.params.date;
             try {
@@ -70,20 +73,22 @@ export class DailyEntriesController {
             const token = req.headers.authorization?.replace('Bearer ', '');
             const useMock = process.env.USE_MOCK === 'true';
             const devUserId = process.env.DEV_USER_ID;
-            let user;
-            if (!token) {
-                if (useMock) {
-                    user = { id: 'mock-user-id' };
-                }
-                else if (devUserId) {
-                    user = { id: devUserId };
+            let user = req.user;
+            if (!user) {
+                if (!token) {
+                    if (useMock) {
+                        user = { id: 'mock-user-id' };
+                    }
+                    else if (devUserId) {
+                        user = { id: devUserId };
+                    }
+                    else {
+                        return res.status(401).json({ error: 'Authorization token required' });
+                    }
                 }
                 else {
-                    return res.status(401).json({ error: 'Authorization token required' });
+                    user = await getUserFromToken(token);
                 }
-            }
-            else {
-                user = await getUserFromToken(token);
             }
             const date = req.params.date;
             if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -96,14 +101,7 @@ export class DailyEntriesController {
                 console.warn('ensureUserRecord failed:', e);
             }
             const entry = await DatabaseService.getDailyEntry(user.id, date);
-            const { data: plans, error: plansError } = await supabaseServiceClient
-                .from('training_plans')
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('date', date)
-                .order('sequence', { ascending: true });
-            if (plansError)
-                throw plansError;
+            const plans = await DatabaseService.listTrainingPlans(user.id, date);
             const response = {
                 success: true,
                 data: {
@@ -124,20 +122,22 @@ export class DailyEntriesController {
             const token = req.headers.authorization?.replace('Bearer ', '');
             const useMock = process.env.USE_MOCK === 'true';
             const devUserId = process.env.DEV_USER_ID;
-            let user;
-            if (!token) {
-                if (useMock) {
-                    user = { id: 'mock-user-id' };
-                }
-                else if (devUserId) {
-                    user = { id: devUserId };
+            let user = req.user;
+            if (!user) {
+                if (!token) {
+                    if (useMock) {
+                        user = { id: 'mock-user-id' };
+                    }
+                    else if (devUserId) {
+                        user = { id: devUserId };
+                    }
+                    else {
+                        return res.status(401).json({ error: 'Authorization token required' });
+                    }
                 }
                 else {
-                    return res.status(401).json({ error: 'Authorization token required' });
+                    user = await getUserFromToken(token);
                 }
-            }
-            else {
-                user = await getUserFromToken(token);
             }
             const date = req.params.date;
             if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -164,22 +164,24 @@ export class DailyEntriesController {
             const token = req.headers.authorization?.replace('Bearer ', '');
             const useMock = process.env.USE_MOCK === 'true';
             const devUserId = process.env.DEV_USER_ID;
-            let user;
-            if (!token) {
-                if (useMock) {
-                    console.log('🔓 No auth token provided, using mock user for development');
-                    user = { id: 'mock-user-id' };
-                }
-                else if (devUserId) {
-                    console.log('👤 Using DEV_USER_ID from environment for development without auth');
-                    user = { id: devUserId };
+            let user = req.user;
+            if (!user) {
+                if (!token) {
+                    if (useMock) {
+                        console.log('🔓 No auth token provided, using mock user for development');
+                        user = { id: 'mock-user-id' };
+                    }
+                    else if (devUserId) {
+                        console.log('👤 Using DEV_USER_ID from environment for development without auth');
+                        user = { id: devUserId };
+                    }
+                    else {
+                        return res.status(401).json({ error: 'Authorization token required' });
+                    }
                 }
                 else {
-                    return res.status(401).json({ error: 'Authorization token required' });
+                    user = await getUserFromToken(token);
                 }
-            }
-            else {
-                user = await getUserFromToken(token);
             }
             const date = req.params.date;
             if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -201,25 +203,14 @@ export class DailyEntriesController {
             }
             const dailyQuote = await DatabaseService.getDailyQuote(user.id, date);
             let affirmation = "I am prepared, focused, and ready to give my best effort today.";
-            try {
-                const affirmationResponse = await fetch(`${process.env.SUPABASE_URL}/functions/v1/generate-affirmation`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        recent_goals: morningData.goals,
-                        next_workout_type: morningData.planned_training_type
-                    })
-                });
-                if (affirmationResponse.ok) {
-                    const affirmationData = await affirmationResponse.json();
-                    affirmation = affirmationData.affirmation || affirmation;
-                }
-            }
-            catch (error) {
-                console.warn('Failed to generate AI affirmation, using default:', error);
+            const gen = await SupabaseEdgeFunctions.generateAffirmation({
+                supabaseUrl: process.env.SUPABASE_URL || '',
+                authToken: token,
+                recent_goals: morningData.goals,
+                next_workout_type: morningData.planned_training_type
+            });
+            if (gen.affirmation) {
+                affirmation = gen.affirmation;
             }
             const entry = await DatabaseService.createOrUpdateDailyEntry(user.id, date, {
                 goals: morningData.goals,
@@ -235,22 +226,12 @@ export class DailyEntriesController {
                 morning_completed_at: new Date().toISOString()
             });
             await DatabaseService.updateUserStreak(user.id, 'morning_ritual', date);
-            try {
-                await fetch(`${process.env.SUPABASE_URL}/functions/v1/generate-insights`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        insight_type: 'morning',
-                        data_period_end: date
-                    })
-                });
-            }
-            catch (error) {
-                console.warn('Failed to generate morning insight:', error);
-            }
+            await SupabaseEdgeFunctions.generateInsights({
+                supabaseUrl: process.env.SUPABASE_URL || '',
+                authToken: token,
+                insight_type: 'morning',
+                data_period_end: date
+            });
             const response = {
                 success: true,
                 data: {
@@ -276,22 +257,24 @@ export class DailyEntriesController {
             const token = req.headers.authorization?.replace('Bearer ', '');
             const useMock = process.env.USE_MOCK === 'true';
             const devUserId = process.env.DEV_USER_ID;
-            let user;
-            if (!token) {
-                if (useMock) {
-                    console.log('🔓 No auth token provided, using mock user for development');
-                    user = { id: 'mock-user-id' };
-                }
-                else if (devUserId) {
-                    console.log('👤 Using DEV_USER_ID from environment for development without auth');
-                    user = { id: devUserId };
+            let user = req.user;
+            if (!user) {
+                if (!token) {
+                    if (useMock) {
+                        console.log('🔓 No auth token provided, using mock user for development');
+                        user = { id: 'mock-user-id' };
+                    }
+                    else if (devUserId) {
+                        console.log('👤 Using DEV_USER_ID from environment for development without auth');
+                        user = { id: devUserId };
+                    }
+                    else {
+                        return res.status(401).json({ error: 'Authorization token required' });
+                    }
                 }
                 else {
-                    return res.status(401).json({ error: 'Authorization token required' });
+                    user = await getUserFromToken(token);
                 }
-            }
-            else {
-                user = await getUserFromToken(token);
             }
             const date = req.params.date;
             try {
@@ -322,22 +305,12 @@ export class DailyEntriesController {
             if (entry.morning_completed_at && entry.evening_completed_at) {
                 await DatabaseService.updateUserStreak(user.id, 'daily_complete', date);
             }
-            try {
-                await fetch(`${process.env.SUPABASE_URL}/functions/v1/generate-insights`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        insight_type: 'evening',
-                        data_period_end: date
-                    })
-                });
-            }
-            catch (error) {
-                console.warn('Failed to generate evening insight:', error);
-            }
+            await SupabaseEdgeFunctions.generateInsights({
+                supabaseUrl: process.env.SUPABASE_URL || '',
+                authToken: token,
+                insight_type: 'evening',
+                data_period_end: date
+            });
             const response = {
                 success: true,
                 data: entry,
@@ -356,48 +329,37 @@ export class DailyEntriesController {
     }
     static async getDailyEntries(req, res) {
         try {
-            const token = req.headers.authorization?.replace('Bearer ', '');
-            if (!token) {
-                return res.status(401).json({ error: 'Authorization token required' });
+            let user = req.user;
+            if (!user) {
+                const token = req.headers.authorization?.replace('Bearer ', '');
+                if (!token) {
+                    return res.status(401).json({ error: 'Authorization token required' });
+                }
+                user = await getUserFromToken(token);
             }
-            const user = await getUserFromToken(token);
             const page = parseInt(req.query.page) || 1;
             const limit = Math.min(parseInt(req.query.limit) || 10, 50);
             const startDate = req.query.start_date;
             const endDate = req.query.end_date;
             const hasMorningRitual = req.query.has_morning_ritual === 'true';
             const hasEveningReflection = req.query.has_evening_reflection === 'true';
-            let query = supabaseServiceClient
-                .from('daily_entries')
-                .select('*', { count: 'exact' })
-                .eq('user_id', user.id)
-                .order('date', { ascending: false });
-            if (startDate) {
-                query = query.gte('date', startDate);
-            }
-            if (endDate) {
-                query = query.lte('date', endDate);
-            }
-            if (hasMorningRitual) {
-                query = query.not('morning_completed_at', 'is', null);
-            }
-            if (hasEveningReflection) {
-                query = query.not('evening_completed_at', 'is', null);
-            }
-            const offset = (page - 1) * limit;
-            query = query.range(offset, offset + limit - 1);
-            const { data, error, count } = await query;
-            if (error)
-                throw error;
-            const totalPages = Math.ceil((count || 0) / limit);
+            const { data, count } = await DatabaseService.listDailyEntries(user.id, {
+                page,
+                limit,
+                startDate,
+                endDate,
+                hasMorningRitual,
+                hasEveningReflection
+            });
+            const totalPages = Math.ceil(count / limit);
             const response = {
                 success: true,
                 data: {
-                    data: data || [],
+                    data: data,
                     pagination: {
                         page,
                         limit,
-                        total: count || 0,
+                        total: count,
                         total_pages: totalPages,
                         has_next: page < totalPages,
                         has_prev: page > 1
@@ -417,22 +379,19 @@ export class DailyEntriesController {
     }
     static async deleteDailyEntry(req, res) {
         try {
-            const token = req.headers.authorization?.replace('Bearer ', '');
-            if (!token) {
-                return res.status(401).json({ error: 'Authorization token required' });
+            let user = req.user;
+            if (!user) {
+                const token = req.headers.authorization?.replace('Bearer ', '');
+                if (!token) {
+                    return res.status(401).json({ error: 'Authorization token required' });
+                }
+                user = await getUserFromToken(token);
             }
-            const user = await getUserFromToken(token);
             const date = req.params.date;
             if (!date.match(/^\d{4}-\d{2}-\d{2}$/)) {
                 return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' });
             }
-            const { error } = await supabaseServiceClient
-                .from('daily_entries')
-                .delete()
-                .eq('user_id', user.id)
-                .eq('date', date);
-            if (error)
-                throw error;
+            await DatabaseService.deleteDailyEntry(user.id, date);
             const response = {
                 success: true,
                 message: 'Daily entry deleted successfully'

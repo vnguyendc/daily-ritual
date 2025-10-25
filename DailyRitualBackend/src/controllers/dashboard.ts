@@ -1,6 +1,6 @@
 // Dashboard Controller - provides overview data for the main app dashboard
 import { Request, Response } from 'express'
-import { DatabaseService, getUserFromToken } from '../services/supabase.js'
+import { DatabaseService, getUserFromToken, supabaseServiceClient } from '../services/supabase.js'
 import type { APIResponse, DashboardData } from '../types/api.js'
 
 export class DashboardController {
@@ -31,7 +31,7 @@ export class DashboardController {
       ])
 
       // Format streaks data
-      const currentStreaks = streaks?.reduce((acc, streak) => {
+      const currentStreaks = streaks?.reduce((acc, streak: any) => {
         acc[streak.streak_type] = streak.current_streak
         return acc
       }, {} as Record<string, number>) || {}
@@ -72,7 +72,7 @@ export class DashboardController {
     const endDate = new Date().toISOString().split('T')[0]
 
     // Get weekly daily entries
-    const { data: weeklyEntries, error: entriesError } = await DatabaseService.supabaseServiceClient
+    const { data: weeklyEntries, error: entriesError } = await supabaseServiceClient
       .from('daily_entries')
       .select('goals, overall_mood')
       .eq('user_id', userId)
@@ -82,7 +82,7 @@ export class DashboardController {
     if (entriesError) throw entriesError
 
     // Get weekly workout reflections
-    const { data: weeklyWorkouts, error: workoutsError } = await DatabaseService.supabaseServiceClient
+    const { data: weeklyWorkouts, error: workoutsError } = await supabaseServiceClient
       .from('workout_reflections')
       .select('training_feeling')
       .eq('user_id', userId)
@@ -92,8 +92,8 @@ export class DashboardController {
     if (workoutsError) throw workoutsError
 
     // Calculate stats
-    const entries = weeklyEntries || []
-    const workouts = weeklyWorkouts || []
+    const entries: any[] = weeklyEntries || []
+    const workouts: any[] = weeklyWorkouts || []
 
     const totalGoals = entries.reduce((sum, entry) => sum + (entry.goals?.length || 0), 0)
     const goalsCompleted = totalGoals // Assuming all set goals are completed for now
@@ -230,7 +230,7 @@ export class DashboardController {
       const insightType = req.query.insight_type as string
       const unreadOnly = req.query.unread_only === 'true'
 
-      let query = DatabaseService.supabaseServiceClient
+      let query = supabaseServiceClient
         .from('ai_insights')
         .select('*')
         .eq('user_id', user.id)
@@ -274,6 +274,13 @@ export class DashboardController {
 
       const user = await getUserFromToken(token)
       const { insightId } = req.params
+
+      if (!insightId) {
+        return res.status(400).json({ 
+          success: false, 
+          error: { error: 'Bad request', message: 'Insight ID is required' }
+        })
+      }
 
       await DatabaseService.markInsightAsRead(insightId, user.id)
 

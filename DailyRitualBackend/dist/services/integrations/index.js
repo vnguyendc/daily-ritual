@@ -1,5 +1,8 @@
+import { WhoopService } from './whoop.js';
+import { StravaService } from './strava.js';
 export { WhoopService } from './whoop.js';
 export { StravaService } from './strava.js';
+export { SupabaseEdgeFunctions } from './supabaseEdgeFunctions.js';
 export class AppleHealthService {
     static mapWorkoutType(appleType) {
         const typeMapping = {

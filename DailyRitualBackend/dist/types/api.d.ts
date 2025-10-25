@@ -30,6 +30,7 @@ export interface MorningRitualRequest {
     planned_intensity?: string;
     planned_duration?: number;
     planned_notes?: string;
+    morning_notes?: string;
 }
 export interface MorningRitualResponse {
     daily_entry: DailyEntry;
@@ -164,6 +165,8 @@ export interface APIResponse<T = any> {
     error?: APIError;
     message?: string;
 }
+export declare function ok<T>(data: T, message?: string): APIResponse<T>;
+export declare function fail(message: string, code?: string, details?: Record<string, any>): APIResponse<null>;
 export interface PaginationParams {
     page?: number;
     limit?: number;

@@ -86,6 +86,41 @@ export class DatabaseService {
             throw error;
         return data;
     }
+    static async listDailyEntries(userId, options) {
+        const { page, limit, startDate, endDate, hasMorningRitual, hasEveningReflection } = options;
+        let query = supabaseServiceClient
+            .from('daily_entries')
+            .select('*', { count: 'exact' })
+            .eq('user_id', userId)
+            .order('date', { ascending: false });
+        if (startDate) {
+            query = query.gte('date', startDate);
+        }
+        if (endDate) {
+            query = query.lte('date', endDate);
+        }
+        if (hasMorningRitual) {
+            query = query.not('morning_completed_at', 'is', null);
+        }
+        if (hasEveningReflection) {
+            query = query.not('evening_completed_at', 'is', null);
+        }
+        const offset = (page - 1) * limit;
+        query = query.range(offset, offset + limit - 1);
+        const { data, error, count } = await query;
+        if (error)
+            throw error;
+        return { data: data || [], count: count || 0 };
+    }
+    static async deleteDailyEntry(userId, date) {
+        const { error } = await supabaseServiceClient
+            .from('daily_entries')
+            .delete()
+            .eq('user_id', userId)
+            .eq('date', date);
+        if (error)
+            throw error;
+    }
     static async createWorkoutReflection(userId, reflection) {
         const { data, error } = await supabaseServiceClient
             .from('workout_reflections')
@@ -220,6 +255,121 @@ export class DatabaseService {
         if (error)
             throw error;
         return data || [];
+    }
+    static async listTrainingPlans(userId, date) {
+        if (useMock) {
+            return [];
+        }
+        const { data, error } = await supabaseServiceClient
+            .from('training_plans')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('date', date)
+            .order('sequence', { ascending: true });
+        if (error)
+            throw error;
+        return data || [];
+    }
+    static async getNextTrainingPlanSequence(userId, date) {
+        if (useMock)
+            return 1;
+        const { data, error } = await supabaseServiceClient
+            .from('training_plans')
+            .select('sequence')
+            .eq('user_id', userId)
+            .eq('date', date)
+            .order('sequence', { ascending: false })
+            .limit(1);
+        if (error)
+            throw error;
+        const last = data?.[0]?.sequence || 0;
+        return Number(last) + 1;
+    }
+    static async createTrainingPlan(userId, payload) {
+        if (useMock) {
+            return {
+                id: 'mock-plan-id',
+                user_id: userId,
+                date: payload.date,
+                sequence: payload.sequence || 1,
+                type: payload.type,
+                start_time: payload.start_time ?? null,
+                intensity: payload.intensity ?? null,
+                duration_minutes: payload.duration_minutes ?? null,
+                notes: payload.notes ?? null,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+        }
+        const insertData = {
+            user_id: userId,
+            date: payload.date,
+            sequence: payload.sequence,
+            type: payload.type,
+            start_time: payload.start_time ?? null,
+            intensity: payload.intensity ?? null,
+            duration_minutes: payload.duration_minutes ?? null,
+            notes: payload.notes ?? null
+        };
+        if (!insertData.sequence) {
+            insertData.sequence = await this.getNextTrainingPlanSequence(userId, payload.date);
+        }
+        const tryInsert = async (body) => {
+            return supabaseServiceClient
+                .from('training_plans')
+                .insert(body)
+                .select()
+                .single();
+        };
+        let { data, error } = await tryInsert(insertData);
+        if (error && (error.code === '23505' || error.message?.includes('duplicate key'))) {
+            const nextSeq = await this.getNextTrainingPlanSequence(userId, payload.date);
+            insertData.sequence = nextSeq;
+            const retry = await tryInsert(insertData);
+            data = retry.data;
+            error = retry.error;
+        }
+        if (error)
+            throw error;
+        return data;
+    }
+    static async updateTrainingPlanById(id, userId, updates) {
+        if (useMock) {
+            return {
+                id,
+                user_id: userId,
+                date: updates.date || new Date().toISOString().split('T')[0],
+                sequence: updates.sequence || 1,
+                type: updates.type || 'strength',
+                start_time: updates.start_time ?? null,
+                intensity: updates.intensity ?? null,
+                duration_minutes: updates.duration_minutes ?? null,
+                notes: updates.notes ?? null,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+        }
+        const { data, error } = await supabaseServiceClient
+            .from('training_plans')
+            .update({ ...updates, updated_at: new Date().toISOString() })
+            .eq('id', id)
+            .eq('user_id', userId)
+            .select()
+            .single();
+        if (error)
+            throw error;
+        return data;
+    }
+    static async deleteTrainingPlanById(id, userId) {
+        if (useMock)
+            return;
+        const { error } = await supabaseServiceClient
+            .from('training_plans')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', userId);
+        if (error)
+            throw error;
     }
     static async markInsightAsRead(insightId, userId) {
         const { error } = await supabaseServiceClient

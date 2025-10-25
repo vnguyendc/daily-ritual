@@ -1,4 +1,7 @@
 import type { Database } from '../types/database.js';
+type TrainingPlanRow = Database['public']['Tables']['training_plans']['Row'];
+type TrainingPlanInsert = Database['public']['Tables']['training_plans']['Insert'];
+type TrainingPlanUpdate = Database['public']['Tables']['training_plans']['Update'];
 export declare const supabaseServiceClient: import("@supabase/supabase-js").SupabaseClient<Database, "public", "public", never, {
     PostgrestVersion: "12";
 }>;
@@ -15,6 +18,18 @@ export declare class DatabaseService {
     }): Promise<void>;
     static getDailyEntry(userId: string, date: string): Promise<null>;
     static createOrUpdateDailyEntry(userId: string, date: string, updates: any): Promise<any>;
+    static listDailyEntries(userId: string, options: {
+        page: number;
+        limit: number;
+        startDate?: string;
+        endDate?: string;
+        hasMorningRitual?: boolean;
+        hasEveningReflection?: boolean;
+    }): Promise<{
+        data: any[];
+        count: number;
+    }>;
+    static deleteDailyEntry(userId: string, date: string): Promise<void>;
     static createWorkoutReflection(userId: string, reflection: any): Promise<never>;
     static getUserProfile(userId: string): Promise<never>;
     static updateUserProfile(userId: string, updates: Record<string, any>): Promise<any>;
@@ -28,6 +43,14 @@ export declare class DatabaseService {
     }>;
     static getUpcomingCompetitions(userId: string): Promise<never[]>;
     static getRecentInsights(userId: string, limit?: number): Promise<never[]>;
+    static listTrainingPlans(userId: string, date: string): Promise<TrainingPlanRow[]>;
+    private static getNextTrainingPlanSequence;
+    static createTrainingPlan(userId: string, payload: Omit<TrainingPlanInsert, 'user_id'> & {
+        user_id?: string;
+    }): Promise<TrainingPlanRow>;
+    static updateTrainingPlanById(id: string, userId: string, updates: TrainingPlanUpdate): Promise<TrainingPlanRow>;
+    static deleteTrainingPlanById(id: string, userId: string): Promise<void>;
     static markInsightAsRead(insightId: string, userId: string): Promise<void>;
 }
+export {};
 //# sourceMappingURL=supabase.d.ts.map

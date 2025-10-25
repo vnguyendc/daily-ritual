@@ -1,4 +1,4 @@
-import { DatabaseService, getUserFromToken } from '../services/supabase.js';
+import { DatabaseService, getUserFromToken, supabaseServiceClient } from '../services/supabase.js';
 export class DashboardController {
     static async getDashboardData(req, res) {
         try {
@@ -49,7 +49,7 @@ export class DashboardController {
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
         const startDate = oneWeekAgo.toISOString().split('T')[0];
         const endDate = new Date().toISOString().split('T')[0];
-        const { data: weeklyEntries, error: entriesError } = await DatabaseService.supabaseServiceClient
+        const { data: weeklyEntries, error: entriesError } = await supabaseServiceClient
             .from('daily_entries')
             .select('goals, overall_mood')
             .eq('user_id', userId)
@@ -57,7 +57,7 @@ export class DashboardController {
             .lte('date', endDate);
         if (entriesError)
             throw entriesError;
-        const { data: weeklyWorkouts, error: workoutsError } = await DatabaseService.supabaseServiceClient
+        const { data: weeklyWorkouts, error: workoutsError } = await supabaseServiceClient
             .from('workout_reflections')
             .select('training_feeling')
             .eq('user_id', userId)
@@ -180,7 +180,7 @@ export class DashboardController {
             const limit = Math.min(parseInt(req.query.limit) || 10, 50);
             const insightType = req.query.insight_type;
             const unreadOnly = req.query.unread_only === 'true';
-            let query = DatabaseService.supabaseServiceClient
+            let query = supabaseServiceClient
                 .from('ai_insights')
                 .select('*')
                 .eq('user_id', user.id)
@@ -217,6 +217,12 @@ export class DashboardController {
             }
             const user = await getUserFromToken(token);
             const { insightId } = req.params;
+            if (!insightId) {
+                return res.status(400).json({
+                    success: false,
+                    error: { error: 'Bad request', message: 'Insight ID is required' }
+                });
+            }
             await DatabaseService.markInsightAsRead(insightId, user.id);
             const response = {
                 success: true,

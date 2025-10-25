@@ -3,13 +3,28 @@ export async function authenticateToken(req, res, next) {
     try {
         const authHeader = req.headers.authorization;
         const token = authHeader && authHeader.split(' ')[1];
+        const useMock = process.env.USE_MOCK === 'true';
+        const devUserId = process.env.DEV_USER_ID;
+        let user;
         if (!token) {
-            return res.status(401).json({
-                success: false,
-                error: { error: 'Unauthorized', message: 'Access token required' }
-            });
+            if (useMock) {
+                console.log('🔓 [auth] No token provided, using mock user (dev mode)');
+                user = { id: 'mock-user-id', email: null };
+            }
+            else if (devUserId) {
+                console.log('👤 [auth] Using DEV_USER_ID for development without auth');
+                user = { id: devUserId, email: null };
+            }
+            else {
+                return res.status(401).json({
+                    success: false,
+                    error: { error: 'Unauthorized', message: 'Access token required' }
+                });
+            }
         }
-        const user = await getUserFromToken(token);
+        else {
+            user = await getUserFromToken(token);
+        }
         try {
             await DatabaseService.ensureUserRecord(user);
         }

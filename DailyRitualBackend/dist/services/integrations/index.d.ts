@@ -1,5 +1,6 @@
 export { WhoopService } from './whoop.js';
 export { StravaService } from './strava.js';
+export { SupabaseEdgeFunctions } from './supabaseEdgeFunctions.js';
 export interface AppleHealthData {
     workouts: Array<{
         id: string;
