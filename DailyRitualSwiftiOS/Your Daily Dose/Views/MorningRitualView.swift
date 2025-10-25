@@ -107,6 +107,7 @@ struct MorningRitualView: View {
                 .padding(DesignSystem.Spacing.cardPadding)
             }
             .loadingOverlay(isLoading: isSaving, message: "Saving your morning ritual...")
+            .navigationTitle("Morning Ritual")
             .premiumBackgroundGradient(timeContext)
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(DesignSystem.Colors.cardBackground.opacity(0.95), for: .navigationBar)
@@ -222,16 +223,18 @@ struct PremiumGoalsStepView: View {
                 PremiumTextEditor(
                     nil,
                     placeholder: numberedPlaceholder,
-                    text: $displayGoals,
+                    text: Binding(
+                        get: { displayGoals },
+                        set: { newValue in
+                            let result = enforceNumbering(newValue)
+                            displayGoals = result.display
+                            goalsText = result.lines.isEmpty ? nil : result.lines.joined(separator: "\n")
+                        }
+                    ),
                     timeContext: timeContext,
                     minHeight: 150,
                     contentFont: DesignSystem.Typography.journalTextSafe,
-                    accessibilityHint: "Enter three numbered goals",
-                    onChange: { newValue in
-                        let result = enforceNumbering(newValue)
-                        // Don't update displayGoals here - it causes text to flicker/disappear
-                        goalsText = result.lines.isEmpty ? nil : result.lines.joined(separator: "\n")
-                    }
+                    accessibilityHint: "Enter three numbered goals"
                 )
                 .onAppear {
                     let existing = goalsText?.components(separatedBy: "\n").joined(separator: "\n") ?? ""
@@ -299,16 +302,18 @@ struct PremiumGratitudeStepView: View {
                 PremiumTextEditor(
                     nil,
                     placeholder: numberedPlaceholder,
-                    text: $displayGratitudes,
+                    text: Binding(
+                        get: { displayGratitudes },
+                        set: { newValue in
+                            let result = enforceNumbering(newValue)
+                            displayGratitudes = result.display
+                            gratitudeText = result.lines.isEmpty ? nil : result.lines.joined(separator: "\n")
+                        }
+                    ),
                     timeContext: timeContext,
                     minHeight: 150,
                     contentFont: DesignSystem.Typography.journalTextSafe,
-                    accessibilityHint: "Enter three gratitudes",
-                    onChange: { newValue in
-                        let result = enforceNumbering(newValue)
-                        // Don't update displayGratitudes here - it causes text to flicker/disappear
-                        gratitudeText = result.lines.isEmpty ? nil : result.lines.joined(separator: "\n")
-                    }
+                    accessibilityHint: "Enter three gratitudes"
                 )
                 .onAppear {
                     let existing = gratitudeText?.components(separatedBy: "\n").joined(separator: "\n") ?? ""
