@@ -203,19 +203,7 @@ export class DailyEntriesController {
                 console.warn('ensureUserRecord failed:', e);
             }
             const dailyQuote = await DatabaseService.getDailyQuote(user.id, date);
-            let affirmation = morningData.affirmation;
-            if (!affirmation || affirmation.trim() === '') {
-                affirmation = "I am prepared, focused, and ready to give my best effort today.";
-                const gen = await SupabaseEdgeFunctions.generateAffirmation({
-                    supabaseUrl: process.env.SUPABASE_URL || '',
-                    authToken: token,
-                    recent_goals: morningData.goals,
-                    next_workout_type: morningData.planned_training_type
-                });
-                if (gen.affirmation) {
-                    affirmation = gen.affirmation;
-                }
-            }
+            const affirmation = morningData.affirmation || null;
             const entry = await DatabaseService.createOrUpdateDailyEntry(user.id, date, {
                 goals: morningData.goals,
                 gratitudes: morningData.gratitudes,

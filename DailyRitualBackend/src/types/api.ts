@@ -46,7 +46,7 @@ export interface MorningRitualRequest {
 
 export interface MorningRitualResponse {
   daily_entry: DailyEntry
-  affirmation: string
+  affirmation: string | null
   daily_quote: Quote
   ai_insight?: string
 }

@@ -225,22 +225,8 @@ export class DailyEntriesController {
       // Get daily quote for the user
       const dailyQuote = await DatabaseService.getDailyQuote(user.id, date)
 
-      // Use user's affirmation if provided, otherwise generate AI affirmation
-      let affirmation = morningData.affirmation
-      
-      if (!affirmation || affirmation.trim() === '') {
-        // No user affirmation provided, generate one with AI
-        affirmation = "I am prepared, focused, and ready to give my best effort today."
-        const gen = await SupabaseEdgeFunctions.generateAffirmation({
-          supabaseUrl: process.env.SUPABASE_URL || '',
-          authToken: token,
-          recent_goals: morningData.goals,
-          next_workout_type: morningData.planned_training_type
-        })
-        if (gen.affirmation) {
-          affirmation = gen.affirmation
-        }
-      }
+      // Use user's affirmation as-is (can be empty if user didn't provide one)
+      const affirmation = morningData.affirmation || null
 
       // Update daily entry
       const entry = await DatabaseService.createOrUpdateDailyEntry(user.id, date, {

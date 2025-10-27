@@ -400,10 +400,8 @@ class SupabaseManager: NSObject, ObservableObject {
             let apiResponse: APIResponse<MorningRitualResponse> = try await api.post("daily-entries/\(dateString)/morning", body: morningData)
             if let responseData = apiResponse.data {
                 var updatedEntry = responseData.daily_entry
-                // Only use backend affirmation if user didn't provide their own
-                if entry.affirmation == nil || entry.affirmation?.isEmpty == true {
-                    updatedEntry.affirmation = responseData.affirmation
-                }
+                // Backend returns what user typed (or null), use it as-is
+                updatedEntry.affirmation = responseData.affirmation
                 updatedEntry.dailyQuote = responseData.daily_quote?.quote_text
                 LocalStore.upsertCachedEntry(updatedEntry, for: dateString)
                 return updatedEntry
