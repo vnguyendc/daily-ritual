@@ -9,6 +9,7 @@ import type { MorningRitualRequest, EveningReflectionRequest, APIResponse } from
 const morningRitualSchema = z.object({
   goals: z.array(z.string().min(1).max(200)).min(1).max(3),
   gratitudes: z.array(z.string().min(1).max(200)).min(1).max(3),
+  affirmation: z.string().max(500).optional(),
   quote_reflection: z.string().max(500).optional(),
   planned_training_type: z.enum(['strength', 'cardio', 'skills', 'competition', 'rest', 'cross_training', 'recovery']).optional(),
   planned_training_time: z.string().optional(),
@@ -224,16 +225,21 @@ export class DailyEntriesController {
       // Get daily quote for the user
       const dailyQuote = await DatabaseService.getDailyQuote(user.id, date)
 
-      // Generate AI affirmation
-      let affirmation = "I am prepared, focused, and ready to give my best effort today."
-      const gen = await SupabaseEdgeFunctions.generateAffirmation({
-        supabaseUrl: process.env.SUPABASE_URL || '',
-        authToken: token,
-        recent_goals: morningData.goals,
-        next_workout_type: morningData.planned_training_type
-      })
-      if (gen.affirmation) {
-        affirmation = gen.affirmation
+      // Use user's affirmation if provided, otherwise generate AI affirmation
+      let affirmation = morningData.affirmation
+      
+      if (!affirmation || affirmation.trim() === '') {
+        // No user affirmation provided, generate one with AI
+        affirmation = "I am prepared, focused, and ready to give my best effort today."
+        const gen = await SupabaseEdgeFunctions.generateAffirmation({
+          supabaseUrl: process.env.SUPABASE_URL || '',
+          authToken: token,
+          recent_goals: morningData.goals,
+          next_workout_type: morningData.planned_training_type
+        })
+        if (gen.affirmation) {
+          affirmation = gen.affirmation
+        }
       }
 
       // Update daily entry

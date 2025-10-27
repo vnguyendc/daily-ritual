@@ -33,6 +33,7 @@ export type CompetitionPrepEntryUpdate = Database['public']['Tables']['competiti
 export interface MorningRitualRequest {
   goals: string[]
   gratitudes: string[]
+  affirmation?: string
   quote_reflection?: string
   planned_training_type?: string
   planned_training_time?: string
