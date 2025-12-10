@@ -550,7 +550,7 @@ class SupabaseManager: NSObject, ObservableObject {
                     userId: userId,
                     date: date,
                     sequence: 1,
-                    trainingType: "strength",
+                    trainingType: "strength_training",
                     startTime: "07:00:00",
                     intensity: "moderate",
                     durationMinutes: 60,
@@ -577,6 +577,48 @@ class SupabaseManager: NSObject, ObservableObject {
             print("Error fetching training plans:", error)
             let plans = LocalStore.loadCachedPlans()[dateString] ?? []
             return plans
+        }
+    }
+    
+    func getTrainingPlan(id: UUID) async throws -> TrainingPlan? {
+        if useMockAuth {
+            return nil
+        }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let response: APIResponse<TrainingPlan> = try await api.get("training-plans/\(id)")
+            return response.data
+        } catch {
+            print("Error fetching training plan:", error)
+            return nil
+        }
+    }
+    
+    func getTrainingPlansInRange(start: Date, end: Date) async throws -> [TrainingPlan] {
+        if useMockAuth {
+            return []
+        }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        let startString = df.string(from: start)
+        let endString = df.string(from: end)
+
+        do {
+            let response: APIResponse<[TrainingPlan]> = try await api.get("training-plans/range", query: [
+                URLQueryItem(name: "start", value: startString),
+                URLQueryItem(name: "end", value: endString)
+            ])
+            return response.data ?? []
+        } catch {
+            print("Error fetching training plans in range:", error)
+            return []
         }
     }
 

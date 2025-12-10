@@ -339,6 +339,44 @@ export class DatabaseService {
     return (data as unknown as TrainingPlanRow[]) || []
   }
 
+  static async getTrainingPlanById(id: string, userId: string): Promise<TrainingPlanRow | null> {
+    if (useMock) {
+      return null
+    }
+    const { data, error } = await supabaseServiceClient
+      .from('training_plans')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .single()
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      throw error
+    }
+    return (data as unknown as TrainingPlanRow) || null
+  }
+
+  static async listTrainingPlansInRange(
+    userId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<TrainingPlanRow[]> {
+    if (useMock) {
+      return []
+    }
+    const { data, error } = await supabaseServiceClient
+      .from('training_plans')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .order('date', { ascending: false })
+      .order('sequence', { ascending: true })
+
+    if (error) throw error
+    return (data as unknown as TrainingPlanRow[]) || []
+  }
+
   private static async getNextTrainingPlanSequence(userId: string, date: string): Promise<number> {
     if (useMock) return 1
     const { data, error } = await supabaseServiceClient

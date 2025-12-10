@@ -23,6 +23,8 @@ router.post('/daily-entries/:date/morning', DailyEntriesController.completeMorni
 router.post('/daily-entries/:date/evening', DailyEntriesController.completeEveningReflection);
 router.delete('/daily-entries/:date', DailyEntriesController.deleteDailyEntry);
 router.get('/training-plans', TrainingPlansController.list);
+router.get('/training-plans/range', TrainingPlansController.listInRange);
+router.get('/training-plans/:id', TrainingPlansController.get);
 router.post('/training-plans', TrainingPlansController.create);
 router.put('/training-plans/:id', TrainingPlansController.update);
 router.delete('/training-plans/:id', TrainingPlansController.remove);

@@ -300,8 +300,299 @@ struct InsightStats: Codable, Sendable {
     }
 }
 
+// MARK: - Training Activity Types (50+ comprehensive options)
+enum TrainingActivityType: String, Codable, CaseIterable, Sendable {
+    // Strength & Conditioning
+    case strengthTraining = "strength_training"
+    case functionalFitness = "functional_fitness"
+    case crossfit = "crossfit"
+    case weightlifting = "weightlifting"
+    case powerlifting = "powerlifting"
+    case bodybuilding = "bodybuilding"
+    case olympicLifting = "olympic_lifting"
+    case calisthenics = "calisthenics"
+    
+    // Cardiovascular
+    case running = "running"
+    case cycling = "cycling"
+    case swimming = "swimming"
+    case rowing = "rowing"
+    case elliptical = "elliptical"
+    case stairClimbing = "stair_climbing"
+    case jumpRope = "jump_rope"
+    
+    // Combat Sports
+    case boxing = "boxing"
+    case kickboxing = "kickboxing"
+    case mma = "mma"
+    case muayThai = "muay_thai"
+    case jiuJitsu = "jiu_jitsu"
+    case karate = "karate"
+    case taekwondo = "taekwondo"
+    case wrestling = "wrestling"
+    
+    // Team Sports
+    case basketball = "basketball"
+    case soccer = "soccer"
+    case football = "football"
+    case volleyball = "volleyball"
+    case baseball = "baseball"
+    case hockey = "hockey"
+    case rugby = "rugby"
+    case lacrosse = "lacrosse"
+    
+    // Racquet Sports
+    case tennis = "tennis"
+    case squash = "squash"
+    case racquetball = "racquetball"
+    case badminton = "badminton"
+    case pickleball = "pickleball"
+    
+    // Individual Sports
+    case golf = "golf"
+    case skiing = "skiing"
+    case snowboarding = "snowboarding"
+    case surfing = "surfing"
+    case skateboarding = "skateboarding"
+    case rockClimbing = "rock_climbing"
+    case bouldering = "bouldering"
+    case hiking = "hiking"
+    case trailRunning = "trail_running"
+    
+    // Mind-Body
+    case yoga = "yoga"
+    case pilates = "pilates"
+    case taiChi = "tai_chi"
+    case meditation = "meditation"
+    case stretching = "stretching"
+    case mobility = "mobility"
+    
+    // Recovery
+    case recovery = "recovery"
+    case rest = "rest"
+    case activeRecovery = "active_recovery"
+    case physicalTherapy = "physical_therapy"
+    case massage = "massage"
+    case walking = "walking"
+    case other = "other"
+    
+    // Legacy types for backward compatibility
+    case strength = "strength"
+    case cardio = "cardio"
+    case skills = "skills"
+    case competition = "competition"
+    case crossTraining = "cross_training"
+    
+    var displayName: String {
+        switch self {
+        case .strengthTraining: return "Strength Training"
+        case .functionalFitness: return "Functional Fitness"
+        case .crossfit: return "CrossFit"
+        case .muayThai: return "Muay Thai"
+        case .jiuJitsu: return "Jiu-Jitsu"
+        case .stairClimbing: return "Stair Climbing"
+        case .jumpRope: return "Jump Rope"
+        case .olympicLifting: return "Olympic Lifting"
+        case .rockClimbing: return "Rock Climbing"
+        case .trailRunning: return "Trail Running"
+        case .taiChi: return "Tai Chi"
+        case .activeRecovery: return "Active Recovery"
+        case .physicalTherapy: return "Physical Therapy"
+        case .crossTraining: return "Cross Training"
+        case .mma: return "MMA"
+        default:
+            return rawValue.replacingOccurrences(of: "_", with: " ").capitalized
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .strengthTraining, .powerlifting, .bodybuilding, .strength:
+            return "dumbbell.fill"
+        case .functionalFitness, .crossfit, .calisthenics:
+            return "figure.strengthtraining.traditional"
+        case .weightlifting, .olympicLifting:
+            return "figure.strengthtraining.functional"
+        case .running, .trailRunning:
+            return "figure.run"
+        case .cycling:
+            return "bicycle"
+        case .swimming:
+            return "figure.pool.swim"
+        case .rowing:
+            return "figure.rowing"
+        case .elliptical, .stairClimbing:
+            return "figure.stair.stepper"
+        case .jumpRope:
+            return "figure.jumprope"
+        case .boxing, .kickboxing, .mma, .muayThai:
+            return "figure.boxing"
+        case .jiuJitsu, .wrestling:
+            return "figure.martial.arts"
+        case .karate, .taekwondo:
+            return "figure.taekwondo"
+        case .basketball:
+            return "basketball.fill"
+        case .soccer:
+            return "soccerball"
+        case .football:
+            return "football.fill"
+        case .volleyball:
+            return "volleyball.fill"
+        case .baseball:
+            return "baseball.fill"
+        case .hockey:
+            return "hockey.puck.fill"
+        case .rugby, .lacrosse:
+            return "sportscourt.fill"
+        case .tennis, .badminton, .pickleball:
+            return "tennisball.fill"
+        case .squash, .racquetball:
+            return "figure.racquetball"
+        case .golf:
+            return "figure.golf"
+        case .skiing, .snowboarding:
+            return "figure.skiing.downhill"
+        case .surfing:
+            return "figure.surfing"
+        case .skateboarding:
+            return "figure.skateboarding"
+        case .rockClimbing, .bouldering:
+            return "figure.climbing"
+        case .hiking:
+            return "figure.hiking"
+        case .yoga, .pilates, .stretching, .mobility:
+            return "figure.yoga"
+        case .taiChi, .meditation:
+            return "brain.head.profile"
+        case .recovery, .rest, .massage, .activeRecovery:
+            return "bed.double.fill"
+        case .physicalTherapy:
+            return "cross.case.fill"
+        case .walking:
+            return "figure.walk"
+        case .cardio:
+            return "heart.fill"
+        case .skills, .competition:
+            return "trophy.fill"
+        case .crossTraining:
+            return "figure.mixed.cardio"
+        case .other:
+            return "ellipsis.circle.fill"
+        }
+    }
+    
+    var category: ActivityCategory {
+        switch self {
+        case .strengthTraining, .functionalFitness, .crossfit, .weightlifting,
+             .powerlifting, .bodybuilding, .olympicLifting, .calisthenics, .strength:
+            return .strength
+        case .running, .cycling, .swimming, .rowing, .elliptical, .stairClimbing,
+             .jumpRope, .cardio:
+            return .cardio
+        case .boxing, .kickboxing, .mma, .muayThai, .jiuJitsu, .karate, .taekwondo, .wrestling:
+            return .combatSports
+        case .basketball, .soccer, .football, .volleyball, .baseball, .hockey, .rugby, .lacrosse:
+            return .teamSports
+        case .tennis, .squash, .racquetball, .badminton, .pickleball:
+            return .racquetSports
+        case .golf, .skiing, .snowboarding, .surfing, .skateboarding, .rockClimbing,
+             .bouldering, .hiking, .trailRunning:
+            return .individualSports
+        case .yoga, .pilates, .taiChi, .meditation, .stretching, .mobility:
+            return .mindBody
+        case .recovery, .rest, .activeRecovery, .physicalTherapy, .massage, .walking:
+            return .recovery
+        case .skills, .competition, .crossTraining, .other:
+            return .other
+        }
+    }
+    
+    /// Returns all activity types for a given category
+    static func types(for category: ActivityCategory) -> [TrainingActivityType] {
+        allCases.filter { $0.category == category && !$0.isLegacy }
+    }
+    
+    /// Returns whether this is a legacy type (for backward compatibility)
+    var isLegacy: Bool {
+        switch self {
+        case .strength, .cardio, .skills, .competition, .crossTraining:
+            return true
+        default:
+            return false
+        }
+    }
+}
+
+// MARK: - Activity Categories
+enum ActivityCategory: String, CaseIterable, Sendable {
+    case strength = "Strength & Conditioning"
+    case cardio = "Cardiovascular"
+    case combatSports = "Combat Sports"
+    case teamSports = "Team Sports"
+    case racquetSports = "Racquet Sports"
+    case individualSports = "Individual Sports"
+    case mindBody = "Mind-Body"
+    case recovery = "Recovery"
+    case other = "Other"
+    
+    var icon: String {
+        switch self {
+        case .strength: return "dumbbell.fill"
+        case .cardio: return "heart.fill"
+        case .combatSports: return "figure.boxing"
+        case .teamSports: return "sportscourt.fill"
+        case .racquetSports: return "tennisball.fill"
+        case .individualSports: return "figure.outdoor.cycle"
+        case .mindBody: return "figure.yoga"
+        case .recovery: return "bed.double.fill"
+        case .other: return "ellipsis.circle.fill"
+        }
+    }
+    
+    var displayOrder: Int {
+        switch self {
+        case .strength: return 0
+        case .cardio: return 1
+        case .combatSports: return 2
+        case .teamSports: return 3
+        case .racquetSports: return 4
+        case .individualSports: return 5
+        case .mindBody: return 6
+        case .recovery: return 7
+        case .other: return 8
+        }
+    }
+}
+
+// MARK: - Training Intensity
+enum TrainingIntensity: String, Codable, CaseIterable, Sendable {
+    case light = "light"
+    case moderate = "moderate"
+    case hard = "hard"
+    case veryHard = "very_hard"
+    
+    var displayName: String {
+        switch self {
+        case .light: return "Light"
+        case .moderate: return "Moderate"
+        case .hard: return "Hard"
+        case .veryHard: return "Very Hard"
+        }
+    }
+    
+    var color: String {
+        switch self {
+        case .light: return "green"
+        case .moderate: return "yellow"
+        case .hard: return "orange"
+        case .veryHard: return "red"
+        }
+    }
+}
+
 // MARK: - Training Plans
-struct TrainingPlan: Codable, Identifiable, Sendable {
+struct TrainingPlan: Codable, Identifiable, Sendable, Hashable {
     let id: UUID
     let userId: UUID
     let date: Date
@@ -326,6 +617,54 @@ struct TrainingPlan: Codable, Identifiable, Sendable {
         case notes
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+    }
+    
+    /// Returns the activity type enum, falling back to .other if not recognized
+    var activityType: TrainingActivityType {
+        guard let typeString = trainingType,
+              let type = TrainingActivityType(rawValue: typeString) else {
+            return .other
+        }
+        return type
+    }
+    
+    /// Returns the intensity enum, falling back to .moderate if not recognized
+    var intensityLevel: TrainingIntensity {
+        guard let intensityString = intensity,
+              let level = TrainingIntensity(rawValue: intensityString) else {
+            return .moderate
+        }
+        return level
+    }
+    
+    /// Formatted start time for display (e.g., "7:00 AM")
+    var formattedStartTime: String? {
+        guard let timeString = startTime else { return nil }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss"
+        guard let date = formatter.date(from: timeString) else {
+            // Try without seconds
+            formatter.dateFormat = "HH:mm"
+            guard let date = formatter.date(from: timeString) else { return timeString }
+            formatter.dateFormat = "h:mm a"
+            return formatter.string(from: date)
+        }
+        formatter.dateFormat = "h:mm a"
+        return formatter.string(from: date)
+    }
+    
+    /// Formatted duration for display (e.g., "1 hr 30 min")
+    var formattedDuration: String? {
+        guard let minutes = durationMinutes else { return nil }
+        if minutes < 60 {
+            return "\(minutes) min"
+        }
+        let hours = minutes / 60
+        let mins = minutes % 60
+        if mins == 0 {
+            return "\(hours) hr"
+        }
+        return "\(hours) hr \(mins) min"
     }
 }
 

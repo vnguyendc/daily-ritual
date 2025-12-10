@@ -270,6 +270,37 @@ export class DatabaseService {
             throw error;
         return data || [];
     }
+    static async getTrainingPlanById(id, userId) {
+        if (useMock) {
+            return null;
+        }
+        const { data, error } = await supabaseServiceClient
+            .from('training_plans')
+            .select('*')
+            .eq('id', id)
+            .eq('user_id', userId)
+            .single();
+        if (error && error.code !== 'PGRST116') {
+            throw error;
+        }
+        return data || null;
+    }
+    static async listTrainingPlansInRange(userId, startDate, endDate) {
+        if (useMock) {
+            return [];
+        }
+        const { data, error } = await supabaseServiceClient
+            .from('training_plans')
+            .select('*')
+            .eq('user_id', userId)
+            .gte('date', startDate)
+            .lte('date', endDate)
+            .order('date', { ascending: false })
+            .order('sequence', { ascending: true });
+        if (error)
+            throw error;
+        return data || [];
+    }
     static async getNextTrainingPlanSequence(userId, date) {
         if (useMock)
             return 1;

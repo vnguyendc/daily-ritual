@@ -44,6 +44,8 @@ export declare class DatabaseService {
     static getUpcomingCompetitions(userId: string): Promise<never[]>;
     static getRecentInsights(userId: string, limit?: number): Promise<never[]>;
     static listTrainingPlans(userId: string, date: string): Promise<TrainingPlanRow[]>;
+    static getTrainingPlanById(id: string, userId: string): Promise<TrainingPlanRow | null>;
+    static listTrainingPlansInRange(userId: string, startDate: string, endDate: string): Promise<TrainingPlanRow[]>;
     private static getNextTrainingPlanSequence;
     static createTrainingPlan(userId: string, payload: Omit<TrainingPlanInsert, 'user_id'> & {
         user_id?: string;

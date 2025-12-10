@@ -38,6 +38,8 @@ router.delete('/daily-entries/:date', DailyEntriesController.deleteDailyEntry)
 
 // Training plans routes
 router.get('/training-plans', TrainingPlansController.list)
+router.get('/training-plans/range', TrainingPlansController.listInRange)
+router.get('/training-plans/:id', TrainingPlansController.get)
 router.post('/training-plans', TrainingPlansController.create)
 router.put('/training-plans/:id', TrainingPlansController.update)
 router.delete('/training-plans/:id', TrainingPlansController.remove)

@@ -7,6 +7,91 @@ type TrainingPlanInsert = Database['public']['Tables']['training_plans']['Insert
 type TrainingPlanUpdate = Database['public']['Tables']['training_plans']['Update']
 
 export class TrainingPlansController {
+  static async get(req: Request, res: Response) {
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '')
+      const useMock = process.env.USE_MOCK === 'true'
+      const devUserId = process.env.DEV_USER_ID
+      
+      let user: any
+      if (!token) {
+        if (useMock) {
+          user = { id: 'mock-user-id' }
+        } else if (devUserId) {
+          user = { id: devUserId }
+        } else {
+          return res.status(401).json({ error: 'Authorization token required' })
+        }
+      } else {
+        user = await getUserFromToken(token)
+      }
+
+      const id = req.params.id
+      if (!id) {
+        return res.status(400).json({ error: 'Training plan ID required' })
+      }
+
+      const plan = await DatabaseService.getTrainingPlanById(id, user.id)
+      if (!plan) {
+        return res.status(404).json({ error: 'Training plan not found' })
+      }
+      
+      const response: APIResponse = { success: true, data: plan }
+      res.json(response)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      console.error('Error getting training plan:', error)
+      res.status(500).json({ success: false, error: { error: 'Internal server error', message } })
+    }
+  }
+
+  static async listInRange(req: Request, res: Response) {
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '')
+      const useMock = process.env.USE_MOCK === 'true'
+      const devUserId = process.env.DEV_USER_ID
+      
+      let user: any
+      if (!token) {
+        if (useMock) {
+          user = { id: 'mock-user-id' }
+        } else if (devUserId) {
+          user = { id: devUserId }
+        } else {
+          return res.status(401).json({ error: 'Authorization token required' })
+        }
+      } else {
+        user = await getUserFromToken(token)
+      }
+
+      const start = req.query.start as string
+      const end = req.query.end as string
+      
+      if (!start || !start.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        return res.status(400).json({ error: 'start query param (YYYY-MM-DD) required' })
+      }
+      if (!end || !end.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        return res.status(400).json({ error: 'end query param (YYYY-MM-DD) required' })
+      }
+
+      // Limit range to 365 days max
+      const startDate = new Date(start)
+      const endDate = new Date(end)
+      const diffDays = Math.abs((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+      if (diffDays > 365) {
+        return res.status(400).json({ error: 'Date range cannot exceed 365 days' })
+      }
+
+      const plans = await DatabaseService.listTrainingPlansInRange(user.id, start, end)
+      const response: APIResponse = { success: true, data: plans }
+      res.json(response)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      console.error('Error listing training plans in range:', error)
+      res.status(500).json({ success: false, error: { error: 'Internal server error', message } })
+    }
+  }
+
   static async list(req: Request, res: Response) {
     try {
       const token = req.headers.authorization?.replace('Bearer ', '')

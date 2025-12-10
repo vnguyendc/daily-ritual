@@ -1,3 +1,4 @@
+export type TrainingActivityType = 'strength_training' | 'functional_fitness' | 'crossfit' | 'weightlifting' | 'powerlifting' | 'bodybuilding' | 'olympic_lifting' | 'calisthenics' | 'running' | 'cycling' | 'swimming' | 'rowing' | 'elliptical' | 'stair_climbing' | 'jump_rope' | 'boxing' | 'kickboxing' | 'mma' | 'muay_thai' | 'jiu_jitsu' | 'karate' | 'taekwondo' | 'wrestling' | 'basketball' | 'soccer' | 'football' | 'volleyball' | 'baseball' | 'hockey' | 'rugby' | 'lacrosse' | 'tennis' | 'squash' | 'racquetball' | 'badminton' | 'pickleball' | 'golf' | 'skiing' | 'snowboarding' | 'surfing' | 'skateboarding' | 'rock_climbing' | 'bouldering' | 'hiking' | 'trail_running' | 'yoga' | 'pilates' | 'tai_chi' | 'meditation' | 'stretching' | 'mobility' | 'recovery' | 'rest' | 'active_recovery' | 'physical_therapy' | 'massage' | 'walking' | 'other' | 'strength' | 'cardio' | 'skills' | 'competition' | 'cross_training';
 export type Json = string | number | boolean | null | {
     [key: string]: Json | undefined;
 } | Json[];
@@ -60,7 +61,7 @@ export interface Database {
                     gratitudes: string[] | null;
                     daily_quote: string | null;
                     quote_reflection: string | null;
-                    planned_training_type: 'strength' | 'cardio' | 'skills' | 'competition' | 'rest' | 'cross_training' | 'recovery' | null;
+                    planned_training_type: TrainingActivityType | null;
                     planned_training_time: string | null;
                     planned_intensity: 'light' | 'moderate' | 'hard' | 'very_hard' | null;
                     planned_duration: number | null;
@@ -83,7 +84,7 @@ export interface Database {
                     gratitudes?: string[] | null;
                     daily_quote?: string | null;
                     quote_reflection?: string | null;
-                    planned_training_type?: 'strength' | 'cardio' | 'skills' | 'competition' | 'rest' | 'cross_training' | 'recovery' | null;
+                    planned_training_type?: TrainingActivityType | null;
                     planned_training_time?: string | null;
                     planned_intensity?: 'light' | 'moderate' | 'hard' | 'very_hard' | null;
                     planned_duration?: number | null;
@@ -104,7 +105,7 @@ export interface Database {
                     gratitudes?: string[] | null;
                     daily_quote?: string | null;
                     quote_reflection?: string | null;
-                    planned_training_type?: 'strength' | 'cardio' | 'skills' | 'competition' | 'rest' | 'cross_training' | 'recovery' | null;
+                    planned_training_type?: TrainingActivityType | null;
                     planned_training_time?: string | null;
                     planned_intensity?: 'light' | 'moderate' | 'hard' | 'very_hard' | null;
                     planned_duration?: number | null;
@@ -202,7 +203,7 @@ export interface Database {
                     user_id: string;
                     date: string;
                     sequence: number;
-                    type: 'strength' | 'cardio' | 'skills' | 'competition' | 'rest' | 'cross_training' | 'recovery';
+                    type: TrainingActivityType;
                     start_time: string | null;
                     intensity: 'light' | 'moderate' | 'hard' | 'very_hard' | null;
                     duration_minutes: number | null;
@@ -215,7 +216,7 @@ export interface Database {
                     user_id: string;
                     date: string;
                     sequence?: number;
-                    type: 'strength' | 'cardio' | 'skills' | 'competition' | 'rest' | 'cross_training' | 'recovery';
+                    type: TrainingActivityType;
                     start_time?: string | null;
                     intensity?: 'light' | 'moderate' | 'hard' | 'very_hard' | null;
                     duration_minutes?: number | null;
@@ -226,7 +227,7 @@ export interface Database {
                     user_id?: string;
                     date?: string;
                     sequence?: number;
-                    type?: 'strength' | 'cardio' | 'skills' | 'competition' | 'rest' | 'cross_training' | 'recovery';
+                    type?: TrainingActivityType;
                     start_time?: string | null;
                     intensity?: 'light' | 'moderate' | 'hard' | 'very_hard' | null;
                     duration_minutes?: number | null;

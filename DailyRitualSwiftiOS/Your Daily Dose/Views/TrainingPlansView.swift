@@ -2,6 +2,7 @@
 //  TrainingPlansView.swift
 //  Your Daily Dose
 //
+//  Enhanced training plans view with tap-to-detail navigation and improved UI
 //  Created by VinhNguyen on 9/9/25.
 //
 
@@ -12,44 +13,30 @@ struct TrainingPlansView: View {
     @State private var isLoading = false
     @State private var showAddSheet = false
     @State private var selectedDate: Date = Calendar.current.startOfDay(for: Date())
+    @State private var selectedPlan: TrainingPlan?
+    @State private var planToEdit: TrainingPlan?
     private let plansService: TrainingPlansServiceProtocol = TrainingPlansService()
+    
+    private var timeContext: DesignSystem.TimeContext { .morning }
 
     var body: some View {
         NavigationView {
-            List {
-                Section {
-                    SyncStatusBanner(timeContext: .morning)
-                }
-                ForEach(plans.sorted(by: { $0.sequence < $1.sequence })) { plan in
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            Text(plan.trainingType ?? "-" ).font(.headline)
-                            Spacer()
-                            Text(plan.intensity ?? "-")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                        HStack(spacing: 12) {
-                            Label(plan.startTime ?? "--:--", systemImage: "clock")
-                            Label("\(plan.durationMinutes ?? 0) min", systemImage: "timer")
-                        }
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        if let notes = plan.notes, !notes.isEmpty {
-                            Text(notes).font(.subheadline)
-                        }
+            ScrollView {
+                VStack(spacing: DesignSystem.Spacing.md) {
+                    // Sync status
+                    SyncStatusBanner(timeContext: timeContext)
+                        .padding(.horizontal, DesignSystem.Spacing.md)
+                    
+                    // Empty state or plan cards
+                    if plans.isEmpty && !isLoading {
+                        emptyState
+                    } else {
+                        plansList
                     }
                 }
-                .onDelete { indexSet in
-                    Task {
-                        for index in indexSet {
-                            let id = plans[index].id
-                            try? await plansService.remove(id)
-                        }
-                        await load()
-                    }
-                }
+                .padding(.vertical, DesignSystem.Spacing.md)
             }
+            .background(DesignSystem.Colors.background)
             .navigationTitle("Training Plans")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -59,19 +46,19 @@ struct TrainingPlansView: View {
                             Text("Add Plan")
                         }
                         .font(DesignSystem.Typography.buttonMedium)
-                        .foregroundColor(DesignSystem.TimeContext.current().primaryColor)
+                        .foregroundColor(timeContext.primaryColor)
                     }
                 }
                 ToolbarItem(placement: .navigationBarLeading) {
                     DatePicker("Date", selection: $selectedDate, displayedComponents: .date)
                         .labelsHidden()
-                        .onChange(of: selectedDate) { _ in
+                        .onChange(of: selectedDate) { _, _ in
                             Task { await load() }
                         }
                 }
             }
             .overlay {
-                if isLoading && plans.isEmpty { 
+                if isLoading && plans.isEmpty {
                     LoadingCard(message: "Loading training plans...", progress: nil, cancelAction: nil, useMaterialBackground: false)
                 }
             }
@@ -81,11 +68,101 @@ struct TrainingPlansView: View {
                 await load()
             }
             .sheet(isPresented: $showAddSheet) {
-                AddTrainingPlanSheet(date: selectedDate) {
+                TrainingPlanFormSheet(mode: .create, date: selectedDate) {
+                    await load()
+                }
+            }
+            .sheet(item: $selectedPlan) { plan in
+                TrainingPlanDetailSheet(
+                    plan: plan,
+                    onEdit: {
+                        selectedPlan = nil
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            planToEdit = plan
+                        }
+                    },
+                    onDelete: {
+                        try? await plansService.remove(plan.id)
+                        await load()
+                    },
+                    onDismiss: {
+                        selectedPlan = nil
+                    }
+                )
+            }
+            .sheet(item: $planToEdit) { plan in
+                TrainingPlanFormSheet(mode: .edit, date: selectedDate, existingPlan: plan) {
                     await load()
                 }
             }
         }
+    }
+    
+    // MARK: - Empty State
+    private var emptyState: some View {
+        VStack(spacing: DesignSystem.Spacing.lg) {
+            Image(systemName: "figure.run.circle")
+                .font(.system(size: 60))
+                .foregroundColor(DesignSystem.Colors.tertiaryText)
+            
+            Text("No Training Plans")
+                .font(DesignSystem.Typography.headlineMedium)
+                .foregroundColor(DesignSystem.Colors.primaryText)
+            
+            Text("Add your first training plan for this day")
+                .font(DesignSystem.Typography.bodyMedium)
+                .foregroundColor(DesignSystem.Colors.secondaryText)
+                .multilineTextAlignment(.center)
+            
+            Button {
+                showAddSheet = true
+            } label: {
+                HStack(spacing: DesignSystem.Spacing.sm) {
+                    Image(systemName: "plus")
+                    Text("Add Training Plan")
+                }
+                .font(DesignSystem.Typography.buttonMedium)
+                .foregroundColor(timeContext.primaryColor)
+                .padding(.horizontal, DesignSystem.Spacing.lg)
+                .padding(.vertical, DesignSystem.Spacing.md)
+                .background(
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
+                        .stroke(timeContext.primaryColor, lineWidth: 1.5)
+                )
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, DesignSystem.Spacing.xxl)
+        .padding(.horizontal, DesignSystem.Spacing.cardPadding)
+    }
+    
+    // MARK: - Plans List
+    private var plansList: some View {
+        VStack(spacing: DesignSystem.Spacing.sm) {
+            ForEach(plans.sorted(by: { $0.sequence < $1.sequence })) { plan in
+                TrainingPlanRow(plan: plan, timeContext: timeContext)
+                    .onTapGesture {
+                        selectedPlan = plan
+                    }
+                    .contextMenu {
+                        Button {
+                            planToEdit = plan
+                        } label: {
+                            Label("Edit", systemImage: "pencil")
+                        }
+                        
+                        Button(role: .destructive) {
+                            Task {
+                                try? await plansService.remove(plan.id)
+                                await load()
+                            }
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+            }
+        }
+        .padding(.horizontal, DesignSystem.Spacing.md)
     }
 
     private func load() async {
@@ -99,287 +176,87 @@ struct TrainingPlansView: View {
     }
 }
 
-private struct AddTrainingPlanSheet: View {
-    let date: Date
-    var onSaved: () async -> Void
-
-    @Environment(\.dismiss) private var dismiss
-    private let plansService: TrainingPlansServiceProtocol = TrainingPlansService()
-
-    @State private var trainingType: String = "strength"
-    @State private var intensity: String = "moderate"
-    @State private var sequence: Int = 1
-    @State private var durationMinutes: Int = 60
-    @State private var startTime: Date = Calendar.current.date(from: DateComponents(hour: 7, minute: 0)) ?? Date()
-    @State private var notes: String = ""
-    @State private var isSaving = false
-
-    private let trainingTypes = ["strength","cardio","skills","competition","rest","cross_training","recovery"]
-    private let intensities = ["light","moderate","hard","very_hard"]
-    private let durationOptions = [30, 45, 60, 90, 120, 150, 180]
+// MARK: - Training Plan Row
+struct TrainingPlanRow: View {
+    let plan: TrainingPlan
+    let timeContext: DesignSystem.TimeContext
     
-    private var timeContext: DesignSystem.TimeContext { .morning }
-    
-    private func durationDisplay(_ minutes: Int) -> String {
-        if minutes < 60 { return "\(minutes) min" }
-        let hours = minutes / 60
-        let mins = minutes % 60
-        if mins == 0 { return "\(hours) hr" }
-        return "\(hours) hr \(mins) min"
-    }
-
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-                    
-                    // Training Type Section
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        Text("Training Type")
-                            .font(DesignSystem.Typography.headlineSmall)
-                            .foregroundColor(DesignSystem.Colors.primaryText)
-                            .kerning(0.3)
-                        
-                        Picker("Type", selection: $trainingType) {
-                            ForEach(trainingTypes, id: \.self) { type in
-                                Text(type.replacingOccurrences(of: "_", with: " ").capitalized)
-                                    .tag(type)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .padding(DesignSystem.Spacing.md)
-                        .background(
-                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.input)
-                                .fill(DesignSystem.Colors.cardBackground)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.input)
-                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                        )
-                    }
-                    
-                    Divider().opacity(0.3)
-                    
-                    // Sequence Section
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        Text("Sequence in Your Day")
-                            .font(DesignSystem.Typography.headlineSmall)
-                            .foregroundColor(DesignSystem.Colors.primaryText)
-                            .kerning(0.3)
-                        
-                        HStack(spacing: DesignSystem.Spacing.md) {
-                            Button {
-                                if sequence > 1 { sequence -= 1 }
-                            } label: {
-                                ZStack {
-                                    Circle()
-                                        .fill(DesignSystem.Colors.cardBackground)
-                                        .frame(width: 44, height: 44)
-                                        .overlay(
-                                            Circle()
-                                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                        )
-                                    Image(systemName: "minus")
-                                        .foregroundColor(timeContext.primaryColor)
-                                        .font(.system(size: 18, weight: .semibold))
-                                }
-                            }
-                            .disabled(sequence <= 1)
-                            
-                            Text("\(sequence)")
-                                .font(DesignSystem.Typography.displaySmall)
-                                .foregroundColor(DesignSystem.Colors.primaryText)
-                                .frame(minWidth: 60)
-                            
-                            Button {
-                                if sequence < 6 { sequence += 1 }
-                            } label: {
-                                ZStack {
-                                    Circle()
-                                        .fill(DesignSystem.Colors.cardBackground)
-                                        .frame(width: 44, height: 44)
-                                        .overlay(
-                                            Circle()
-                                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                        )
-                                    Image(systemName: "plus")
-                                        .foregroundColor(timeContext.primaryColor)
-                                        .font(.system(size: 18, weight: .semibold))
-                                }
-                            }
-                            .disabled(sequence >= 6)
-                        }
-                    }
-                    
-                    Divider().opacity(0.3)
-                    
-                    // Training Time Section
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        Text("Training Time")
-                            .font(DesignSystem.Typography.headlineSmall)
-                            .foregroundColor(DesignSystem.Colors.primaryText)
-                            .kerning(0.3)
-                        
-                        DatePicker("Start Time", selection: $startTime, displayedComponents: .hourAndMinute)
-                            .datePickerStyle(.compact)
-                            .labelsHidden()
-                            .padding(DesignSystem.Spacing.md)
-                            .background(
-                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.input)
-                                    .fill(DesignSystem.Colors.cardBackground)
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.input)
-                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                            )
-                    }
-                    
-                    Divider().opacity(0.3)
-                    
-                    // Intensity Section
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        Text("Intensity")
-                            .font(DesignSystem.Typography.headlineSmall)
-                            .foregroundColor(DesignSystem.Colors.primaryText)
-                            .kerning(0.3)
-                        
-                        Picker("Intensity", selection: $intensity) {
-                            ForEach(intensities, id: \.self) { int in
-                                Text(int.replacingOccurrences(of: "_", with: " ").capitalized)
-                                    .tag(int)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .padding(DesignSystem.Spacing.md)
-                        .background(
-                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.input)
-                                .fill(DesignSystem.Colors.cardBackground)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.input)
-                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                        )
-                    }
-                    
-                    Divider().opacity(0.3)
-                    
-                    // Duration Section
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        Text("Duration")
-                            .font(DesignSystem.Typography.headlineSmall)
-                            .foregroundColor(DesignSystem.Colors.primaryText)
-                            .kerning(0.3)
-                        
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: DesignSystem.Spacing.sm) {
-                                ForEach(durationOptions, id: \.self) { duration in
-                                    Button {
-                                        durationMinutes = duration
-                                    } label: {
-                                        Text(durationDisplay(duration))
-                                            .font(DesignSystem.Typography.buttonMedium)
-                                            .foregroundColor(durationMinutes == duration ? DesignSystem.Colors.invertedText : DesignSystem.Colors.secondaryText.opacity(0.8))
-                                            .padding(.horizontal, DesignSystem.Spacing.md)
-                                            .padding(.vertical, DesignSystem.Spacing.sm)
-                                            .background(
-                                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
-                                                    .fill(durationMinutes == duration ? timeContext.primaryColor : DesignSystem.Colors.cardBackground)
-                                            )
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
-                                                    .stroke(durationMinutes == duration ? Color.clear : Color.white.opacity(0.12), lineWidth: 1)
-                                            )
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                        }
-                    }
-                    
-                    Divider().opacity(0.3)
-                    
-                    // Notes Section
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        Text("Notes (Optional)")
-                            .font(DesignSystem.Typography.headlineSmall)
-                            .foregroundColor(DesignSystem.Colors.primaryText)
-                            .kerning(0.3)
-                        
-                        ZStack(alignment: .topLeading) {
-                            if notes.isEmpty {
-                                Text("e.g., 5x5 squats, focus on form")
-                                    .font(DesignSystem.Typography.bodyLargeSafe)
-                                    .foregroundColor(DesignSystem.Colors.tertiaryText)
-                                    .padding(.horizontal, DesignSystem.Spacing.md + 4)
-                                    .padding(.vertical, DesignSystem.Spacing.md + 2)
-                                    .accessibilityHidden(true)
-                            }
-                            TextEditor(text: $notes)
-                                .font(DesignSystem.Typography.bodyLargeSafe)
-                                .foregroundColor(DesignSystem.Colors.primaryText)
-                                .padding(.horizontal, DesignSystem.Spacing.md)
-                                .padding(.vertical, DesignSystem.Spacing.md)
-                                .frame(minHeight: 100)
-                                .scrollContentBackground(.hidden)
-                                .background(Color.clear)
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.input)
-                                .fill(DesignSystem.Colors.cardBackground)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.input)
-                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                        )
-                    }
-                    
-                    // Prominent Save Button at Bottom
-                    PremiumPrimaryButton(isSaving ? "Saving…" : "Save Training Plan", isLoading: isSaving, timeContext: timeContext) {
-                        Task { await save() }
-                    }
-                    .padding(.top, DesignSystem.Spacing.md)
-                }
-                .padding(DesignSystem.Spacing.cardPadding)
+        HStack(spacing: DesignSystem.Spacing.md) {
+            // Activity icon
+            ZStack {
+                Circle()
+                    .fill(timeContext.primaryColor.opacity(0.15))
+                    .frame(width: 50, height: 50)
+                
+                Image(systemName: plan.activityType.icon)
+                    .font(.system(size: 22))
+                    .foregroundColor(timeContext.primaryColor)
             }
-            .background(DesignSystem.Colors.background)
-            .navigationTitle("Create Training Plan")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                        .foregroundColor(DesignSystem.Colors.secondaryText)
-                }
-            }
-        }
-    }
-
-    private func save() async {
-        isSaving = true
-        defer { isSaving = false }
-        do {
-            // Convert Date to HH:mm:ss string
-            let formatter = DateFormatter()
-            formatter.dateFormat = "HH:mm:ss"
-            let timeString = formatter.string(from: startTime)
             
-            let plan = TrainingPlan(
-                id: UUID(),
-                userId: SupabaseManager.shared.currentUser?.id ?? UUID(),
-                date: date,
-                sequence: sequence,
-                trainingType: trainingType,
-                startTime: timeString,
-                intensity: intensity,
-                durationMinutes: durationMinutes,
-                notes: notes.isEmpty ? nil : notes,
-                createdAt: nil,
-                updatedAt: nil
-            )
-            _ = try await plansService.create(plan)
-            await onSaved()
-            dismiss()
-        } catch {
-            print("Failed to save training plan:", error)
+            // Plan details
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(plan.activityType.displayName)
+                        .font(DesignSystem.Typography.headlineSmall)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                    
+                    Spacer()
+                    
+                    // Intensity badge
+                    Text(plan.intensityLevel.displayName)
+                        .font(DesignSystem.Typography.caption)
+                        .foregroundColor(intensityColor(plan.intensityLevel))
+                        .padding(.horizontal, DesignSystem.Spacing.sm)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule()
+                                .fill(intensityColor(plan.intensityLevel).opacity(0.15))
+                        )
+                }
+                
+                HStack(spacing: DesignSystem.Spacing.md) {
+                    if let time = plan.formattedStartTime {
+                        Label(time, systemImage: "clock")
+                    }
+                    if let duration = plan.formattedDuration {
+                        Label(duration, systemImage: "timer")
+                    }
+                }
+                .font(DesignSystem.Typography.caption)
+                .foregroundColor(DesignSystem.Colors.secondaryText)
+                
+                if let notes = plan.notes, !notes.isEmpty {
+                    Text(notes)
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                        .lineLimit(2)
+                }
+            }
+            
+            // Chevron
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(DesignSystem.Colors.tertiaryText)
+        }
+        .padding(DesignSystem.Spacing.md)
+        .background(
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                .fill(DesignSystem.Colors.cardBackground)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                .stroke(DesignSystem.Colors.border, lineWidth: 1)
+        )
+        .contentShape(Rectangle())
+    }
+    
+    private func intensityColor(_ intensity: TrainingIntensity) -> Color {
+        switch intensity {
+        case .light: return DesignSystem.Colors.powerGreen
+        case .moderate: return DesignSystem.Colors.eliteGold
+        case .hard: return .orange
+        case .veryHard: return DesignSystem.Colors.alertRed
         }
     }
 }

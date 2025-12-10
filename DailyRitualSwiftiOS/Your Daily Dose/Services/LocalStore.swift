@@ -140,4 +140,42 @@ extension LocalStore {
     }
 }
 
+// MARK: - Onboarding State Persistence
+extension LocalStore {
+    private static let onboardingStateFilename = "onboarding_state.json"
+    
+    private static func onboardingStateURL() -> URL {
+        documentsURL().appendingPathComponent(onboardingStateFilename)
+    }
+    
+    static func loadOnboardingState() -> OnboardingState? {
+        let url = onboardingStateURL()
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        do {
+            return try JSONDecoder().decode(OnboardingState.self, from: data)
+        } catch {
+            print("LocalStore: failed to decode onboarding state:", error)
+            return nil
+        }
+    }
+    
+    static func saveOnboardingState(_ state: OnboardingState) {
+        do {
+            let data = try JSONEncoder().encode(state)
+            try data.write(to: onboardingStateURL(), options: [.atomic])
+        } catch {
+            print("LocalStore: failed to write onboarding state:", error)
+        }
+    }
+    
+    static func clearOnboardingState() {
+        try? FileManager.default.removeItem(at: onboardingStateURL())
+    }
+    
+    static func hasCompletedOnboarding() -> Bool {
+        guard let state = loadOnboardingState() else { return false }
+        return state.isComplete
+    }
+}
+
 
