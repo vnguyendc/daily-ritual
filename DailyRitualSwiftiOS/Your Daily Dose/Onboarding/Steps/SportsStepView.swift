@@ -13,10 +13,10 @@ struct SportsStepView: View {
     @State private var showAddCustom: Bool = false
     @FocusState private var isCustomFieldFocused: Bool
     
+    // 2 columns for better touch targets on smaller phones
     private let columns = [
-        GridItem(.flexible()),
-        GridItem(.flexible()),
-        GridItem(.flexible())
+        GridItem(.flexible(), spacing: DesignSystem.Spacing.md),
+        GridItem(.flexible(), spacing: DesignSystem.Spacing.md)
     ]
     
     var body: some View {
@@ -27,19 +27,19 @@ struct SportsStepView: View {
                     Text("What sports do you train?")
                         .font(DesignSystem.Typography.displaySmallSafe)
                         .foregroundColor(DesignSystem.Colors.primaryText)
-                    
+
                     Text("Select all that apply. This helps us tailor your reflections and insights.")
                         .font(DesignSystem.Typography.bodyLargeSafe)
                         .foregroundColor(DesignSystem.Colors.secondaryText)
                 }
                 .padding(.bottom, DesignSystem.Spacing.sm)
-                
+
                 // Selected Count
                 if !coordinator.state.allSports.isEmpty {
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundColor(DesignSystem.Colors.powerGreen)
-                        
+
                         Text("\(coordinator.state.allSports.count) selected")
                             .font(DesignSystem.Typography.bodyMedium)
                             .foregroundColor(DesignSystem.Colors.powerGreen)
@@ -49,36 +49,46 @@ struct SportsStepView: View {
                     .background(DesignSystem.Colors.powerGreen.opacity(0.15))
                     .cornerRadius(DesignSystem.CornerRadius.small)
                 }
-                
+
                 // Sports Grid
                 LazyVGrid(columns: columns, spacing: DesignSystem.Spacing.md) {
                     ForEach(SportOption.curatedList) { sport in
                         SportCard(
                             sport: sport,
                             isSelected: coordinator.isSportSelected(sport),
-                            action: { coordinator.toggleSport(sport) }
+                            action: {
+                                HapticFeedback.selection()
+                                coordinator.toggleSport(sport)
+                            }
                         )
                     }
-                    
+
                     // Custom sports
                     ForEach(coordinator.state.customSports) { sport in
                         SportCard(
                             sport: sport,
                             isSelected: coordinator.isSportSelected(sport),
-                            action: { coordinator.toggleSport(sport) },
-                            onDelete: { coordinator.removeCustomSport(sport) }
+                            action: {
+                                HapticFeedback.selection()
+                                coordinator.toggleSport(sport)
+                            },
+                            onDelete: {
+                                HapticFeedback.impact(.light)
+                                coordinator.removeCustomSport(sport)
+                            }
                         )
                     }
-                    
+
                     // Add Custom Button
                     Button {
+                        HapticFeedback.selection()
                         showAddCustom = true
                     } label: {
                         VStack(spacing: DesignSystem.Spacing.sm) {
                             Image(systemName: "plus.circle.fill")
                                 .font(.system(size: 28))
                                 .foregroundColor(DesignSystem.Colors.championBlue)
-                            
+
                             Text("Add Other")
                                 .font(DesignSystem.Typography.buttonSmall)
                                 .foregroundColor(DesignSystem.Colors.championBlue)
@@ -92,16 +102,18 @@ struct SportsStepView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                
+
                 Spacer(minLength: DesignSystem.Spacing.xxl)
             }
             .padding(.horizontal, DesignSystem.Spacing.lg)
             .padding(.top, DesignSystem.Spacing.lg)
         }
+        .scrollDismissesKeyboard(.interactively)
         .sheet(isPresented: $showAddCustom) {
             AddCustomSportSheet(
                 customSportText: $customSportText,
                 onAdd: {
+                    HapticFeedback.notification(.success)
                     coordinator.addCustomSport(customSportText)
                     customSportText = ""
                     showAddCustom = false
@@ -188,7 +200,7 @@ struct AddCustomSportSheet: View {
     let onAdd: () -> Void
     let onCancel: () -> Void
     @FocusState private var isFocused: Bool
-    
+
     var body: some View {
         NavigationStack {
             VStack(spacing: DesignSystem.Spacing.lg) {
@@ -196,21 +208,27 @@ struct AddCustomSportSheet: View {
                     Text("Add your sport")
                         .font(DesignSystem.Typography.headlineLargeSafe)
                         .foregroundColor(DesignSystem.Colors.primaryText)
-                    
+
                     Text("Don't see your sport? Add it here.")
                         .font(DesignSystem.Typography.bodyMedium)
                         .foregroundColor(DesignSystem.Colors.secondaryText)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                
+
                 PremiumTextField(
                     placeholder: "e.g., Pickleball, Surfing, Dance...",
                     text: $customSportText,
                     timeContext: .morning,
-                    autocapitalization: .words
+                    autocapitalization: .words,
+                    submitLabel: .done,
+                    onSubmit: {
+                        if !customSportText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            onAdd()
+                        }
+                    }
                 )
                 .focused($isFocused)
-                
+
                 PremiumPrimaryButton(
                     "Add Sport",
                     isDisabled: customSportText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
@@ -218,7 +236,7 @@ struct AddCustomSportSheet: View {
                 ) {
                     onAdd()
                 }
-                
+
                 Spacer()
             }
             .padding(DesignSystem.Spacing.lg)
@@ -227,6 +245,11 @@ struct AddCustomSportSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { onCancel() }
+                }
+                ToolbarItem(placement: .keyboard) {
+                    Button("Done") {
+                        isFocused = false
+                    }
                 }
             }
         }

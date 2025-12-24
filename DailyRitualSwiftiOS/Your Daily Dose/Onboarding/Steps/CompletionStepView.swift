@@ -140,18 +140,19 @@ struct CompletionStepView: View {
             withAnimation(.easeOut(duration: 1.0)) {
                 ringProgress = 1.0
             }
-            
+
             withAnimation(.easeOut(duration: 0.5).delay(0.8)) {
                 textOpacity = 1.0
             }
-            
+
             withAnimation(.easeOut(duration: 0.5).delay(1.2)) {
                 summaryOpacity = 1.0
             }
-            
-            // Trigger haptic
-            let generator = UINotificationFeedbackGenerator()
-            generator.notificationOccurred(.success)
+
+            // Celebration haptic
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                HapticFeedback.notification(.success)
+            }
         }
     }
     

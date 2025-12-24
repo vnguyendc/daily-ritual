@@ -13,45 +13,48 @@ struct OnboardingFlowView: View {
     @Binding var isOnboardingComplete: Bool
     
     var body: some View {
-        ZStack {
-            // Background
-            DesignSystem.Colors.background
-                .ignoresSafeArea()
-            
-            VStack(spacing: 0) {
-                // Header with progress
-                OnboardingHeader(
-                    coordinator: coordinator,
-                    onBack: { coordinator.goToPreviousStep() },
-                    onSkip: { coordinator.skipCurrentStep() }
-                )
-                
-                // Step Content
-                TabView(selection: Binding(
-                    get: { coordinator.state.currentStep },
-                    set: { _ in } // Read-only binding - navigation handled by coordinator
-                )) {
-                    ForEach(OnboardingStep.allCases, id: \.self) { step in
-                        stepView(for: step)
-                            .tag(step)
+        VStack(spacing: 0) {
+            // Header with progress
+            OnboardingHeader(
+                coordinator: coordinator,
+                onBack: {
+                    HapticFeedback.selection()
+                    coordinator.goToPreviousStep()
+                },
+                onSkip: {
+                    HapticFeedback.selection()
+                    coordinator.skipCurrentStep()
+                }
+            )
+
+            // Step Content
+            TabView(selection: Binding(
+                get: { coordinator.state.currentStep },
+                set: { _ in } // Read-only binding - navigation handled by coordinator
+            )) {
+                ForEach(OnboardingStep.allCases, id: \.self) { step in
+                    stepView(for: step)
+                        .tag(step)
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .animation(DesignSystem.Animation.standard, value: coordinator.state.currentStep)
+
+            // Footer with action button
+            OnboardingFooter(
+                coordinator: coordinator,
+                onContinue: {
+                    HapticFeedback.impact(.light)
+                    if coordinator.state.currentStep == .completion {
+                        HapticFeedback.notification(.success)
+                        completeOnboarding()
+                    } else {
+                        coordinator.goToNextStep()
                     }
                 }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                .animation(DesignSystem.Animation.standard, value: coordinator.state.currentStep)
-                
-                // Footer with action button
-                OnboardingFooter(
-                    coordinator: coordinator,
-                    onContinue: {
-                        if coordinator.state.currentStep == .completion {
-                            completeOnboarding()
-                        } else {
-                            coordinator.goToNextStep()
-                        }
-                    }
-                )
-            }
+            )
         }
+        .background(DesignSystem.Colors.background.ignoresSafeArea())
         .alert("Error", isPresented: $coordinator.showError) {
             Button("OK", role: .cancel) { }
         } message: {
@@ -61,21 +64,22 @@ struct OnboardingFlowView: View {
     
     @ViewBuilder
     private func stepView(for step: OnboardingStep) -> some View {
+        // Flow: Personal → Sports → Experience → Why → Goal → Reminders → Tutorial → Done
         switch step {
         case .personalInfo:
             PersonalInfoStepView(coordinator: coordinator)
-        case .goal:
-            GoalStepView(coordinator: coordinator)
         case .sports:
             SportsStepView(coordinator: coordinator)
         case .journalHistory:
             JournalHistoryStepView(coordinator: coordinator)
-        case .tutorial:
-            TutorialStepView(coordinator: coordinator)
         case .reflectionReason:
             ReflectionReasonStepView(coordinator: coordinator)
+        case .goal:
+            GoalStepView(coordinator: coordinator)
         case .reminderTimes:
             ReminderTimesStepView(coordinator: coordinator)
+        case .tutorial:
+            TutorialStepView(coordinator: coordinator)
         case .completion:
             CompletionStepView(coordinator: coordinator)
         }
@@ -93,7 +97,7 @@ struct OnboardingHeader: View {
     @ObservedObject var coordinator: OnboardingCoordinator
     let onBack: () -> Void
     let onSkip: () -> Void
-    
+
     var body: some View {
         VStack(spacing: DesignSystem.Spacing.md) {
             // Navigation Row
@@ -108,20 +112,21 @@ struct OnboardingHeader: View {
                         .font(DesignSystem.Typography.buttonMedium)
                         .foregroundColor(DesignSystem.Colors.secondaryText)
                     }
+                    .frame(minWidth: 60, alignment: .leading)
                 } else {
                     Spacer()
                         .frame(width: 60)
                 }
-                
+
                 Spacer()
-                
+
                 // Step indicator
                 Text("\(coordinator.currentStepIndex + 1) of \(coordinator.totalSteps)")
                     .font(DesignSystem.Typography.caption)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
-                
+
                 Spacer()
-                
+
                 // Skip Button
                 if coordinator.canSkip {
                     Button(action: onSkip) {
@@ -129,13 +134,15 @@ struct OnboardingHeader: View {
                             .font(DesignSystem.Typography.buttonMedium)
                             .foregroundColor(DesignSystem.Colors.secondaryText)
                     }
+                    .frame(minWidth: 60, alignment: .trailing)
                 } else {
                     Spacer()
                         .frame(width: 60)
                 }
             }
+            .frame(minHeight: DesignSystem.Spacing.minTouchTarget)
             .padding(.horizontal, DesignSystem.Spacing.lg)
-            
+
             // Progress Bar
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
@@ -143,7 +150,7 @@ struct OnboardingHeader: View {
                     Capsule()
                         .fill(DesignSystem.Colors.border)
                         .frame(height: 4)
-                    
+
                     // Progress fill
                     Capsule()
                         .fill(
@@ -160,7 +167,8 @@ struct OnboardingHeader: View {
             .frame(height: 4)
             .padding(.horizontal, DesignSystem.Spacing.lg)
         }
-        .padding(.top, DesignSystem.Spacing.md)
+        .padding(.top, DesignSystem.Spacing.sm)
+        .padding(.bottom, DesignSystem.Spacing.sm)
         .background(DesignSystem.Colors.background)
     }
 }

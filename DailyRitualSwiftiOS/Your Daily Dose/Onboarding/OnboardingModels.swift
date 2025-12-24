@@ -8,42 +8,43 @@
 import Foundation
 
 // MARK: - Onboarding Step Enum
+// Flow optimized: Personal → Sports → Experience → Why → Goal → Reminders → Tutorial → Done
 enum OnboardingStep: Int, CaseIterable, Codable {
-    case personalInfo = 0
-    case goal = 1
-    case sports = 2
-    case journalHistory = 3
-    case tutorial = 4
-    case reflectionReason = 5
-    case reminderTimes = 6
-    case completion = 7
-    
+    case personalInfo = 0      // Light intro, build rapport
+    case sports = 1            // Quick wins with tap selections
+    case journalHistory = 2    // Context for personalization
+    case reflectionReason = 3  // Education/motivation (why this matters)
+    case goal = 4              // Now they understand, set their goal
+    case reminderTimes = 5     // Practical setup
+    case tutorial = 6          // Final walkthrough (skippable)
+    case completion = 7        // Celebration
+
     var title: String {
         switch self {
         case .personalInfo: return "About You"
-        case .goal: return "Your Goal"
         case .sports: return "Your Sports"
         case .journalHistory: return "Your Experience"
-        case .tutorial: return "How It Works"
         case .reflectionReason: return "Why Reflect"
+        case .goal: return "Your Goal"
         case .reminderTimes: return "Reminders"
+        case .tutorial: return "How It Works"
         case .completion: return "All Set!"
         }
     }
-    
+
     var subtitle: String {
         switch self {
         case .personalInfo: return "Let's personalize your experience"
-        case .goal: return "What are you working toward?"
         case .sports: return "What do you train for?"
         case .journalHistory: return "How familiar are you with journaling?"
-        case .tutorial: return "A quick tour of Daily Ritual"
         case .reflectionReason: return "The science behind daily reflection"
+        case .goal: return "What are you working toward?"
         case .reminderTimes: return "Build your habit with reminders"
+        case .tutorial: return "A quick tour of Daily Ritual"
         case .completion: return "You're ready to start!"
         }
     }
-    
+
     var isSkippable: Bool {
         switch self {
         case .personalInfo, .tutorial, .reflectionReason:
@@ -52,12 +53,12 @@ enum OnboardingStep: Int, CaseIterable, Codable {
             return false
         }
     }
-    
+
     var next: OnboardingStep? {
         guard let nextRaw = OnboardingStep(rawValue: rawValue + 1) else { return nil }
         return nextRaw
     }
-    
+
     var previous: OnboardingStep? {
         guard rawValue > 0, let prevRaw = OnboardingStep(rawValue: rawValue - 1) else { return nil }
         return prevRaw

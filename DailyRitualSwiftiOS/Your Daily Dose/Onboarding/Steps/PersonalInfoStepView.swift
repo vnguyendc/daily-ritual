@@ -12,7 +12,7 @@ struct PersonalInfoStepView: View {
     @State private var selectedAgeRange: AgeRange?
     @State private var selectedPronouns: PronounOption?
     @State private var showTimezoneSheet: Bool = false
-    
+
     private let commonTimezones: [(id: String, display: String)] = [
         ("America/New_York", "Eastern Time (ET)"),
         ("America/Chicago", "Central Time (CT)"),
@@ -26,7 +26,7 @@ struct PersonalInfoStepView: View {
         ("Asia/Tokyo", "Japan Time"),
         ("Australia/Sydney", "Sydney Time"),
     ]
-    
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
@@ -35,19 +35,19 @@ struct PersonalInfoStepView: View {
                     Text("Let's get to know you")
                         .font(DesignSystem.Typography.displaySmallSafe)
                         .foregroundColor(DesignSystem.Colors.primaryText)
-                    
+
                     Text("All fields are optional—share as much or as little as you'd like.")
                         .font(DesignSystem.Typography.bodyLargeSafe)
                         .foregroundColor(DesignSystem.Colors.secondaryText)
                 }
                 .padding(.bottom, DesignSystem.Spacing.md)
-                
+
                 // Name Field
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                     Text("What should we call you?")
                         .font(DesignSystem.Typography.headlineSmall)
                         .foregroundColor(DesignSystem.Colors.primaryText)
-                    
+
                     PremiumTextField(
                         placeholder: "Name or nickname",
                         text: Binding(
@@ -59,22 +59,20 @@ struct PersonalInfoStepView: View {
                         disableAutocorrection: true
                     )
                 }
-                
-                // Pronouns
+
+                // Pronouns - Flowing layout
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                     Text("Pronouns")
                         .font(DesignSystem.Typography.headlineSmall)
                         .foregroundColor(DesignSystem.Colors.primaryText)
-                    
-                    LazyVGrid(columns: [
-                        GridItem(.flexible()),
-                        GridItem(.flexible())
-                    ], spacing: DesignSystem.Spacing.sm) {
+
+                    FlowLayout(spacing: DesignSystem.Spacing.sm) {
                         ForEach(PronounOption.allCases, id: \.self) { option in
                             SelectableChip(
                                 title: option.displayTitle,
                                 isSelected: selectedPronouns == option,
                                 action: {
+                                    HapticFeedback.selection()
                                     selectedPronouns = option
                                     coordinator.updatePronouns(option.rawValue)
                                 }
@@ -82,22 +80,20 @@ struct PersonalInfoStepView: View {
                         }
                     }
                 }
-                
-                // Age Range
+
+                // Age Range - Flowing layout
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                     Text("Age range")
                         .font(DesignSystem.Typography.headlineSmall)
                         .foregroundColor(DesignSystem.Colors.primaryText)
-                    
-                    LazyVGrid(columns: [
-                        GridItem(.flexible()),
-                        GridItem(.flexible())
-                    ], spacing: DesignSystem.Spacing.sm) {
+
+                    FlowLayout(spacing: DesignSystem.Spacing.sm) {
                         ForEach(AgeRange.allCases, id: \.self) { range in
                             SelectableChip(
                                 title: range.displayTitle,
                                 isSelected: selectedAgeRange == range,
                                 action: {
+                                    HapticFeedback.selection()
                                     selectedAgeRange = range
                                     coordinator.updateAgeRange(range.rawValue)
                                 }
@@ -105,30 +101,31 @@ struct PersonalInfoStepView: View {
                         }
                     }
                 }
-                
+
                 // Timezone
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                     Text("Your timezone")
                         .font(DesignSystem.Typography.headlineSmall)
                         .foregroundColor(DesignSystem.Colors.primaryText)
-                    
+
                     Text("Used for scheduling your daily reminders")
                         .font(DesignSystem.Typography.bodySmall)
                         .foregroundColor(DesignSystem.Colors.tertiaryText)
-                    
+
                     Button {
+                        HapticFeedback.selection()
                         showTimezoneSheet = true
                     } label: {
                         HStack {
                             Image(systemName: "globe")
                                 .foregroundColor(DesignSystem.Colors.eliteGold)
-                            
+
                             Text(displayTimezone(coordinator.state.timezone))
                                 .font(DesignSystem.Typography.bodyLargeSafe)
                                 .foregroundColor(DesignSystem.Colors.primaryText)
-                            
+
                             Spacer()
-                            
+
                             Image(systemName: "chevron.right")
                                 .foregroundColor(DesignSystem.Colors.tertiaryText)
                         }
@@ -141,11 +138,15 @@ struct PersonalInfoStepView: View {
                         )
                     }
                 }
-                
+
                 Spacer(minLength: DesignSystem.Spacing.xxl)
             }
             .padding(.horizontal, DesignSystem.Spacing.lg)
             .padding(.top, DesignSystem.Spacing.lg)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .onTapGesture {
+            hideKeyboard()
         }
         .sheet(isPresented: $showTimezoneSheet) {
             TimezonePickerSheet(
@@ -177,12 +178,54 @@ struct PersonalInfoStepView: View {
     }
 }
 
+// MARK: - Flow Layout for Chips
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var currentX: CGFloat = 0
+        var currentY: CGFloat = 0
+        var lineHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if currentX + size.width > maxWidth && currentX > 0 {
+                currentX = 0
+                currentY += lineHeight + spacing
+                lineHeight = 0
+            }
+            lineHeight = max(lineHeight, size.height)
+            currentX += size.width + spacing
+        }
+        return CGSize(width: maxWidth, height: currentY + lineHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var currentX: CGFloat = bounds.minX
+        var currentY: CGFloat = bounds.minY
+        var lineHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if currentX + size.width > bounds.maxX && currentX > bounds.minX {
+                currentX = bounds.minX
+                currentY += lineHeight + spacing
+                lineHeight = 0
+            }
+            subview.place(at: CGPoint(x: currentX, y: currentY), proposal: ProposedViewSize(size))
+            lineHeight = max(lineHeight, size.height)
+            currentX += size.width + spacing
+        }
+    }
+}
+
 // MARK: - Selectable Chip Component
 struct SelectableChip: View {
     let title: String
     let isSelected: Bool
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             Text(title)
@@ -190,13 +233,12 @@ struct SelectableChip: View {
                 .foregroundColor(isSelected ? DesignSystem.Colors.invertedText : DesignSystem.Colors.primaryText)
                 .padding(.horizontal, DesignSystem.Spacing.md)
                 .padding(.vertical, DesignSystem.Spacing.sm)
-                .frame(maxWidth: .infinity)
                 .background(
-                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.badge)
                         .fill(isSelected ? DesignSystem.Colors.eliteGold : DesignSystem.Colors.cardBackground)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.badge)
                         .stroke(isSelected ? DesignSystem.Colors.eliteGold : DesignSystem.Colors.border, lineWidth: 1)
                 )
         }

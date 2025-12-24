@@ -100,6 +100,7 @@ struct ReflectionReasonStepView: View {
                 
                 // Learn More Button
                 Button {
+                    HapticFeedback.selection()
                     showLearnMore = true
                 } label: {
                     HStack {

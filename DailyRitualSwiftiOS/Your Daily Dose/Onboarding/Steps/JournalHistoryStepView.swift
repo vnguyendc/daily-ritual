@@ -31,7 +31,10 @@ struct JournalHistoryStepView: View {
                         JournalHistoryOptionCard(
                             option: option,
                             isSelected: coordinator.state.journalingHistory == option,
-                            action: { coordinator.updateJournalingHistory(option) }
+                            action: {
+                                HapticFeedback.selection()
+                                coordinator.updateJournalingHistory(option)
+                            }
                         )
                     }
                 }

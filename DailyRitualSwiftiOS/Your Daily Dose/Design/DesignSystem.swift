@@ -1017,4 +1017,54 @@ enum TextLevel {
     case tertiary
 }
 
+// MARK: - Keyboard Dismissal
+
+extension View {
+    /// Dismisses the keyboard when tapping outside of text fields
+    func dismissKeyboardOnTap() -> some View {
+        self.onTapGesture {
+            hideKeyboard()
+        }
+    }
+
+    /// Hides the keyboard
+    func hideKeyboard() {
+        #if canImport(UIKit)
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        #endif
+    }
+}
+
+#if canImport(UIKit)
+/// Global function to hide keyboard
+func hideKeyboard() {
+    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+}
+#endif
+
+// MARK: - Haptic Feedback
+
+struct HapticFeedback {
+    #if canImport(UIKit)
+    static func selection() {
+        let generator = UISelectionFeedbackGenerator()
+        generator.selectionChanged()
+    }
+
+    static func impact(_ style: UIImpactFeedbackGenerator.FeedbackStyle = .light) {
+        let generator = UIImpactFeedbackGenerator(style: style)
+        generator.impactOccurred()
+    }
+
+    static func notification(_ type: UINotificationFeedbackGenerator.FeedbackType) {
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(type)
+    }
+    #else
+    static func selection() {}
+    static func impact(_ style: Any? = nil) {}
+    static func notification(_ type: Any) {}
+    #endif
+}
+
 

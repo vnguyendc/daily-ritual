@@ -103,11 +103,15 @@ struct ReminderTimesStepView: View {
                         
                         // Enable Notifications Button
                         Button {
+                            HapticFeedback.impact(.medium)
                             Task {
                                 isRequestingPermission = true
                                 await coordinator.requestNotificationPermission()
                                 permissionStatus = await coordinator.checkNotificationStatus()
                                 isRequestingPermission = false
+                                if coordinator.state.notificationPermissionGranted {
+                                    HapticFeedback.notification(.success)
+                                }
                             }
                         } label: {
                             HStack {
@@ -184,51 +188,52 @@ struct ReminderTimesStepView: View {
     }
 }
 
-// MARK: - Reminder Time Card
+// MARK: - Reminder Time Card (Compact)
 struct ReminderTimeCard: View {
     let icon: String
     let iconColor: Color
     let title: String
     let description: String
     @Binding var time: Date
-    
+
     var body: some View {
-        VStack(spacing: DesignSystem.Spacing.md) {
-            HStack {
-                // Icon
-                ZStack {
-                    Circle()
-                        .fill(iconColor.opacity(0.2))
-                        .frame(width: 44, height: 44)
-                    
-                    Image(systemName: icon)
-                        .font(.system(size: 22))
-                        .foregroundColor(iconColor)
-                }
-                
-                // Text
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(DesignSystem.Typography.headlineSmall)
-                        .foregroundColor(DesignSystem.Colors.primaryText)
-                    
-                    Text(description)
-                        .font(DesignSystem.Typography.bodySmall)
-                        .foregroundColor(DesignSystem.Colors.secondaryText)
-                }
-                
-                Spacer()
+        HStack(spacing: DesignSystem.Spacing.md) {
+            // Icon
+            ZStack {
+                Circle()
+                    .fill(iconColor.opacity(0.2))
+                    .frame(width: 48, height: 48)
+
+                Image(systemName: icon)
+                    .font(.system(size: 22))
+                    .foregroundColor(iconColor)
             }
-            
-            // Time Picker
+
+            // Text
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(DesignSystem.Typography.headlineSmall)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+
+                Text(description)
+                    .font(DesignSystem.Typography.bodySmall)
+                    .foregroundColor(DesignSystem.Colors.secondaryText)
+            }
+
+            Spacer()
+
+            // Compact Time Picker
             DatePicker(
                 "",
                 selection: $time,
                 displayedComponents: .hourAndMinute
             )
-            .datePickerStyle(.wheel)
+            .datePickerStyle(.compact)
             .labelsHidden()
-            .frame(height: 100)
+            .tint(iconColor)
+            .onChange(of: time) { _, _ in
+                HapticFeedback.selection()
+            }
         }
         .padding(DesignSystem.Spacing.md)
         .background(DesignSystem.Colors.cardBackground)
