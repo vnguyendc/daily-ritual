@@ -252,3 +252,4 @@ struct ActivityTypePicker: View {
     ActivityTypePicker(selectedType: .constant(.strengthTraining))
 }
 
+

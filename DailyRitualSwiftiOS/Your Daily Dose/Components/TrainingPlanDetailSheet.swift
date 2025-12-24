@@ -321,3 +321,4 @@ struct TrainingPlanDetailSheet: View {
     )
 }
 
+

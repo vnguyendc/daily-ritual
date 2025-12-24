@@ -368,3 +368,4 @@ struct TrainingPlansSummary: View {
     .background(DesignSystem.Colors.background)
 }
 
+
