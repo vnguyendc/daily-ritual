@@ -6,6 +6,8 @@ export declare class DailyEntriesController {
     static completeMorningRitual(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static completeEveningReflection(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static getDailyEntries(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    static getBatchDailyEntries(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    static getBatchDailyEntriesWithPlans(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static deleteDailyEntry(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 }
 //# sourceMappingURL=dailyEntries.d.ts.map

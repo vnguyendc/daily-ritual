@@ -17,6 +17,11 @@ export declare class DatabaseService {
         user_metadata?: any;
     }): Promise<void>;
     static getDailyEntry(userId: string, date: string): Promise<null>;
+    static getDailyEntriesBatch(userId: string, dates: string[]): Promise<Record<string, any>>;
+    static getDailyEntriesWithPlansBatch(userId: string, dates: string[]): Promise<{
+        entries: Record<string, any>;
+        plans: Record<string, any[]>;
+    }>;
     static createOrUpdateDailyEntry(userId: string, date: string, updates: any): Promise<any>;
     static listDailyEntries(userId: string, options: {
         page: number;

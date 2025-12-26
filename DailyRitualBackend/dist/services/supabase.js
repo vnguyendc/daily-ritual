@@ -60,6 +60,63 @@ export class DatabaseService {
         }
         return data;
     }
+    static async getDailyEntriesBatch(userId, dates) {
+        if (useMock) {
+            console.log('📝 Returning mock batch daily entries for development');
+            return {};
+        }
+        if (dates.length === 0)
+            return {};
+        const { data, error } = await supabaseServiceClient
+            .from('daily_entries')
+            .select('*')
+            .eq('user_id', userId)
+            .in('date', dates);
+        if (error)
+            throw error;
+        const entriesMap = {};
+        for (const entry of (data || [])) {
+            entriesMap[entry.date] = entry;
+        }
+        return entriesMap;
+    }
+    static async getDailyEntriesWithPlansBatch(userId, dates) {
+        if (useMock) {
+            console.log('📝 Returning mock batch entries with plans for development');
+            return { entries: {}, plans: {} };
+        }
+        if (dates.length === 0)
+            return { entries: {}, plans: {} };
+        const [entriesResult, plansResult] = await Promise.all([
+            supabaseServiceClient
+                .from('daily_entries')
+                .select('*')
+                .eq('user_id', userId)
+                .in('date', dates),
+            supabaseServiceClient
+                .from('training_plans')
+                .select('*')
+                .eq('user_id', userId)
+                .in('date', dates)
+                .order('sequence', { ascending: true })
+        ]);
+        if (entriesResult.error)
+            throw entriesResult.error;
+        if (plansResult.error)
+            throw plansResult.error;
+        const entriesMap = {};
+        for (const entry of (entriesResult.data || [])) {
+            entriesMap[entry.date] = entry;
+        }
+        const plansMap = {};
+        for (const plan of (plansResult.data || [])) {
+            const dateKey = plan.date;
+            if (!plansMap[dateKey])
+                plansMap[dateKey] = [];
+            plansMap[dateKey].push(plan);
+        }
+        return { entries: entriesMap, plans: plansMap };
+    }
     static async createOrUpdateDailyEntry(userId, date, updates) {
         if (useMock) {
             console.log('📝 Creating mock daily entry for development');

@@ -369,6 +369,119 @@ export class DailyEntriesController {
             });
         }
     }
+    static async getBatchDailyEntries(req, res) {
+        try {
+            const token = req.headers.authorization?.replace('Bearer ', '');
+            const useMock = process.env.USE_MOCK === 'true';
+            const devUserId = process.env.DEV_USER_ID;
+            let user = req.user;
+            if (!user) {
+                if (!token) {
+                    if (useMock) {
+                        user = { id: 'mock-user-id' };
+                    }
+                    else if (devUserId) {
+                        user = { id: devUserId };
+                    }
+                    else {
+                        return res.status(401).json({ error: 'Authorization token required' });
+                    }
+                }
+                else {
+                    user = await getUserFromToken(token);
+                }
+            }
+            const datesParam = req.query.dates;
+            const dates = datesParam ? datesParam.split(',') : (req.body.dates || []);
+            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+            for (const date of dates) {
+                if (!dateRegex.test(date)) {
+                    return res.status(400).json({ error: `Invalid date format: ${date}. Use YYYY-MM-DD` });
+                }
+            }
+            if (dates.length > 31) {
+                return res.status(400).json({ error: 'Maximum 31 dates per batch request' });
+            }
+            try {
+                await DatabaseService.ensureUserRecord({ id: user.id, email: user.email || null });
+            }
+            catch (e) {
+                console.warn('ensureUserRecord failed:', e);
+            }
+            const entriesMap = await DatabaseService.getDailyEntriesBatch(user.id, dates);
+            const response = {
+                success: true,
+                data: {
+                    entries: entriesMap,
+                    requested_dates: dates,
+                    fetched_at: new Date().toISOString()
+                }
+            };
+            res.json(response);
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            console.error('Error getting batch daily entries:', error);
+            res.status(500).json({ success: false, error: { error: 'Internal server error', message } });
+        }
+    }
+    static async getBatchDailyEntriesWithPlans(req, res) {
+        try {
+            const token = req.headers.authorization?.replace('Bearer ', '');
+            const useMock = process.env.USE_MOCK === 'true';
+            const devUserId = process.env.DEV_USER_ID;
+            let user = req.user;
+            if (!user) {
+                if (!token) {
+                    if (useMock) {
+                        user = { id: 'mock-user-id' };
+                    }
+                    else if (devUserId) {
+                        user = { id: devUserId };
+                    }
+                    else {
+                        return res.status(401).json({ error: 'Authorization token required' });
+                    }
+                }
+                else {
+                    user = await getUserFromToken(token);
+                }
+            }
+            const datesParam = req.query.dates;
+            const dates = datesParam ? datesParam.split(',') : (req.body.dates || []);
+            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+            for (const date of dates) {
+                if (!dateRegex.test(date)) {
+                    return res.status(400).json({ error: `Invalid date format: ${date}. Use YYYY-MM-DD` });
+                }
+            }
+            if (dates.length > 31) {
+                return res.status(400).json({ error: 'Maximum 31 dates per batch request' });
+            }
+            try {
+                await DatabaseService.ensureUserRecord({ id: user.id, email: user.email || null });
+            }
+            catch (e) {
+                console.warn('ensureUserRecord failed:', e);
+            }
+            const { entries, plans } = await DatabaseService.getDailyEntriesWithPlansBatch(user.id, dates);
+            const response = {
+                success: true,
+                data: {
+                    entries,
+                    training_plans: plans,
+                    requested_dates: dates,
+                    fetched_at: new Date().toISOString()
+                }
+            };
+            res.json(response);
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            console.error('Error getting batch daily entries with plans:', error);
+            res.status(500).json({ success: false, error: { error: 'Internal server error', message } });
+        }
+    }
     static async deleteDailyEntry(req, res) {
         try {
             let user = req.user;

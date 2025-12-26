@@ -93,7 +93,7 @@ export class DatabaseService {
   }
 
   // Batch fetch multiple daily entries by dates (optimized for calendar views)
-  static async getDailyEntriesBatch(userId: string, dates: string[]) {
+  static async getDailyEntriesBatch(userId: string, dates: string[]): Promise<Record<string, any>> {
     if (useMock) {
       console.log('📝 Returning mock batch daily entries for development')
       return {}
@@ -101,7 +101,7 @@ export class DatabaseService {
 
     if (dates.length === 0) return {}
 
-    const { data, error } = await supabaseServiceClient
+    const { data, error } = await (supabaseServiceClient as any)
       .from('daily_entries')
       .select('*')
       .eq('user_id', userId)
@@ -118,7 +118,7 @@ export class DatabaseService {
   }
 
   // Batch fetch entries with training plans (optimized combined query)
-  static async getDailyEntriesWithPlansBatch(userId: string, dates: string[]) {
+  static async getDailyEntriesWithPlansBatch(userId: string, dates: string[]): Promise<{ entries: Record<string, any>, plans: Record<string, any[]> }> {
     if (useMock) {
       console.log('📝 Returning mock batch entries with plans for development')
       return { entries: {}, plans: {} }
@@ -128,12 +128,12 @@ export class DatabaseService {
 
     // Parallel fetch for better performance
     const [entriesResult, plansResult] = await Promise.all([
-      supabaseServiceClient
+      (supabaseServiceClient as any)
         .from('daily_entries')
         .select('*')
         .eq('user_id', userId)
         .in('date', dates),
-      supabaseServiceClient
+      (supabaseServiceClient as any)
         .from('training_plans')
         .select('*')
         .eq('user_id', userId)
@@ -152,8 +152,9 @@ export class DatabaseService {
 
     const plansMap: Record<string, any[]> = {}
     for (const plan of (plansResult.data || [])) {
-      if (!plansMap[plan.date]) plansMap[plan.date] = []
-      plansMap[plan.date].push(plan)
+      const dateKey = plan.date as string
+      if (!plansMap[dateKey]) plansMap[dateKey] = []
+      plansMap[dateKey]!.push(plan)
     }
 
     return { entries: entriesMap, plans: plansMap }

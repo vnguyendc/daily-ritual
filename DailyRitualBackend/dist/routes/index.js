@@ -16,6 +16,10 @@ router.use(['/profile', '/daily-entries', '/training-plans', '/insights'], authe
 router.get('/profile', DashboardController.getUserProfile);
 router.put('/profile', DashboardController.updateUserProfile);
 router.get('/daily-entries', DailyEntriesController.getDailyEntries);
+router.get('/daily-entries/batch', DailyEntriesController.getBatchDailyEntries);
+router.post('/daily-entries/batch', DailyEntriesController.getBatchDailyEntries);
+router.get('/daily-entries/batch/with-plans', DailyEntriesController.getBatchDailyEntriesWithPlans);
+router.post('/daily-entries/batch/with-plans', DailyEntriesController.getBatchDailyEntriesWithPlans);
 router.get('/daily-entries/:date', DailyEntriesController.getDailyEntry);
 router.get('/daily-entries/:date/with-plans', DailyEntriesController.getDailyEntryWithPlans);
 router.get('/daily-entries/:date/quote', DailyEntriesController.getDailyQuote);
