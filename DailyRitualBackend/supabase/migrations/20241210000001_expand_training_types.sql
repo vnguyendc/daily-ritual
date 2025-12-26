@@ -105,3 +105,4 @@ COMMENT ON COLUMN training_plans.type IS
   'Activity type - 50+ options including strength_training, running, boxing, yoga, etc. Legacy types (strength, cardio, skills) still supported for backward compatibility.';
 
 
+

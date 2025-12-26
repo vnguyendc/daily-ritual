@@ -92,6 +92,73 @@ export class DatabaseService {
     return data
   }
 
+  // Batch fetch multiple daily entries by dates (optimized for calendar views)
+  static async getDailyEntriesBatch(userId: string, dates: string[]) {
+    if (useMock) {
+      console.log('📝 Returning mock batch daily entries for development')
+      return {}
+    }
+
+    if (dates.length === 0) return {}
+
+    const { data, error } = await supabaseServiceClient
+      .from('daily_entries')
+      .select('*')
+      .eq('user_id', userId)
+      .in('date', dates)
+
+    if (error) throw error
+
+    // Return as a map keyed by date for O(1) lookup
+    const entriesMap: Record<string, any> = {}
+    for (const entry of (data || [])) {
+      entriesMap[entry.date] = entry
+    }
+    return entriesMap
+  }
+
+  // Batch fetch entries with training plans (optimized combined query)
+  static async getDailyEntriesWithPlansBatch(userId: string, dates: string[]) {
+    if (useMock) {
+      console.log('📝 Returning mock batch entries with plans for development')
+      return { entries: {}, plans: {} }
+    }
+
+    if (dates.length === 0) return { entries: {}, plans: {} }
+
+    // Parallel fetch for better performance
+    const [entriesResult, plansResult] = await Promise.all([
+      supabaseServiceClient
+        .from('daily_entries')
+        .select('*')
+        .eq('user_id', userId)
+        .in('date', dates),
+      supabaseServiceClient
+        .from('training_plans')
+        .select('*')
+        .eq('user_id', userId)
+        .in('date', dates)
+        .order('sequence', { ascending: true })
+    ])
+
+    if (entriesResult.error) throw entriesResult.error
+    if (plansResult.error) throw plansResult.error
+
+    // Build maps keyed by date
+    const entriesMap: Record<string, any> = {}
+    for (const entry of (entriesResult.data || [])) {
+      entriesMap[entry.date] = entry
+    }
+
+    const plansMap: Record<string, any[]> = {}
+    for (const plan of (plansResult.data || [])) {
+      if (!plansMap[plan.date]) plansMap[plan.date] = []
+      plansMap[plan.date].push(plan)
+    }
+
+    return { entries: entriesMap, plans: plansMap }
+  }
+
   static async createOrUpdateDailyEntry(userId: string, date: string, updates: any) {
     // For development with placeholder credentials, return mock data
     if (useMock) {

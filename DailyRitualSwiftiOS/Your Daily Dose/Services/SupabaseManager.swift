@@ -16,6 +16,77 @@ import Security
 import AuthenticationServices
 import Security
 
+// MARK: - In-Memory Cache for instant UI response
+actor EntryCache {
+    private var entries: [String: DailyEntry] = [:]
+    private var plans: [String: [TrainingPlan]] = [:]
+    private var entryTimestamps: [String: Date] = [:]
+    private var planTimestamps: [String: Date] = [:]
+    
+    private let cacheTTL: TimeInterval = 60 // 1 minute for in-memory (file cache has longer TTL)
+    
+    func getEntry(_ dateString: String) -> DailyEntry? {
+        guard let entry = entries[dateString],
+              let timestamp = entryTimestamps[dateString],
+              Date().timeIntervalSince(timestamp) < cacheTTL else {
+            return nil
+        }
+        return entry
+    }
+    
+    func setEntry(_ entry: DailyEntry, for dateString: String) {
+        entries[dateString] = entry
+        entryTimestamps[dateString] = Date()
+    }
+    
+    func setEntries(_ newEntries: [String: DailyEntry]) {
+        let now = Date()
+        for (dateString, entry) in newEntries {
+            entries[dateString] = entry
+            entryTimestamps[dateString] = now
+        }
+    }
+    
+    func getPlans(_ dateString: String) -> [TrainingPlan]? {
+        guard let planList = plans[dateString],
+              let timestamp = planTimestamps[dateString],
+              Date().timeIntervalSince(timestamp) < cacheTTL else {
+            return nil
+        }
+        return planList
+    }
+    
+    func setPlans(_ planList: [TrainingPlan], for dateString: String) {
+        plans[dateString] = planList
+        planTimestamps[dateString] = Date()
+    }
+    
+    func setPlansMap(_ newPlans: [String: [TrainingPlan]]) {
+        let now = Date()
+        for (dateString, planList) in newPlans {
+            plans[dateString] = planList
+            planTimestamps[dateString] = now
+        }
+    }
+    
+    func invalidateEntry(_ dateString: String) {
+        entries.removeValue(forKey: dateString)
+        entryTimestamps.removeValue(forKey: dateString)
+    }
+    
+    func invalidatePlans(_ dateString: String) {
+        plans.removeValue(forKey: dateString)
+        planTimestamps.removeValue(forKey: dateString)
+    }
+    
+    func clear() {
+        entries.removeAll()
+        plans.removeAll()
+        entryTimestamps.removeAll()
+        planTimestamps.removeAll()
+    }
+}
+
 @MainActor
 class SupabaseManager: NSObject, ObservableObject {
     static let shared = SupabaseManager()
@@ -25,6 +96,13 @@ class SupabaseManager: NSObject, ObservableObject {
     @Published var isLoading = false
     @Published var pendingOpsCount = 0
     @Published var isSyncing = false
+    
+    // In-memory cache for instant responses
+    private let memoryCache = EntryCache()
+    
+    // Track in-flight requests to prevent duplicate fetches
+    private var inFlightEntryRequests: [String: Task<DailyEntry?, Error>] = [:]
+    private var inFlightBatchRequests: Task<[String: DailyEntry], Error>?
     
     // Backend configuration - use localhost for simulator, IP for device
     // private let baseURL = "http://localhost:3000/api/v1" // Change to IP for device testing
@@ -280,7 +358,9 @@ class SupabaseManager: NSObject, ObservableObject {
         print("AUTH: refresh success")
     }
     
-    // MARK: - Daily Entries
+    // MARK: - Daily Entries (Cache-First Strategy)
+    
+    /// Get entry with cache-first strategy: returns cached immediately, refreshes in background
     func getEntry(for date: Date) async throws -> DailyEntry? {
         if useMockAuth {
             guard let userId = currentUser?.id else { return nil }
@@ -297,23 +377,219 @@ class SupabaseManager: NSObject, ObservableObject {
             return entry
         }
         
-        isLoading = true
-        defer { isLoading = false }
-        
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
         let dateString = df.string(from: date)
-        let cachedEntry = LocalStore.loadCachedEntries()[dateString]
         
+        // 1. Check in-memory cache first (instant)
+        if let memCached = await memoryCache.getEntry(dateString) {
+            // Background refresh if needed
+            Task { await refreshEntryInBackground(dateString: dateString, date: date) }
+            return memCached
+        }
+        
+        // 2. Check file cache (TTL-aware)
+        if let fileCached = LocalStore.getFreshCachedEntry(for: dateString) {
+            await memoryCache.setEntry(fileCached, for: dateString)
+            return fileCached
+        }
+        
+        // 3. Check for stale cache (for instant UI, will refresh)
+        if let (staleEntry, _) = LocalStore.getAnyCachedEntry(for: dateString) {
+            await memoryCache.setEntry(staleEntry, for: dateString)
+            // Trigger background refresh for stale data
+            Task { await refreshEntryInBackground(dateString: dateString, date: date) }
+            return staleEntry
+        }
+        
+        // 4. No cache - fetch from network
+        return try await fetchEntryFromNetwork(dateString: dateString, date: date)
+    }
+    
+    /// Fetch entry from network (deduplicates concurrent requests)
+    private func fetchEntryFromNetwork(dateString: String, date: Date) async throws -> DailyEntry? {
+        // Check if there's already an in-flight request for this date
+        if let existingTask = inFlightEntryRequests[dateString] {
+            return try await existingTask.value
+        }
+        
+        let task = Task<DailyEntry?, Error> {
+            isLoading = true
+            defer { 
+                Task { @MainActor in
+                    self.isLoading = false
+                    self.inFlightEntryRequests.removeValue(forKey: dateString)
+                }
+            }
+            
+            do {
+                let apiResponse: APIResponse<DailyEntry> = try await api.get("daily-entries/\(dateString)")
+                if let fresh = apiResponse.data {
+                    LocalStore.upsertCachedEntry(fresh, for: dateString)
+                    await memoryCache.setEntry(fresh, for: dateString)
+                    return fresh
+                }
+                // No entry exists yet - return new entry shell
+                return DailyEntry(userId: currentUser?.id ?? UUID(), date: Calendar.current.startOfDay(for: date))
+            } catch {
+                print("Error fetching entry for \(dateString):", error)
+                // Final fallback
+                return DailyEntry(userId: currentUser?.id ?? UUID(), date: Calendar.current.startOfDay(for: date))
+            }
+        }
+        
+        inFlightEntryRequests[dateString] = task
+        return try await task.value
+    }
+    
+    /// Background refresh for stale data
+    private func refreshEntryInBackground(dateString: String, date: Date) async {
         do {
             let apiResponse: APIResponse<DailyEntry> = try await api.get("daily-entries/\(dateString)")
-            if let fresh = apiResponse.data { LocalStore.upsertCachedEntry(fresh, for: dateString) }
-            return apiResponse.data ?? cachedEntry
+            if let fresh = apiResponse.data {
+                LocalStore.upsertCachedEntry(fresh, for: dateString)
+                await memoryCache.setEntry(fresh, for: dateString)
+            }
         } catch {
-            print("Error fetching today's entry:", error)
-            // Fallback to cached, else empty new entry
-            if let cached = cachedEntry { return cached }
-            return DailyEntry(userId: currentUser?.id ?? UUID(), date: Calendar.current.startOfDay(for: date))
+            // Silent fail for background refresh
+            print("Background refresh failed for \(dateString):", error)
+        }
+    }
+    
+    // MARK: - Batch Fetching (Optimized for Calendar/History views)
+    
+    /// Batch fetch entries for multiple dates at once
+    func getEntriesBatch(for dates: [Date]) async throws -> [String: DailyEntry] {
+        if useMockAuth { return [:] }
+        
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        let dateStrings = dates.map { df.string(from: $0) }
+        
+        // 1. Get what we have from cache
+        var result: [String: DailyEntry] = [:]
+        var missingDates: [String] = []
+        
+        for dateString in dateStrings {
+            if let memCached = await memoryCache.getEntry(dateString) {
+                result[dateString] = memCached
+            } else if let fileCached = LocalStore.getFreshCachedEntry(for: dateString) {
+                result[dateString] = fileCached
+                await memoryCache.setEntry(fileCached, for: dateString)
+            } else {
+                missingDates.append(dateString)
+            }
+        }
+        
+        // 2. Batch fetch missing from network
+        if !missingDates.isEmpty {
+            let fetched = try await fetchEntriesBatchFromNetwork(dateStrings: missingDates)
+            result.merge(fetched) { _, new in new }
+        }
+        
+        return result
+    }
+    
+    /// Network batch fetch with deduplication
+    private func fetchEntriesBatchFromNetwork(dateStrings: [String]) async throws -> [String: DailyEntry] {
+        if dateStrings.isEmpty { return [:] }
+        
+        isLoading = true
+        defer { isLoading = false }
+        
+        do {
+            let datesQuery = dateStrings.joined(separator: ",")
+            let apiResponse: APIResponse<BatchEntriesResponse> = try await api.get("daily-entries/batch", query: [URLQueryItem(name: "dates", value: datesQuery)])
+            
+            if let data = apiResponse.data {
+                // Cache all fetched entries
+                LocalStore.upsertCachedEntries(data.entries)
+                await memoryCache.setEntries(data.entries)
+                return data.entries
+            }
+            return [:]
+        } catch {
+            print("Batch fetch failed:", error)
+            return [:]
+        }
+    }
+    
+    /// Batch fetch entries with training plans (combined for calendar views)
+    func getEntriesWithPlansBatch(for dates: [Date]) async throws -> (entries: [String: DailyEntry], plans: [String: [TrainingPlan]]) {
+        if useMockAuth { return ([:], [:]) }
+        
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        let dateStrings = dates.map { df.string(from: $0) }
+        
+        // Get cached entries and plans
+        var entriesResult: [String: DailyEntry] = [:]
+        var plansResult: [String: [TrainingPlan]] = [:]
+        var missingDates: [String] = []
+        
+        for dateString in dateStrings {
+            if let memEntry = await memoryCache.getEntry(dateString),
+               let memPlans = await memoryCache.getPlans(dateString) {
+                entriesResult[dateString] = memEntry
+                plansResult[dateString] = memPlans
+            } else if let fileEntry = LocalStore.getFreshCachedEntry(for: dateString),
+                      let filePlans = LocalStore.getFreshCachedPlans(for: dateString) {
+                entriesResult[dateString] = fileEntry
+                plansResult[dateString] = filePlans
+                await memoryCache.setEntry(fileEntry, for: dateString)
+                await memoryCache.setPlans(filePlans, for: dateString)
+            } else {
+                missingDates.append(dateString)
+            }
+        }
+        
+        // Fetch missing from network
+        if !missingDates.isEmpty {
+            let (fetchedEntries, fetchedPlans) = try await fetchEntriesWithPlansBatchFromNetwork(dateStrings: missingDates)
+            entriesResult.merge(fetchedEntries) { _, new in new }
+            plansResult.merge(fetchedPlans) { _, new in new }
+        }
+        
+        return (entriesResult, plansResult)
+    }
+    
+    private func fetchEntriesWithPlansBatchFromNetwork(dateStrings: [String]) async throws -> ([String: DailyEntry], [String: [TrainingPlan]]) {
+        if dateStrings.isEmpty { return ([:], [:]) }
+        
+        isLoading = true
+        defer { isLoading = false }
+        
+        do {
+            let datesQuery = dateStrings.joined(separator: ",")
+            let apiResponse: APIResponse<BatchEntriesWithPlansResponse> = try await api.get("daily-entries/batch/with-plans", query: [URLQueryItem(name: "dates", value: datesQuery)])
+            
+            if let data = apiResponse.data {
+                // Cache all fetched data
+                LocalStore.upsertCachedEntries(data.entries)
+                LocalStore.upsertCachedPlansBatch(data.training_plans)
+                await memoryCache.setEntries(data.entries)
+                await memoryCache.setPlansMap(data.training_plans)
+                return (data.entries, data.training_plans)
+            }
+            return ([:], [:])
+        } catch {
+            print("Batch fetch with plans failed:", error)
+            return ([:], [:])
+        }
+    }
+    
+    /// Prefetch entries for surrounding dates (call when user views a date)
+    func prefetchEntriesAround(date: Date, range: Int = 3) {
+        Task {
+            var dates: [Date] = []
+            let calendar = Calendar.current
+            for offset in -range...range {
+                if let d = calendar.date(byAdding: .day, value: offset, to: date) {
+                    dates.append(d)
+                }
+            }
+            // Silent prefetch - don't await or handle errors
+            _ = try? await getEntriesBatch(for: dates)
         }
     }
     
@@ -385,6 +661,9 @@ class SupabaseManager: NSObject, ObservableObject {
         df.dateFormat = "yyyy-MM-dd"
         let dateString = df.string(from: entry.date)
         
+        // Invalidate cache for this date since we're modifying
+        await memoryCache.invalidateEntry(dateString)
+        
         let morningData = MorningRitualRequest(
             goals: entry.goals ?? [],
             gratitudes: entry.gratitudes ?? [],
@@ -404,9 +683,11 @@ class SupabaseManager: NSObject, ObservableObject {
                 updatedEntry.affirmation = responseData.affirmation
                 updatedEntry.dailyQuote = responseData.daily_quote?.quote_text
                 LocalStore.upsertCachedEntry(updatedEntry, for: dateString)
+                await memoryCache.setEntry(updatedEntry, for: dateString)
                 return updatedEntry
             }
             LocalStore.upsertCachedEntry(entry, for: dateString)
+            await memoryCache.setEntry(entry, for: dateString)
             return entry
         } catch {
             print("Error completing morning ritual:", error)
@@ -414,6 +695,7 @@ class SupabaseManager: NSObject, ObservableObject {
             var updatedEntry = entry
             updatedEntry.morningCompletedAt = Date()
             LocalStore.upsertCachedEntry(updatedEntry, for: dateString)
+            await memoryCache.setEntry(updatedEntry, for: dateString)
             // Enqueue pending op
             let payload = try? JSONEncoder().encode(morningData)
             let op = PendingOp(id: UUID(), opType: .morning, dateString: dateString, payload: payload, attemptCount: 0, lastAttemptAt: nil)
@@ -437,6 +719,9 @@ class SupabaseManager: NSObject, ObservableObject {
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let dateString = dateFormatter.string(from: entry.date)
         
+        // Invalidate cache for this date since we're modifying
+        await memoryCache.invalidateEntry(dateString)
+        
         let requestBody: [String: Any] = [
             "quote_application": entry.quoteApplication ?? "",
             "day_went_well": entry.dayWentWell ?? "",
@@ -445,15 +730,16 @@ class SupabaseManager: NSObject, ObservableObject {
         ]
         
         do {
-            let data = try JSONSerialization.data(withJSONObject: requestBody)
             let apiResponse: APIResponse<DailyEntry> = try await api.postRaw("daily-entries/\(dateString)/evening", json: requestBody)
             if let responseData = apiResponse.data {
                 LocalStore.upsertCachedEntry(responseData, for: dateString)
+                await memoryCache.setEntry(responseData, for: dateString)
                 return responseData
             }
             var updatedEntry = entry
             updatedEntry.eveningCompletedAt = Date()
             LocalStore.upsertCachedEntry(updatedEntry, for: dateString)
+            await memoryCache.setEntry(updatedEntry, for: dateString)
             return updatedEntry
         } catch {
             // Only print error if this is NOT a retry (reduce log noise)
@@ -463,6 +749,7 @@ class SupabaseManager: NSObject, ObservableObject {
             var updatedEntry = entry
             updatedEntry.eveningCompletedAt = Date()
             LocalStore.upsertCachedEntry(updatedEntry, for: dateString)
+            await memoryCache.setEntry(updatedEntry, for: dateString)
             // Only enqueue if this is NOT already a retry (prevent infinite loop)
             if !isRetry {
                 let payload = try? JSONSerialization.data(withJSONObject: requestBody)
@@ -540,7 +827,7 @@ class SupabaseManager: NSObject, ObservableObject {
         return quoteSourceMap[quote] ?? "Unknown"
     }
     
-    // MARK: - Training Plans
+    // MARK: - Training Plans (Cache-First Strategy)
     func getTrainingPlans(for date: Date) async throws -> [TrainingPlan] {
         if useMockAuth {
             guard let userId = currentUser?.id else { return [] }
@@ -561,22 +848,58 @@ class SupabaseManager: NSObject, ObservableObject {
             ]
         }
 
-        isLoading = true
-        defer { isLoading = false }
-
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
         let dateString = df.string(from: date)
+
+        // 1. Check in-memory cache first
+        if let memCached = await memoryCache.getPlans(dateString) {
+            Task { await refreshPlansInBackground(dateString: dateString) }
+            return memCached
+        }
+        
+        // 2. Check file cache
+        if let fileCached = LocalStore.getFreshCachedPlans(for: dateString) {
+            await memoryCache.setPlans(fileCached, for: dateString)
+            return fileCached
+        }
+        
+        // 3. Stale cache fallback
+        let staleCache = LocalStore.loadCachedPlans()[dateString]
+        if let stale = staleCache {
+            await memoryCache.setPlans(stale, for: dateString)
+            Task { await refreshPlansInBackground(dateString: dateString) }
+            return stale
+        }
+
+        // 4. Fetch from network
+        return try await fetchPlansFromNetwork(dateString: dateString)
+    }
+    
+    private func fetchPlansFromNetwork(dateString: String) async throws -> [TrainingPlan] {
+        isLoading = true
+        defer { isLoading = false }
 
         do {
             let response: APIResponse<[TrainingPlan]> = try await api.get("training-plans", query: [URLQueryItem(name: "date", value: dateString)])
             let plans = response.data ?? []
             LocalStore.upsertCachedPlans(plans, for: dateString)
+            await memoryCache.setPlans(plans, for: dateString)
             return plans
         } catch {
             print("Error fetching training plans:", error)
-            let plans = LocalStore.loadCachedPlans()[dateString] ?? []
-            return plans
+            return []
+        }
+    }
+    
+    private func refreshPlansInBackground(dateString: String) async {
+        do {
+            let response: APIResponse<[TrainingPlan]> = try await api.get("training-plans", query: [URLQueryItem(name: "date", value: dateString)])
+            let plans = response.data ?? []
+            LocalStore.upsertCachedPlans(plans, for: dateString)
+            await memoryCache.setPlans(plans, for: dateString)
+        } catch {
+            print("Background plans refresh failed for \(dateString):", error)
         }
     }
     
@@ -633,6 +956,9 @@ class SupabaseManager: NSObject, ObservableObject {
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
         let dateString = df.string(from: plan.date)
+        
+        // Invalidate plans cache for this date
+        await memoryCache.invalidatePlans(dateString)
 
         let requestBody: [String: Any] = [
             "date": dateString,
@@ -646,12 +972,13 @@ class SupabaseManager: NSObject, ObservableObject {
 
         do {
             let apiResponse: APIResponse<TrainingPlan> = try await api.postRaw("training-plans", json: requestBody)
-            return apiResponse.data ?? plan
+            let createdPlan = apiResponse.data ?? plan
+            // Refresh cache for this date
+            Task { await refreshPlansInBackground(dateString: dateString) }
+            return createdPlan
         } catch {
             print("Error creating training plan:", error)
             // Enqueue create for replay
-            let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
-            let dateString = df.string(from: plan.date)
             let body: [String: Any] = [
                 "date": dateString,
                 "sequence": plan.sequence,
@@ -680,6 +1007,9 @@ class SupabaseManager: NSObject, ObservableObject {
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
         let dateString = df.string(from: plan.date)
+        
+        // Invalidate plans cache for this date
+        await memoryCache.invalidatePlans(dateString)
 
         let requestBody: [String: Any] = [
             "date": dateString,
@@ -693,12 +1023,13 @@ class SupabaseManager: NSObject, ObservableObject {
 
         do {
             let apiResponse: APIResponse<TrainingPlan> = try await api.putRaw("training-plans/\(plan.id)", json: requestBody)
-            return apiResponse.data ?? plan
+            let updatedPlan = apiResponse.data ?? plan
+            // Refresh cache for this date
+            Task { await refreshPlansInBackground(dateString: dateString) }
+            return updatedPlan
         } catch {
             print("Error updating training plan:", error)
             // Enqueue update for replay
-            let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
-            let dateString = df.string(from: plan.date)
             let body: [String: Any] = [
                 "id": plan.id.uuidString,
                 "date": dateString,
@@ -717,21 +1048,27 @@ class SupabaseManager: NSObject, ObservableObject {
         }
     }
 
-    func deleteTrainingPlan(_ planId: UUID) async throws {
+    func deleteTrainingPlan(_ planId: UUID, for date: Date? = nil) async throws {
         if useMockAuth {
             return
         }
 
         isLoading = true
         defer { isLoading = false }
+        
+        let dateString = date.map { SupabaseManager.dateOnlyFormatter.string(from: $0) } ?? SupabaseManager.dateOnlyFormatter.string(from: Date())
+        
+        // Invalidate plans cache for this date
+        await memoryCache.invalidatePlans(dateString)
 
         do {
             let _: APIResponse<TrainingPlan> = try await api.delete("training-plans/\(planId)")
+            // Refresh cache for this date
+            Task { await refreshPlansInBackground(dateString: dateString) }
             return
         } catch {
             print("Error deleting training plan:", error)
-            // Enqueue delete for replay (date unknown; use today's by default)
-            let dateString = SupabaseManager.dateOnlyFormatter.string(from: Date())
+            // Enqueue delete for replay
             let body: [String: Any] = ["id": planId.uuidString]
             let payload = try? JSONSerialization.data(withJSONObject: body)
             let op = PendingOp(id: UUID(), opType: .trainingPlanDelete, dateString: dateString, payload: payload, attemptCount: 0, lastAttemptAt: nil)
@@ -999,6 +1336,20 @@ struct MorningRitualResponse: Codable {
     let affirmation: String
     let daily_quote: Quote?
     let ai_insight: String?
+}
+
+// MARK: - Batch API Response Models
+struct BatchEntriesResponse: Codable {
+    let entries: [String: DailyEntry]
+    let requested_dates: [String]
+    let fetched_at: String
+}
+
+struct BatchEntriesWithPlansResponse: Codable {
+    let entries: [String: DailyEntry]
+    let training_plans: [String: [TrainingPlan]]
+    let requested_dates: [String]
+    let fetched_at: String
 }
 
 struct Quote: Codable {

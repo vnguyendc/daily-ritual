@@ -113,13 +113,25 @@ struct InsightsListView: View {
                     LoadingCard(message: "Loading your insights...", progress: nil, cancelAction: nil, useMaterialBackground: false)
                         .padding(.top, DesignSystem.Spacing.xxxl)
                 } else if viewModel.insights.isEmpty && !viewModel.isLoading {
-                    PremiumPlaceholderView(
-                        icon: "brain.head.profile",
-                        title: "No Insights Yet",
-                        subtitle: "Complete your morning and evening rituals to generate insights.",
-                        timeContext: timeContext
-                    )
+                    // Empty state
+                    VStack(spacing: DesignSystem.Spacing.lg) {
+                        Image(systemName: "brain.head.profile")
+                            .font(.system(size: 60))
+                            .foregroundColor(timeContext.primaryColor.opacity(0.6))
+                        
+                        VStack(spacing: DesignSystem.Spacing.sm) {
+                            Text("No Insights Yet")
+                                .font(DesignSystem.Typography.headlineMedium)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
+                            
+                            Text("Complete your morning and evening rituals to generate insights.")
+                                .font(DesignSystem.Typography.bodyMedium)
+                                .foregroundColor(DesignSystem.Colors.secondaryText)
+                                .multilineTextAlignment(.center)
+                        }
+                    }
                     .frame(maxWidth: .infinity)
+                    .padding(.vertical, DesignSystem.Spacing.xxl)
                 } else {
                     ScrollView {
                         VStack(spacing: DesignSystem.Spacing.md) {

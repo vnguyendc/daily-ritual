@@ -22,6 +22,12 @@ struct TodayView: View {
     @State private var selectedDate: Date = Date()
     @State private var currentDay: Date = Calendar.current.startOfDay(for: Date())
     
+    // Training plan detail/edit navigation
+    @State private var selectedTrainingPlan: TrainingPlan?
+    @State private var trainingPlanToEdit: TrainingPlan?
+    
+    private let plansService: TrainingPlansServiceProtocol = TrainingPlansService()
+    
     private var timeContext: DesignSystem.TimeContext {
         DesignSystem.TimeContext.current()
     }
@@ -305,15 +311,15 @@ struct TodayView: View {
                             }
                         }
 
-                        // Today's Training Plan
-                        PremiumCard(timeContext: timeContext) {
-                            TrainingPlansSection(
-                                plans: viewModel.sortedTrainingPlans,
-                                entry: viewModel.entry,
-                                timeContext: timeContext,
-                                onManage: { showingTrainingPlans = true }
-                            )
-                        }
+                        // Today's Training Plan - Enhanced with tap-to-detail
+                        TrainingPlansSummary(
+                            plans: viewModel.sortedTrainingPlans,
+                            timeContext: timeContext,
+                            onPlanTap: { plan in
+                                selectedTrainingPlan = plan
+                            },
+                            onManagePlans: { showingTrainingPlans = true }
+                        )
 
                         // Premium celebration card for full completion
                         if viewModel.entry.isFullyComplete {
@@ -405,8 +411,7 @@ struct TodayView: View {
                     .edgesIgnoringSafeArea(.all)
             }
             .sheet(isPresented: $showingTrainingPlans) {
-                TrainingPlansView()
-                    .edgesIgnoringSafeArea(.all)
+                TrainingPlanView()
             }
             .sheet(isPresented: $showingProfile) {
                 ProfileView()
@@ -415,6 +420,30 @@ struct TodayView: View {
             .sheet(isPresented: $showingEveningReflection) {
                 EveningReflectionView(entry: $viewModel.entry)
                     .edgesIgnoringSafeArea(.all)
+            }
+            .sheet(item: $selectedTrainingPlan) { plan in
+                TrainingPlanDetailSheet(
+                    plan: plan,
+                    onEdit: {
+                        selectedTrainingPlan = nil
+                        // Small delay to allow sheet dismiss animation
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            trainingPlanToEdit = plan
+                        }
+                    },
+                    onDelete: {
+                        try? await plansService.remove(plan.id)
+                        await viewModel.load(date: selectedDate)
+                    },
+                    onDismiss: {
+                        selectedTrainingPlan = nil
+                    }
+                )
+            }
+            .sheet(item: $trainingPlanToEdit) { plan in
+                TrainingPlanFormSheet(mode: .edit, date: selectedDate, existingPlan: plan) {
+                    await viewModel.load(date: selectedDate)
+                }
             }
             .onChange(of: showingTrainingPlans) { isPresented in
                 if !isPresented {
@@ -462,133 +491,6 @@ extension TodayView {
         }
     }
     
-    @ViewBuilder
-    func planRow(icon: String, label: String, value: String) -> some View {
-        HStack(spacing: DesignSystem.Spacing.md) {
-            Image(systemName: icon)
-                .foregroundColor(timeContext.primaryColor)
-            Text(label)
-                .font(DesignSystem.Typography.bodyMedium)
-                .foregroundColor(DesignSystem.Colors.secondaryText)
-            Spacer()
-            Text(value)
-                .font(DesignSystem.Typography.bodyLargeSafe)
-                .foregroundColor(DesignSystem.Colors.primaryText)
-        }
-    }
-
-    struct TrainingPlanRow: View {
-        let plan: TrainingPlan
-        let timeContext: DesignSystem.TimeContext
-        var body: some View {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                HStack {
-                    Text("#\(plan.sequence)")
-                        .font(DesignSystem.Typography.metadata)
-                        .foregroundColor(DesignSystem.Colors.tertiaryText)
-                    Text(plan.trainingType?.capitalized ?? "-")
-                        .font(DesignSystem.Typography.bodyLargeSafe)
-                        .foregroundColor(DesignSystem.Colors.primaryText)
-                    Spacer()
-                }
-                HStack(spacing: DesignSystem.Spacing.lg) {
-                    HStack(spacing: DesignSystem.Spacing.xs) {
-                        Image(systemName: "clock.fill")
-                        Text(plan.startTime ?? "--:--")
-                    }
-                    HStack(spacing: DesignSystem.Spacing.xs) {
-                        Image(systemName: "flame.fill")
-                        Text(plan.intensity?.replacingOccurrences(of: "_", with: " ") ?? "-")
-                    }
-                    HStack(spacing: DesignSystem.Spacing.xs) {
-                        Image(systemName: "hourglass")
-                        Text("\(plan.durationMinutes ?? 0) min")
-                    }
-                }
-                .font(DesignSystem.Typography.bodyMedium)
-                .foregroundColor(DesignSystem.Colors.secondaryText)
-            }
-            .padding(.vertical, DesignSystem.Spacing.xs)
-        }
-    }
-
-    struct TrainingPlansSection: View {
-        let plans: [TrainingPlan]
-        let entry: DailyEntry
-        let timeContext: DesignSystem.TimeContext
-        let onManage: () -> Void
-        
-        var hasAnyPlan: Bool {
-            !plans.isEmpty ||
-            (entry.plannedTrainingType?.isEmpty == false) ||
-            (entry.plannedTrainingTime?.isEmpty == false) ||
-            (entry.plannedIntensity?.isEmpty == false) ||
-            ((entry.plannedDuration ?? 0) > 0)
-        }
-        
-        var body: some View {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                Text("Today's Training Plan")
-                    .font(DesignSystem.Typography.journalTitleSafe)
-                    .foregroundColor(DesignSystem.Colors.primaryText)
-                
-                if hasAnyPlan {
-                    VStack(spacing: DesignSystem.Spacing.md) {
-                        if !plans.isEmpty {
-                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                                ForEach(plans) { plan in
-                                    TrainingPlanRow(plan: plan, timeContext: timeContext)
-                                }
-                            }
-                        } else {
-                            VStack(spacing: DesignSystem.Spacing.sm) {
-                                HStack(spacing: DesignSystem.Spacing.md) {
-                                    Image(systemName: "dumbbell.fill").foregroundColor(timeContext.primaryColor)
-                                    Text(entry.plannedTrainingType ?? "-")
-                                        .font(DesignSystem.Typography.bodyLargeSafe)
-                                }
-                                HStack(spacing: DesignSystem.Spacing.md) {
-                                    Image(systemName: "clock.fill").foregroundColor(timeContext.primaryColor)
-                                    Text(entry.plannedTrainingTime ?? "-")
-                                        .font(DesignSystem.Typography.bodyLargeSafe)
-                                }
-                                HStack(spacing: DesignSystem.Spacing.md) {
-                                    Image(systemName: "flame.fill").foregroundColor(timeContext.primaryColor)
-                                    Text(entry.plannedIntensity?.replacingOccurrences(of: "_", with: " ") ?? "-")
-                                        .font(DesignSystem.Typography.bodyLargeSafe)
-                                }
-                                HStack(spacing: DesignSystem.Spacing.md) {
-                                    Image(systemName: "hourglass").foregroundColor(timeContext.primaryColor)
-                                    let d = entry.plannedDuration ?? 0
-                                    Text(d > 0 ? "\(d) min" : "-")
-                                        .font(DesignSystem.Typography.bodyLargeSafe)
-                                }
-                            }
-                        }
-                        Button(action: onManage) {
-                            HStack(spacing: DesignSystem.Spacing.xs) {
-                                Image(systemName: "slider.horizontal.3")
-                                Text("Manage training plans")
-                            }
-                            .font(DesignSystem.Typography.buttonMedium)
-                            .foregroundColor(timeContext.primaryColor)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                } else {
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                        Text("No plan set yet")
-                            .font(DesignSystem.Typography.bodyMedium)
-                            .foregroundColor(DesignSystem.Colors.secondaryText)
-                        PremiumPrimaryButton("Add training plan", timeContext: timeContext) {
-                            onManage()
-                        }
-                    }
-                }
-            }
-        }
-    }
-
 }
 
 // ViewModel moved to ViewModels/TodayViewModel.swift

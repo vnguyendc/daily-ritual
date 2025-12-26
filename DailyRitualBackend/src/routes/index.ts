@@ -29,6 +29,10 @@ router.put('/profile', DashboardController.updateUserProfile)
 
 // Daily entries routes
 router.get('/daily-entries', DailyEntriesController.getDailyEntries)
+router.get('/daily-entries/batch', DailyEntriesController.getBatchDailyEntries)  // Batch fetch (must be before :date)
+router.post('/daily-entries/batch', DailyEntriesController.getBatchDailyEntries) // Also support POST for larger date lists
+router.get('/daily-entries/batch/with-plans', DailyEntriesController.getBatchDailyEntriesWithPlans)
+router.post('/daily-entries/batch/with-plans', DailyEntriesController.getBatchDailyEntriesWithPlans)
 router.get('/daily-entries/:date', DailyEntriesController.getDailyEntry)
 router.get('/daily-entries/:date/with-plans', DailyEntriesController.getDailyEntryWithPlans)
 router.get('/daily-entries/:date/quote', DailyEntriesController.getDailyQuote)
