@@ -10,7 +10,7 @@ protocol DailyEntriesServiceProtocol {
     // Batch operations for optimized loading
     func getEntriesBatch(for dates: [Date]) async throws -> [String: DailyEntry]
     func getEntriesWithPlansBatch(for dates: [Date]) async throws -> (entries: [String: DailyEntry], plans: [String: [TrainingPlan]])
-    func prefetchEntriesAround(date: Date, range: Int)
+    @MainActor func prefetchEntriesAround(date: Date, range: Int)
 }
 
 struct DailyEntriesService: DailyEntriesServiceProtocol {
@@ -52,6 +52,7 @@ struct DailyEntriesService: DailyEntriesServiceProtocol {
     
     /// Prefetch surrounding dates when user views a specific date
     /// Call this to warm the cache for smoother navigation
+    @MainActor
     func prefetchEntriesAround(date: Date, range: Int = 3) {
         api.prefetchEntriesAround(date: date, range: range)
     }
