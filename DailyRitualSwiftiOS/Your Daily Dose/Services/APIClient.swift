@@ -93,6 +93,11 @@ struct APIClient {
     func postRaw<T: Decodable>(_ path: String, json: [String: Any]?) async throws -> T {
         let bodyData = try json.map { try JSONSerialization.data(withJSONObject: $0, options: []) }
         let data = try await request(path: path, method: "POST", body: bodyData)
+        #if DEBUG
+        if let responseString = String(data: data, encoding: .utf8) {
+            print("📥 POST \(path) response: \(responseString)")
+        }
+        #endif
         return try makeDecoder().decode(T.self, from: data)
     }
 

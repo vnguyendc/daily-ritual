@@ -960,39 +960,52 @@ class SupabaseManager: NSObject, ObservableObject {
         // Invalidate plans cache for this date
         await memoryCache.invalidatePlans(dateString)
 
-        let requestBody: [String: Any] = [
+        // Build request body with proper nil handling
+        var requestBody: [String: Any] = [
             "date": dateString,
-            "sequence": plan.sequence,
-            "type": plan.trainingType ?? "",
-            "start_time": plan.startTime as Any,
-            "intensity": plan.intensity as Any,
-            "duration_minutes": plan.durationMinutes as Any,
-            "notes": plan.notes as Any
-        ].compactMapValues { $0 }
+            "sequence": plan.sequence
+        ]
+        
+        // Add optional fields only if they have values
+        if let type = plan.trainingType, !type.isEmpty {
+            requestBody["type"] = type
+        }
+        if let startTime = plan.startTime {
+            requestBody["start_time"] = startTime
+        }
+        if let intensity = plan.intensity {
+            requestBody["intensity"] = intensity
+        }
+        if let durationMinutes = plan.durationMinutes {
+            requestBody["duration_minutes"] = durationMinutes
+        }
+        if let notes = plan.notes, !notes.isEmpty {
+            requestBody["notes"] = notes
+        }
+        
+        print("📤 Creating training plan with body:", requestBody)
 
         do {
             let apiResponse: APIResponse<TrainingPlan> = try await api.postRaw("training-plans", json: requestBody)
-            let createdPlan = apiResponse.data ?? plan
-            // Refresh cache for this date
-            Task { await refreshPlansInBackground(dateString: dateString) }
-            return createdPlan
+            print("📥 Create response - success: \(apiResponse.success), data: \(String(describing: apiResponse.data))")
+            
+            if let createdPlan = apiResponse.data {
+                // Immediately refresh the plans list from server to ensure consistency
+                await refreshPlansInBackground(dateString: dateString)
+                return createdPlan
+            } else {
+                // API returned success but no data - this shouldn't happen
+                print("⚠️ API returned success but no plan data")
+                throw SupabaseError.invalidData
+            }
         } catch {
-            print("Error creating training plan:", error)
+            print("❌ Error creating training plan:", error)
             // Enqueue create for replay
-            let body: [String: Any] = [
-                "date": dateString,
-                "sequence": plan.sequence,
-                "type": plan.trainingType as Any,
-                "start_time": plan.startTime as Any,
-                "intensity": plan.intensity as Any,
-                "duration_minutes": plan.durationMinutes as Any,
-                "notes": plan.notes as Any
-            ].compactMapValues { $0 }
-            let payload = try? JSONSerialization.data(withJSONObject: body)
+            let payload = try? JSONSerialization.data(withJSONObject: requestBody)
             let op = PendingOp(id: UUID(), opType: .trainingPlanCreate, dateString: dateString, payload: payload, attemptCount: 0, lastAttemptAt: nil)
             LocalStore.enqueue(op)
             await MainActor.run { self.pendingOpsCount = LocalStore.countPendingOps() }
-            return plan
+            throw error  // Re-throw so the caller knows it failed
         }
     }
 
