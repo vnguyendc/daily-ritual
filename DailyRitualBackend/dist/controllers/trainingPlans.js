@@ -141,6 +141,8 @@ export class TrainingPlansController {
             else {
                 user = await getUserFromToken(token);
             }
+            console.log('📝 Creating training plan for user:', user.id);
+            console.log('📝 Request body:', JSON.stringify(req.body));
             const { date, sequence, type, start_time, intensity, duration_minutes, notes } = req.body || {};
             if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) {
                 return res.status(400).json({ error: 'date (YYYY-MM-DD) required' });
@@ -150,27 +152,39 @@ export class TrainingPlansController {
             }
             try {
                 await DatabaseService.ensureUserRecord({ id: user.id, email: user.email || null });
+                console.log('✅ User record ensured');
             }
             catch (e) {
-                console.warn('ensureUserRecord failed:', e);
+                console.error('❌ ensureUserRecord failed:', e?.message || e);
             }
             const payload = {
                 user_id: user.id,
                 date,
-                sequence,
+                sequence: sequence || 1,
                 type,
-                start_time,
-                intensity,
-                duration_minutes,
-                notes
+                start_time: start_time || null,
+                intensity: intensity || null,
+                duration_minutes: duration_minutes || null,
+                notes: notes || null
             };
+            console.log('📝 Insert payload:', JSON.stringify(payload));
             const created = await DatabaseService.createTrainingPlan(user.id, payload);
+            console.log('✅ Training plan created:', created?.id);
             const response = { success: true, data: created };
             res.json(response);
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            console.error('Error creating training plan:', error);
+            let message = 'Unknown error';
+            if (error instanceof Error) {
+                message = error.message;
+            }
+            else if (typeof error === 'object' && error !== null) {
+                message = error.message || error.details || JSON.stringify(error);
+            }
+            else {
+                message = String(error);
+            }
+            console.error('❌ Error creating training plan:', message, error);
             res.status(500).json({ success: false, error: { error: 'Internal server error', message } });
         }
     }
