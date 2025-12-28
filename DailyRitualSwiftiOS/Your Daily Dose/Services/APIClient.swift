@@ -52,9 +52,22 @@ struct APIClient {
         if let t = authTokenProvider() { req.setValue("Bearer \(t)", forHTTPHeaderField: "Authorization") }
         req.httpBody = body
 
+        #if DEBUG
+        let hasToken = authTokenProvider() != nil
+        print("🌐 \(method) \(url.absoluteString) [auth: \(hasToken ? "yes" : "NO")]")
+        #endif
+
         let (data, response) = try await URLSession.shared.data(for: req)
         if let http = response as? HTTPURLResponse {
             let bodyString = String(data: data, encoding: .utf8) ?? ""
+            
+            #if DEBUG
+            print("📡 HTTP \(http.statusCode) for \(method) \(path)")
+            if http.statusCode < 200 || http.statusCode >= 300 {
+                print("❌ Response body: \(bodyString)")
+            }
+            #endif
+            
             if http.statusCode == 401 || (http.statusCode == 500 && bodyString.contains("Invalid or expired token")) {
                 // refresh and retry once
                 try await refreshHandler()
