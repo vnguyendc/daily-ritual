@@ -2,7 +2,7 @@
 //  TrainingPlanView.swift
 //  Your Daily Dose
 //
-//  Streamlined training plan management with Day/Week toggle
+//  Week-first training plan management - tap day to see details
 //  Created by VinhNguyen on 12/26/25.
 //
 
@@ -11,31 +11,11 @@ import SwiftUI
 import UIKit
 #endif
 
-// View mode for training plans
-enum TrainingPlanViewMode: String, CaseIterable {
-    case day = "Day"
-    case week = "Week"
-    
-    var icon: String {
-        switch self {
-        case .day: return "calendar.day.timeline.left"
-        case .week: return "calendar"
-        }
-    }
-}
-
 struct TrainingPlanView: View {
-    @State private var plans: [TrainingPlan] = []
-    @State private var isLoading = false
     @State private var selectedDate: Date = Calendar.current.startOfDay(for: Date())
-    @State private var showingAddForm = false
-    @State private var editingPlan: TrainingPlan?
-    @State private var planToDelete: TrainingPlan?
-    @State private var showDeleteConfirmation = false
-    @State private var viewMode: TrainingPlanViewMode = .week
-    @AppStorage("trainingPlanViewMode") private var savedViewMode: String = "week"
+    @State private var showDayDetail = false
+    @State private var dayDetailDate: Date = Date()
     
-    private let plansService: TrainingPlansServiceProtocol = TrainingPlansService()
     private var timeContext: DesignSystem.TimeContext { DesignSystem.TimeContext.current() }
     
     var body: some View {
@@ -43,95 +23,128 @@ struct TrainingPlanView: View {
             ZStack {
                 DesignSystem.Colors.background.ignoresSafeArea()
                 
-                VStack(spacing: 0) {
-                    // View mode toggle
-                    viewModeToggle
-                        .padding(.horizontal, DesignSystem.Spacing.md)
-                        .padding(.top, DesignSystem.Spacing.sm)
-                    
-                    // Content based on view mode
-                    if viewMode == .week {
-                        TrainingWeekView(selectedDate: $selectedDate)
-                    } else {
-                        dayViewContent
-                    }
+                TrainingWeekView(selectedDate: $selectedDate) { date in
+                    dayDetailDate = date
+                    showDayDetail = true
+                    hapticLight()
                 }
             }
             .navigationTitle("Training")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    if viewMode == .day {
-                        Button {
-                            showingAddForm = true
-                            hapticLight()
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 24))
-                                .foregroundColor(timeContext.primaryColor)
-                        }
-                    }
-                }
                 ToolbarItem(placement: .navigationBarLeading) {
-                    if viewMode == .week {
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                selectedDate = Date()
-                            }
-                        } label: {
-                            Text("Today")
-                                .font(DesignSystem.Typography.buttonSmall)
-                                .foregroundColor(timeContext.primaryColor)
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selectedDate = Date()
                         }
+                        hapticLight()
+                    } label: {
+                        Text("Today")
+                            .font(DesignSystem.Typography.buttonSmall)
+                            .foregroundColor(timeContext.primaryColor)
                     }
                 }
             }
-            .onAppear {
-                viewMode = TrainingPlanViewMode(rawValue: savedViewMode) ?? .week
+            .sheet(isPresented: $showDayDetail) {
+                DayDetailSheet(date: dayDetailDate)
             }
-            .onChange(of: viewMode) { _, newValue in
-                savedViewMode = newValue.rawValue
+        }
+    }
+    
+    // MARK: - Haptics
+    private func hapticLight() {
+        #if canImport(UIKit)
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        #endif
+    }
+}
+
+// MARK: - Day Detail Sheet
+struct DayDetailSheet: View {
+    let date: Date
+    @Environment(\.dismiss) private var dismiss
+    
+    @State private var plans: [TrainingPlan] = []
+    @State private var isLoading = false
+    @State private var showingAddForm = false
+    @State private var editingPlan: TrainingPlan?
+    @State private var planToDelete: TrainingPlan?
+    @State private var showDeleteConfirmation = false
+    
+    private let plansService: TrainingPlansServiceProtocol = TrainingPlansService()
+    private var timeContext: DesignSystem.TimeContext { DesignSystem.TimeContext.current() }
+    private let calendar = Calendar.current
+    
+    private var isToday: Bool {
+        calendar.isDateInToday(date)
+    }
+    
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                DesignSystem.Colors.background.ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(spacing: DesignSystem.Spacing.lg) {
+                        // Date header
+                        dateHeader
+                        
+                        // Sync status
+                        SyncStatusBanner(timeContext: timeContext)
+                        
+                        // Content
+                        if isLoading && plans.isEmpty {
+                            loadingState
+                        } else if plans.isEmpty {
+                            emptyState
+                        } else {
+                            plansList
+                        }
+                    }
+                    .padding(DesignSystem.Spacing.md)
+                }
+                .refreshable {
+                    await SupabaseManager.shared.replayPendingOpsWithBackoff()
+                    await load()
+                }
+            }
+            .navigationTitle(dayName)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                    .foregroundColor(timeContext.primaryColor)
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showingAddForm = true
+                        hapticLight()
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 22))
+                            .foregroundColor(timeContext.primaryColor)
+                    }
+                }
             }
             .task { await load() }
             .sheet(isPresented: $showingAddForm) {
                 TrainingPlanFormView(
                     mode: .create,
-                    date: selectedDate,
+                    date: date,
                     nextSequence: (plans.map(\.sequence).max() ?? 0) + 1,
-                    onSave: { 
-                        await load()
-                        print("📋 Reloaded plans after create")
-                    }
+                    onSave: { await load() }
                 )
-            }
-            .onChange(of: showingAddForm) { _, isPresented in
-                if !isPresented {
-                    // Also reload when sheet closes as backup
-                    Task { 
-                        await load() 
-                        print("📋 Reloaded plans on sheet dismiss")
-                    }
-                }
             }
             .sheet(item: $editingPlan) { plan in
                 TrainingPlanFormView(
                     mode: .edit(plan),
-                    date: selectedDate,
+                    date: date,
                     nextSequence: plan.sequence,
-                    onSave: { 
-                        await load()
-                        print("📋 Reloaded plans after edit")
-                    }
+                    onSave: { await load() }
                 )
-            }
-            .onChange(of: editingPlan) { _, plan in
-                if plan == nil {
-                    // Also reload when sheet closes as backup
-                    Task { 
-                        await load() 
-                        print("📋 Reloaded plans on edit sheet dismiss")
-                    }
-                }
             }
             .confirmationDialog(
                 "Delete Training Plan",
@@ -156,157 +169,40 @@ struct TrainingPlanView: View {
         }
     }
     
-    // MARK: - View Mode Toggle
-    private var viewModeToggle: some View {
-        HStack(spacing: 0) {
-            ForEach(TrainingPlanViewMode.allCases, id: \.self) { mode in
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        viewMode = mode
-                        hapticLight()
-                    }
-                } label: {
-                    HStack(spacing: DesignSystem.Spacing.xs) {
-                        Image(systemName: mode.icon)
-                            .font(.system(size: 14))
-                        Text(mode.rawValue)
-                            .font(DesignSystem.Typography.buttonSmall)
-                    }
-                    .foregroundColor(viewMode == mode ? .white : DesignSystem.Colors.secondaryText)
-                    .frame(maxWidth: .infinity)
+    // MARK: - Date Header
+    private var dateHeader: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(formattedDate)
+                    .font(DesignSystem.Typography.headlineMedium)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+                
+                if !plans.isEmpty {
+                    Text("\(plans.count) training session\(plans.count == 1 ? "" : "s")")
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                }
+            }
+            
+            Spacer()
+            
+            if isToday {
+                Text("Today")
+                    .font(DesignSystem.Typography.buttonSmall)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, DesignSystem.Spacing.md)
                     .padding(.vertical, DesignSystem.Spacing.sm)
                     .background(
-                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
-                            .fill(viewMode == mode ? timeContext.primaryColor : Color.clear)
+                        Capsule()
+                            .fill(timeContext.primaryColor)
                     )
-                }
             }
         }
-        .padding(4)
+        .padding(DesignSystem.Spacing.md)
         .background(
-            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
                 .fill(DesignSystem.Colors.cardBackground)
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
-                .stroke(DesignSystem.Colors.border, lineWidth: 1)
-        )
-    }
-    
-    // MARK: - Day View Content
-    private var dayViewContent: some View {
-        VStack(spacing: 0) {
-            // Weekly calendar strip at top
-            weekCalendarStrip
-                .padding(.top, DesignSystem.Spacing.sm)
-            
-            ScrollView {
-                VStack(spacing: DesignSystem.Spacing.lg) {
-                    // Sync status
-                    SyncStatusBanner(timeContext: timeContext)
-                    
-                    // Content
-                    if isLoading && plans.isEmpty {
-                        loadingState
-                    } else if plans.isEmpty {
-                        emptyState
-                    } else {
-                        plansList
-                    }
-                }
-                .padding(DesignSystem.Spacing.md)
-            }
-            .refreshable {
-                await SupabaseManager.shared.replayPendingOpsWithBackoff()
-                await load()
-            }
-        }
-    }
-    
-    // MARK: - Week Calendar Strip
-    private var weekCalendarStrip: some View {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        
-        // Get the start of the week (Sunday)
-        let weekday = calendar.component(.weekday, from: selectedDate)
-        let daysToSubtract = weekday - 1
-        let startOfWeek = calendar.date(byAdding: .day, value: -daysToSubtract, to: selectedDate) ?? selectedDate
-        
-        return VStack(spacing: DesignSystem.Spacing.sm) {
-            // Month and year header
-            HStack {
-                Text(selectedDate, format: .dateTime.month(.wide).year())
-                    .font(DesignSystem.Typography.caption)
-                    .foregroundColor(DesignSystem.Colors.secondaryText)
-                
-                Spacer()
-                
-                if !calendar.isDate(selectedDate, inSameDayAs: today) {
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedDate = today
-                        }
-                        hapticLight()
-                        Task { await load() }
-                    } label: {
-                        Text("Today")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(timeContext.primaryColor)
-                    }
-                }
-            }
-            .padding(.horizontal, DesignSystem.Spacing.md)
-            
-            // Days of week
-            HStack(spacing: 0) {
-                ForEach(0..<7, id: \.self) { dayOffset in
-                    let date = calendar.date(byAdding: .day, value: dayOffset, to: startOfWeek) ?? Date()
-                    let isSelected = calendar.isDate(date, inSameDayAs: selectedDate)
-                    let isToday = calendar.isDate(date, inSameDayAs: today)
-                    
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedDate = date
-                        }
-                        hapticLight()
-                        Task { await load() }
-                    } label: {
-                        VStack(spacing: 6) {
-                            Text(date, format: .dateTime.weekday(.narrow))
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundColor(DesignSystem.Colors.tertiaryText)
-                            
-                            ZStack {
-                                if isSelected {
-                                    Circle()
-                                        .fill(timeContext.primaryColor)
-                                        .frame(width: 36, height: 36)
-                                } else if isToday {
-                                    Circle()
-                                        .stroke(timeContext.primaryColor, lineWidth: 1.5)
-                                        .frame(width: 36, height: 36)
-                                }
-                                
-                                Text(date, format: .dateTime.day())
-                                    .font(.system(size: 16, weight: isSelected ? .bold : .medium))
-                                    .foregroundColor(
-                                        isSelected ? .white :
-                                        isToday ? timeContext.primaryColor :
-                                        DesignSystem.Colors.primaryText
-                                    )
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            }
-            .padding(.vertical, DesignSystem.Spacing.sm)
-            .padding(.horizontal, DesignSystem.Spacing.xs)
-            .background(DesignSystem.Colors.cardBackground)
-            .cornerRadius(DesignSystem.CornerRadius.card)
-            .padding(.horizontal, DesignSystem.Spacing.md)
-        }
     }
     
     // MARK: - Loading State
@@ -326,16 +222,16 @@ struct TrainingPlanView: View {
     // MARK: - Empty State
     private var emptyState: some View {
         VStack(spacing: DesignSystem.Spacing.lg) {
-            Image(systemName: "figure.run.circle")
+            Image(systemName: "moon.zzz.fill")
                 .font(.system(size: 64))
                 .foregroundColor(DesignSystem.Colors.tertiaryText.opacity(0.5))
             
             VStack(spacing: DesignSystem.Spacing.xs) {
-                Text("No Training Planned")
+                Text("Rest Day")
                     .font(DesignSystem.Typography.headlineMedium)
                     .foregroundColor(DesignSystem.Colors.primaryText)
                 
-                Text("Add your workouts for \(selectedDate, format: .dateTime.weekday(.wide))")
+                Text("No training planned for this day")
                     .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(DesignSystem.Colors.secondaryText)
                     .multilineTextAlignment(.center)
@@ -366,7 +262,7 @@ struct TrainingPlanView: View {
     private var plansList: some View {
         VStack(spacing: DesignSystem.Spacing.sm) {
             ForEach(plans.sorted(by: { $0.sequence < $1.sequence })) { plan in
-                TrainingPlanListItem(
+                DayPlanCard(
                     plan: plan,
                     timeContext: timeContext,
                     onEdit: {
@@ -403,16 +299,27 @@ struct TrainingPlanView: View {
         }
     }
     
-    // MARK: - Load
+    // MARK: - Helpers
+    private var dayName: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE"
+        return formatter.string(from: date)
+    }
+    
+    private var formattedDate: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, MMMM d"
+        return formatter.string(from: date)
+    }
+    
     private func load() async {
         isLoading = true
         defer { isLoading = false }
         do {
-            let loadedPlans = try await plansService.list(for: selectedDate)
+            let loadedPlans = try await plansService.list(for: date)
             await MainActor.run {
                 plans = loadedPlans
             }
-            print("📋 Loaded \(loadedPlans.count) plans for \(selectedDate)")
         } catch {
             print("❌ Failed to load training plans:", error)
         }
@@ -438,8 +345,8 @@ struct TrainingPlanView: View {
     }
 }
 
-// MARK: - Training Plan List Item
-struct TrainingPlanListItem: View {
+// MARK: - Day Plan Card
+struct DayPlanCard: View {
     let plan: TrainingPlan
     let timeContext: DesignSystem.TimeContext
     var onEdit: () -> Void
@@ -470,50 +377,63 @@ struct TrainingPlanListItem: View {
                         .background(DesignSystem.Colors.alertRed)
                 }
             }
-            .frame(height: 80)
+            .frame(height: 90)
             .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card))
             
             // Main card content
-            HStack(spacing: DesignSystem.Spacing.md) {
-                // Activity icon
-                ZStack {
-                    Circle()
-                        .fill(timeContext.primaryColor.opacity(0.15))
-                        .frame(width: 50, height: 50)
-                    
-                    Image(systemName: plan.activityType.icon)
-                        .font(.system(size: 22))
-                        .foregroundColor(timeContext.primaryColor)
-                }
-                
-                // Details
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(plan.activityType.displayName)
-                        .font(DesignSystem.Typography.headlineSmall)
-                        .foregroundColor(DesignSystem.Colors.primaryText)
-                    
-                    HStack(spacing: DesignSystem.Spacing.md) {
-                        if let time = plan.formattedStartTime {
-                            HStack(spacing: 4) {
-                                Image(systemName: "clock")
-                                Text(time)
-                            }
-                        }
-                        if let duration = plan.formattedDuration {
-                            HStack(spacing: 4) {
-                                Image(systemName: "timer")
-                                Text(duration)
-                            }
-                        }
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                HStack(spacing: DesignSystem.Spacing.md) {
+                    // Activity icon
+                    ZStack {
+                        Circle()
+                            .fill(timeContext.primaryColor.opacity(0.15))
+                            .frame(width: 50, height: 50)
+                        
+                        Image(systemName: plan.activityType.icon)
+                            .font(.system(size: 22))
+                            .foregroundColor(timeContext.primaryColor)
                     }
-                    .font(DesignSystem.Typography.caption)
-                    .foregroundColor(DesignSystem.Colors.secondaryText)
+                    
+                    // Details
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(plan.activityType.displayName)
+                                .font(DesignSystem.Typography.headlineSmall)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
+                            
+                            Spacer()
+                            
+                            // Intensity badge
+                            IntensityBadge(intensity: plan.intensityLevel)
+                        }
+                        
+                        HStack(spacing: DesignSystem.Spacing.md) {
+                            if let time = plan.formattedStartTime {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "clock")
+                                    Text(time)
+                                }
+                            }
+                            if let duration = plan.formattedDuration {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "timer")
+                                    Text(duration)
+                                }
+                            }
+                        }
+                        .font(DesignSystem.Typography.caption)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                    }
                 }
                 
-                Spacer()
-                
-                // Intensity badge
-                IntensityBadge(intensity: plan.intensityLevel)
+                // Notes if present
+                if let notes = plan.notes, !notes.isEmpty {
+                    Text(notes)
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                        .lineLimit(2)
+                        .padding(.leading, 62) // Align with text above
+                }
             }
             .padding(DesignSystem.Spacing.md)
             .background(
@@ -557,7 +477,6 @@ struct TrainingPlanListItem: View {
                 }
             }
         }
-        .frame(height: 80)
     }
 }
 
@@ -590,4 +509,3 @@ struct IntensityBadge: View {
 #Preview {
     TrainingPlanView()
 }
-

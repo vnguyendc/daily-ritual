@@ -10,6 +10,8 @@ import SwiftUI
 
 struct TrainingWeekView: View {
     @Binding var selectedDate: Date
+    var onDayTap: ((Date) -> Void)?
+    
     @State private var weekPlans: [Date: [TrainingPlan]] = [:]
     @State private var isLoading = false
     @State private var selectedPlan: TrainingPlan?
@@ -145,9 +147,7 @@ struct TrainingWeekView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        selectedDate = day
-                    }
+                    onDayTap?(day)
                 }
             }
         }
@@ -175,8 +175,10 @@ struct TrainingWeekView: View {
                             date: day,
                             plans: weekPlans[calendar.startOfDay(for: day)] ?? [],
                             isToday: isToday(day),
-                            isSelected: calendar.isDate(day, inSameDayAs: selectedDate),
                             timeContext: timeContext,
+                            onCardTap: {
+                                onDayTap?(day)
+                            },
                             onPlanTap: { plan in
                                 selectedPlan = plan
                             },
@@ -191,6 +193,14 @@ struct TrainingWeekView: View {
                 .padding(.bottom, DesignSystem.Spacing.lg)
             }
         }
+        .refreshable {
+            await loadWeekPlans()
+        }
+    }
+    
+    // Expose refresh method
+    func refresh() async {
+        await loadWeekPlans()
     }
     
     // MARK: - Helper Methods
@@ -270,8 +280,8 @@ struct WeekDayCard: View {
     let date: Date
     let plans: [TrainingPlan]
     let isToday: Bool
-    let isSelected: Bool
     let timeContext: DesignSystem.TimeContext
+    var onCardTap: (() -> Void)?
     var onPlanTap: ((TrainingPlan) -> Void)?
     var onAddPlan: (() -> Void)?
     
@@ -279,42 +289,55 @@ struct WeekDayCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-            // Day header
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(dayName)
-                        .font(DesignSystem.Typography.headlineSmall)
-                        .foregroundColor(isToday ? timeContext.primaryColor : DesignSystem.Colors.primaryText)
+            // Day header - tappable to open day view
+            Button {
+                onCardTap?()
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(dayName)
+                            .font(DesignSystem.Typography.headlineSmall)
+                            .foregroundColor(isToday ? timeContext.primaryColor : DesignSystem.Colors.primaryText)
+                        
+                        Text(formattedDate)
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                    }
                     
-                    Text(formattedDate)
-                        .font(DesignSystem.Typography.caption)
-                        .foregroundColor(DesignSystem.Colors.secondaryText)
-                }
-                
-                Spacer()
-                
-                if isToday {
-                    Text("Today")
-                        .font(DesignSystem.Typography.caption)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, DesignSystem.Spacing.sm)
-                        .padding(.vertical, 4)
-                        .background(
-                            Capsule()
-                                .fill(timeContext.primaryColor)
-                        )
-                }
-                
-                Button {
-                    onAddPlan?()
-                } label: {
-                    Image(systemName: "plus.circle")
-                        .font(.system(size: 20))
-                        .foregroundColor(timeContext.primaryColor)
+                    Spacer()
+                    
+                    if isToday {
+                        Text("Today")
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, DesignSystem.Spacing.sm)
+                            .padding(.vertical, 4)
+                            .background(
+                                Capsule()
+                                    .fill(timeContext.primaryColor)
+                            )
+                    }
+                    
+                    // Plan count badge
+                    if !plans.isEmpty {
+                        Text("\(plans.count)")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                            .frame(width: 24, height: 24)
+                            .background(
+                                Circle()
+                                    .fill(DesignSystem.Colors.secondaryBackground)
+                            )
+                    }
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(DesignSystem.Colors.tertiaryText)
                 }
             }
+            .buttonStyle(.plain)
             
-            // Plans for this day
+            // Plans preview (show first 2, with "+X more" if needed)
             if plans.isEmpty {
                 HStack {
                     Image(systemName: "moon.zzz.fill")
@@ -324,15 +347,45 @@ struct WeekDayCard: View {
                     Text("Rest day")
                         .font(DesignSystem.Typography.bodySmall)
                         .foregroundColor(DesignSystem.Colors.tertiaryText)
+                    
+                    Spacer()
+                    
+                    Button {
+                        onAddPlan?()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 12))
+                            Text("Add")
+                                .font(DesignSystem.Typography.caption)
+                        }
+                        .foregroundColor(timeContext.primaryColor)
+                    }
                 }
                 .padding(.vertical, DesignSystem.Spacing.xs)
             } else {
                 VStack(spacing: DesignSystem.Spacing.xs) {
-                    ForEach(plans) { plan in
+                    // Show first 2 plans
+                    ForEach(Array(plans.prefix(2))) { plan in
                         CompactPlanRow(plan: plan, timeContext: timeContext)
                             .onTapGesture {
                                 onPlanTap?(plan)
                             }
+                    }
+                    
+                    // Show "+X more" if there are more plans
+                    if plans.count > 2 {
+                        Button {
+                            onCardTap?()
+                        } label: {
+                            HStack {
+                                Text("+\(plans.count - 2) more")
+                                    .font(DesignSystem.Typography.caption)
+                                    .foregroundColor(timeContext.primaryColor)
+                                Spacer()
+                            }
+                            .padding(.vertical, DesignSystem.Spacing.xs)
+                        }
                     }
                 }
             }
@@ -340,11 +393,11 @@ struct WeekDayCard: View {
         .padding(DesignSystem.Spacing.md)
         .background(
             RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
-                .fill(isSelected ? timeContext.primaryColor.opacity(0.08) : DesignSystem.Colors.cardBackground)
+                .fill(DesignSystem.Colors.cardBackground)
         )
         .overlay(
             RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
-                .stroke(isSelected ? timeContext.primaryColor.opacity(0.3) : DesignSystem.Colors.border, lineWidth: isSelected ? 1.5 : 1)
+                .stroke(isToday ? timeContext.primaryColor.opacity(0.3) : DesignSystem.Colors.border, lineWidth: isToday ? 1.5 : 1)
         )
     }
     
@@ -356,7 +409,7 @@ struct WeekDayCard: View {
     
     private var formattedDate: String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d, yyyy"
+        formatter.dateFormat = "MMM d"
         return formatter.string(from: date)
     }
 }
@@ -409,11 +462,6 @@ struct CompactPlanRow: View {
             
             // Intensity indicator
             IntensityIndicator(intensity: plan.intensityLevel)
-            
-            // Chevron
-            Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(DesignSystem.Colors.tertiaryText)
         }
         .padding(DesignSystem.Spacing.sm)
         .background(
@@ -429,4 +477,3 @@ struct CompactPlanRow: View {
     TrainingWeekView(selectedDate: .constant(Date()))
         .background(DesignSystem.Colors.background)
 }
-
