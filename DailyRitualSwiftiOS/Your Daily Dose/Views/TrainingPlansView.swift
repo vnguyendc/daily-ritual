@@ -2,11 +2,23 @@
 //  TrainingPlansView.swift
 //  Your Daily Dose
 //
-//  Enhanced training plans view with tap-to-detail navigation and improved UI
+//  Enhanced training plans view with day/week toggle and improved UI
 //  Created by VinhNguyen on 9/9/25.
 //
 
 import SwiftUI
+
+enum TrainingViewMode: String, CaseIterable {
+    case day = "Day"
+    case week = "Week"
+    
+    var icon: String {
+        switch self {
+        case .day: return "calendar.day.timeline.left"
+        case .week: return "calendar"
+        }
+    }
+}
 
 struct TrainingPlansView: View {
     @State private var plans: [TrainingPlan] = []
@@ -15,57 +27,61 @@ struct TrainingPlansView: View {
     @State private var selectedDate: Date = Calendar.current.startOfDay(for: Date())
     @State private var selectedPlan: TrainingPlan?
     @State private var planToEdit: TrainingPlan?
+    @State private var viewMode: TrainingViewMode = .week
+    @AppStorage("trainingViewMode") private var savedViewMode: String = "week"
+    
     private let plansService: TrainingPlansServiceProtocol = TrainingPlansService()
     
     private var timeContext: DesignSystem.TimeContext { .morning }
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: DesignSystem.Spacing.md) {
-                    // Sync status
-                    SyncStatusBanner(timeContext: timeContext)
-                        .padding(.horizontal, DesignSystem.Spacing.md)
-                    
-                    // Empty state or plan cards
-                    if plans.isEmpty && !isLoading {
-                        emptyState
-                    } else {
-                        plansList
-                    }
+            VStack(spacing: 0) {
+                // View mode toggle
+                viewModeToggle
+                
+                // Content based on view mode
+                if viewMode == .week {
+                    TrainingWeekView(selectedDate: $selectedDate)
+                } else {
+                    dayView
                 }
-                .padding(.vertical, DesignSystem.Spacing.md)
             }
             .background(DesignSystem.Colors.background)
-            .navigationTitle("Training Plans")
+            .navigationTitle("Training")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showAddSheet = true }) {
-                        HStack(spacing: DesignSystem.Spacing.xs) {
+                    if viewMode == .day {
+                        Button(action: { showAddSheet = true }) {
                             Image(systemName: "plus.circle.fill")
-                            Text("Add Plan")
+                                .font(.system(size: 20))
+                                .foregroundColor(timeContext.primaryColor)
                         }
-                        .font(DesignSystem.Typography.buttonMedium)
-                        .foregroundColor(timeContext.primaryColor)
                     }
                 }
                 ToolbarItem(placement: .navigationBarLeading) {
-                    DatePicker("Date", selection: $selectedDate, displayedComponents: .date)
-                        .labelsHidden()
-                        .onChange(of: selectedDate) { _, _ in
-                            Task { await load() }
+                    if viewMode == .day {
+                        DatePicker("Date", selection: $selectedDate, displayedComponents: .date)
+                            .labelsHidden()
+                            .onChange(of: selectedDate) { _, _ in
+                                Task { await load() }
+                            }
+                    } else {
+                        Button {
+                            selectedDate = Date()
+                        } label: {
+                            Text("Today")
+                                .font(DesignSystem.Typography.buttonSmall)
+                                .foregroundColor(timeContext.primaryColor)
                         }
+                    }
                 }
             }
-            .overlay {
-                if isLoading && plans.isEmpty {
-                    LoadingCard(message: "Loading training plans...", progress: nil, cancelAction: nil, useMaterialBackground: false)
-                }
+            .onAppear {
+                viewMode = TrainingViewMode(rawValue: savedViewMode) ?? .week
             }
-            .task { await load() }
-            .refreshable {
-                await SupabaseManager.shared.replayPendingOpsWithBackoff()
-                await load()
+            .onChange(of: viewMode) { _, newValue in
+                savedViewMode = newValue.rawValue
             }
             .sheet(isPresented: $showAddSheet) {
                 TrainingPlanFormSheet(mode: .create, date: selectedDate) {
@@ -95,6 +111,73 @@ struct TrainingPlansView: View {
                     await load()
                 }
             }
+        }
+    }
+    
+    // MARK: - View Mode Toggle
+    private var viewModeToggle: some View {
+        HStack(spacing: 0) {
+            ForEach(TrainingViewMode.allCases, id: \.self) { mode in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        viewMode = mode
+                    }
+                } label: {
+                    HStack(spacing: DesignSystem.Spacing.xs) {
+                        Image(systemName: mode.icon)
+                            .font(.system(size: 14))
+                        Text(mode.rawValue)
+                            .font(DesignSystem.Typography.buttonSmall)
+                    }
+                    .foregroundColor(viewMode == mode ? .white : DesignSystem.Colors.secondaryText)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, DesignSystem.Spacing.sm)
+                    .background(
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
+                            .fill(viewMode == mode ? timeContext.primaryColor : Color.clear)
+                    )
+                }
+            }
+        }
+        .padding(4)
+        .background(
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
+                .fill(DesignSystem.Colors.cardBackground)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
+                .stroke(DesignSystem.Colors.border, lineWidth: 1)
+        )
+        .padding(.horizontal, DesignSystem.Spacing.md)
+        .padding(.vertical, DesignSystem.Spacing.sm)
+    }
+    
+    // MARK: - Day View
+    private var dayView: some View {
+        ScrollView {
+            VStack(spacing: DesignSystem.Spacing.md) {
+                // Sync status
+                SyncStatusBanner(timeContext: timeContext)
+                    .padding(.horizontal, DesignSystem.Spacing.md)
+                
+                // Empty state or plan cards
+                if plans.isEmpty && !isLoading {
+                    emptyState
+                } else {
+                    plansList
+                }
+            }
+            .padding(.vertical, DesignSystem.Spacing.md)
+        }
+        .overlay {
+            if isLoading && plans.isEmpty {
+                LoadingCard(message: "Loading training plans...", progress: nil, cancelAction: nil, useMaterialBackground: false)
+            }
+        }
+        .task { await load() }
+        .refreshable {
+            await SupabaseManager.shared.replayPendingOpsWithBackoff()
+            await load()
         }
     }
     
