@@ -1,10 +1,6 @@
 import { Request, Response } from 'express'
 import { supabaseServiceClient } from '../services/supabase.js'
-import { ok, fail, PaginatedResponse } from '../types/api.js'
-import type { Database } from '../types/database.js'
-
-type JournalEntry = Database['public']['Tables']['journal_entries']['Row']
-type JournalEntryInsert = Database['public']['Tables']['journal_entries']['Insert']
+import { ok, fail, PaginatedResponse, JournalEntry } from '../types/api.js'
 
 export const JournalController = {
   // Get all journal entries for a user (paginated)
@@ -21,7 +17,7 @@ export const JournalController = {
       const offset = (page - 1) * limit
 
       // Count total
-      const { count, error: countError } = await supabaseServiceClient
+      const { count, error: countError } = await (supabaseServiceClient as any)
         .from('journal_entries')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId)
@@ -29,7 +25,7 @@ export const JournalController = {
       if (countError) throw countError
 
       // Fetch entries
-      const { data: entries, error } = await supabaseServiceClient
+      const { data: entries, error } = await (supabaseServiceClient as any)
         .from('journal_entries')
         .select('*')
         .eq('user_id', userId)
@@ -42,7 +38,7 @@ export const JournalController = {
       const totalPages = Math.ceil(total / limit)
 
       const response: PaginatedResponse<JournalEntry> = {
-        data: entries || [],
+        data: (entries || []) as JournalEntry[],
         pagination: {
           page,
           limit,
@@ -71,7 +67,7 @@ export const JournalController = {
         return
       }
 
-      const { data: entry, error } = await supabaseServiceClient
+      const { data: entry, error } = await (supabaseServiceClient as any)
         .from('journal_entries')
         .select('*')
         .eq('id', id)
@@ -109,7 +105,7 @@ export const JournalController = {
         return
       }
 
-      const insertData: JournalEntryInsert = {
+      const insertData = {
         user_id: userId,
         title: title || null,
         content: content.trim(),
@@ -119,7 +115,7 @@ export const JournalController = {
         is_private: true
       }
 
-      const { data: entry, error } = await supabaseServiceClient
+      const { data: entry, error } = await (supabaseServiceClient as any)
         .from('journal_entries')
         .insert(insertData)
         .select()
@@ -154,7 +150,7 @@ export const JournalController = {
       if (energy !== undefined) updateData.energy = energy
       if (tags !== undefined) updateData.tags = tags
 
-      const { data: entry, error } = await supabaseServiceClient
+      const { data: entry, error } = await (supabaseServiceClient as any)
         .from('journal_entries')
         .update(updateData)
         .eq('id', id)
@@ -188,7 +184,7 @@ export const JournalController = {
         return
       }
 
-      const { error } = await supabaseServiceClient
+      const { error } = await (supabaseServiceClient as any)
         .from('journal_entries')
         .delete()
         .eq('id', id)

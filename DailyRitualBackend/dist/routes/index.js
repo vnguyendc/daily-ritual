@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { DailyEntriesController } from '../controllers/dailyEntries.js';
 import { TrainingPlansController } from '../controllers/trainingPlans.js';
 import { InsightsController } from '../controllers/insights.js';
+import { JournalController } from '../controllers/journalEntries.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { DashboardController } from '../controllers/dashboard.js';
 const router = Router();
@@ -12,7 +13,7 @@ router.get('/health', (req, res) => {
         version: '1.0.0'
     });
 });
-router.use(['/profile', '/daily-entries', '/training-plans', '/insights'], authenticateToken);
+router.use(['/profile', '/daily-entries', '/training-plans', '/insights', '/journal'], authenticateToken);
 router.get('/profile', DashboardController.getUserProfile);
 router.put('/profile', DashboardController.updateUserProfile);
 router.get('/daily-entries', DailyEntriesController.getDailyEntries);
@@ -35,5 +36,10 @@ router.delete('/training-plans/:id', TrainingPlansController.remove);
 router.get('/insights', InsightsController.getInsights);
 router.get('/insights/stats', InsightsController.getInsightsStats);
 router.post('/insights/:id/read', InsightsController.markAsRead);
+router.get('/journal', JournalController.getJournalEntries);
+router.post('/journal', JournalController.createJournalEntry);
+router.get('/journal/:id', JournalController.getJournalEntry);
+router.put('/journal/:id', JournalController.updateJournalEntry);
+router.delete('/journal/:id', JournalController.deleteJournalEntry);
 export default router;
 //# sourceMappingURL=index.js.map
