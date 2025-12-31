@@ -26,7 +26,7 @@ struct DesignSystem {
     struct Colors {
         // MARK: - Universal Performance Accents (Consistent Across Themes)
         // Vibrant neon palette for high-energy athletic feel
-        static let eliteGold = Color(red: 1.0, green: 0.42, blue: 0.0)      // #FF6B00 - Neon Orange - Primary CTA, achievements
+        static let eliteGold = Color(red: 1.0, green: 0.9, blue: 0.0)       // #FFE600 - Neon Yellow - Primary CTA, achievements
         static let championBlue = Color(red: 0.0, green: 0.75, blue: 1.0)   // #00BFFF - Electric Blue - Evening reflection
         static let alertRed = Color(red: 1.0, green: 0.25, blue: 0.35)      // #FF4059 - Vivid Red - Warnings, critical data
         
@@ -370,9 +370,9 @@ struct DesignSystem {
         
         var primaryColor: Color {
             switch self {
-            case .morning: return DesignSystem.Colors.eliteGold      // Neon Orange for morning energy
+            case .morning: return DesignSystem.Colors.eliteGold      // Neon Yellow for morning energy
             case .evening: return DesignSystem.Colors.championBlue   // Electric Blue for evening reflection
-            case .neutral: return DesignSystem.Colors.eliteGold      // Default to Neon Orange
+            case .neutral: return DesignSystem.Colors.eliteGold      // Default to Neon Yellow
             }
         }
         
