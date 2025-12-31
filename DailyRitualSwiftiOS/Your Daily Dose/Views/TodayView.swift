@@ -431,11 +431,14 @@ struct TodayView: View {
                     .edgesIgnoringSafeArea(.all)
             }
             .sheet(isPresented: $showingQuickEntry) {
-                QuickEntryView(date: selectedDate) { entryText in
+                QuickEntryView(date: selectedDate) { title, content in
                     // Save the quick entry to the daily entry's notes/other thoughts
                     var updatedEntry = viewModel.entry
                     let existingNotes = updatedEntry.quoteReflection ?? ""
-                    let newNotes = existingNotes.isEmpty ? entryText : existingNotes + "\n\n---\n\n" + entryText
+                    
+                    // Format entry with title
+                    let formattedEntry = "**\(title)**\n\(content)"
+                    let newNotes = existingNotes.isEmpty ? formattedEntry : existingNotes + "\n\n---\n\n" + formattedEntry
                     updatedEntry.quoteReflection = newNotes
                     
                     // Save to backend

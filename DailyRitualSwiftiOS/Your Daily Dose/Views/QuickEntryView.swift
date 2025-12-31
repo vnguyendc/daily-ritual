@@ -13,12 +13,14 @@ import UIKit
 
 struct QuickEntryView: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var entryTitle = ""
     @State private var entryText = ""
     @State private var isSaving = false
+    @FocusState private var isTitleFocused: Bool
     @FocusState private var isTextFieldFocused: Bool
     
     let date: Date
-    var onSave: ((String) async -> Void)?
+    var onSave: ((String, String) async -> Void)? // (title, content)
     
     private var timeContext: DesignSystem.TimeContext { DesignSystem.TimeContext.current() }
     
@@ -28,24 +30,16 @@ struct QuickEntryView: View {
                 DesignSystem.Colors.background.ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // Date header
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Quick Entry")
-                                .font(DesignSystem.Typography.headlineMedium)
-                                .foregroundColor(DesignSystem.Colors.primaryText)
-                            
-                            Text(date, format: .dateTime.weekday(.wide).month(.wide).day())
-                                .font(DesignSystem.Typography.caption)
-                                .foregroundColor(DesignSystem.Colors.secondaryText)
-                        }
+                    // Title and date header
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                        TextField("Quick Entry", text: $entryTitle)
+                            .font(DesignSystem.Typography.headlineMedium)
+                            .foregroundColor(DesignSystem.Colors.primaryText)
+                            .focused($isTitleFocused)
                         
-                        Spacer()
-                        
-                        // Character count
-                        Text("\(entryText.count)")
+                        Text(date, format: .dateTime.weekday(.wide).month(.wide).day())
                             .font(DesignSystem.Typography.caption)
-                            .foregroundColor(DesignSystem.Colors.tertiaryText)
+                            .foregroundColor(DesignSystem.Colors.secondaryText)
                     }
                     .padding(DesignSystem.Spacing.md)
                     
@@ -111,15 +105,16 @@ struct QuickEntryView: View {
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
                     Button("Done") {
+                        isTitleFocused = false
                         isTextFieldFocused = false
                     }
                     .foregroundColor(timeContext.primaryColor)
                 }
             }
             .onAppear {
-                // Focus the text field after a brief delay
+                // Focus the title field after a brief delay
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    isTextFieldFocused = true
+                    isTitleFocused = true
                 }
             }
         }
@@ -163,8 +158,11 @@ struct QuickEntryView: View {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         #endif
         
-        // Save the entry
-        await onSave?(entryText)
+        // Use placeholder if title is empty
+        let finalTitle = entryTitle.isEmpty ? "Quick Entry" : entryTitle
+        
+        // Save the entry with title
+        await onSave?(finalTitle, entryText)
         
         #if canImport(UIKit)
         UINotificationFeedbackGenerator().notificationOccurred(.success)
