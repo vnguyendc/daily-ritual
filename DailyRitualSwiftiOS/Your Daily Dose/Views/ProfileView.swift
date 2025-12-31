@@ -26,6 +26,7 @@ struct ProfileView: View {
     @State private var name = ""
     @State private var primarySport = ""
     @State private var reminderTime = Date()
+    @State private var eveningReminderTime = Calendar.current.date(from: DateComponents(hour: 17, minute: 0)) ?? Date()
     @State private var selectedTimezone = TimeZone.current.identifier
     
     // UI state
@@ -261,13 +262,44 @@ struct ProfileView: View {
                         .textCase(.uppercase)
                     
                     HStack {
-                        Image(systemName: "bell.fill")
-                            .foregroundColor(timeContext.primaryColor)
+                        Image(systemName: "sun.max.fill")
+                            .foregroundColor(DesignSystem.Colors.eliteGold)
                         
                         DatePicker("", selection: $reminderTime, displayedComponents: .hourAndMinute)
                             .labelsHidden()
                         
                         Spacer()
+                    }
+                    .padding(DesignSystem.Spacing.md)
+                    .background(
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                            .fill(DesignSystem.Colors.cardBackground)
+                    )
+                }
+                
+                // Evening Reminder Time
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                    Text("Evening Reflection Time")
+                        .font(DesignSystem.Typography.caption)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                        .textCase(.uppercase)
+                    
+                    HStack {
+                        Image(systemName: "moon.fill")
+                            .foregroundColor(DesignSystem.Colors.championBlue)
+                        
+                        DatePicker("", selection: $eveningReminderTime, displayedComponents: .hourAndMinute)
+                            .labelsHidden()
+                            .onChange(of: eveningReminderTime) { _, newValue in
+                                let hour = Calendar.current.component(.hour, from: newValue)
+                                UserDefaults.standard.set(hour, forKey: "eveningReminderHour")
+                            }
+                        
+                        Spacer()
+                        
+                        Text("Available after")
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(DesignSystem.Colors.tertiaryText)
                     }
                     .padding(DesignSystem.Spacing.md)
                     .background(
@@ -584,6 +616,13 @@ struct ProfileView: View {
         
         if let date = supabase.date(fromTimeString: user.morningReminderTime, in: TimeZone(identifier: user.timezone) ?? .current) {
             reminderTime = date
+        }
+        
+        // Load evening reminder time from UserDefaults
+        let savedHour = UserDefaults.standard.integer(forKey: "eveningReminderHour")
+        let hour = savedHour > 0 ? savedHour : 17 // Default 5 PM
+        if let date = Calendar.current.date(from: DateComponents(hour: hour, minute: 0)) {
+            eveningReminderTime = date
         }
     }
     

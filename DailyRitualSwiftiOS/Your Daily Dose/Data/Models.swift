@@ -167,7 +167,9 @@ struct DailyEntry: Codable, Identifiable, Sendable, Hashable {
     
     var shouldShowEvening: Bool {
         let hour = Calendar.current.component(.hour, from: Date())
-        return isMorningComplete || hour >= 17 // Show after 5 PM or if morning is complete
+        let eveningStartHour = UserDefaults.standard.integer(forKey: "eveningReminderHour")
+        let effectiveHour = eveningStartHour > 0 ? eveningStartHour : 17 // Default to 5 PM
+        return isMorningComplete || hour >= effectiveHour
     }
     
     var completedMorningSteps: Int {

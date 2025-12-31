@@ -146,34 +146,36 @@ struct TodayView: View {
                             .buttonStyle(.plain)
                             .animation(DesignSystem.Animation.gentle, value: viewModel.entry.completedMorningSteps)
                         } else {
-                            // Premium completed morning card with edit button
+                            // Compact completed morning card
                             Button(action: { showingMorningRitual = true }) {
-                                PremiumCard(timeContext: .morning) {
-                                    HStack {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundColor(DesignSystem.Colors.success)
-                                            .font(DesignSystem.Typography.headlineLargeSafe)
-                                        
-                                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                            Text("Morning Ritual Complete")
-                                                .font(DesignSystem.Typography.journalTitleSafe)
-                                                .foregroundColor(DesignSystem.Colors.primaryText)
-                                            
-                                            Text("Tap to edit")
-                                                .font(DesignSystem.Typography.bodyMedium)
-                                                .foregroundColor(DesignSystem.Colors.secondaryText)
-                                        }
-                                        
-                                        Spacer()
-                                        
-                                        PremiumProgressRing(
-                                            progress: 1.0,
-                                            size: 32,
-                                            lineWidth: 3,
-                                            timeContext: .morning
-                                        )
-                                    }
+                                HStack(spacing: DesignSystem.Spacing.md) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(DesignSystem.Colors.success)
+                                        .font(.system(size: 20))
+                                    
+                                    Text("Morning Complete")
+                                        .font(DesignSystem.Typography.bodyMedium)
+                                        .foregroundColor(DesignSystem.Colors.primaryText)
+                                    
+                                    Spacer()
+                                    
+                                    Text("Edit")
+                                        .font(DesignSystem.Typography.caption)
+                                        .foregroundColor(DesignSystem.Colors.morningAccent)
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundColor(DesignSystem.Colors.tertiaryText)
                                 }
+                                .padding(DesignSystem.Spacing.md)
+                                .background(
+                                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                                        .fill(DesignSystem.Colors.cardBackground)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                                        .stroke(DesignSystem.Colors.border, lineWidth: 1)
+                                )
                             }
                             .buttonStyle(.plain)
                         }
@@ -228,34 +230,36 @@ struct TodayView: View {
                                 .buttonStyle(.plain)
                                 .animation(DesignSystem.Animation.gentle, value: viewModel.entry.completedEveningSteps)
                             } else {
-                                // Premium completed evening card with edit button
+                                // Compact completed evening card
                                 Button(action: { showingEveningReflection = true }) {
-                                    PremiumCard(timeContext: .evening) {
-                                        HStack {
-                                            Image(systemName: "checkmark.circle.fill")
-                                                .foregroundColor(DesignSystem.Colors.success)
-                                                .font(DesignSystem.Typography.headlineLargeSafe)
-                                            
-                                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                                Text("Evening Reflection Complete")
-                                                    .font(DesignSystem.Typography.journalTitleSafe)
-                                                    .foregroundColor(DesignSystem.Colors.primaryText)
-                                                
-                                                Text("Tap to edit")
-                                                    .font(DesignSystem.Typography.bodyMedium)
-                                                    .foregroundColor(DesignSystem.Colors.secondaryText)
-                                            }
-                                            
-                                            Spacer()
-                                            
-                                            PremiumProgressRing(
-                                                progress: 1.0,
-                                                size: 32,
-                                                lineWidth: 3,
-                                                timeContext: .evening
-                                            )
-                                        }
+                                    HStack(spacing: DesignSystem.Spacing.md) {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(DesignSystem.Colors.success)
+                                            .font(.system(size: 20))
+                                        
+                                        Text("Evening Complete")
+                                            .font(DesignSystem.Typography.bodyMedium)
+                                            .foregroundColor(DesignSystem.Colors.primaryText)
+                                        
+                                        Spacer()
+                                        
+                                        Text("Edit")
+                                            .font(DesignSystem.Typography.caption)
+                                            .foregroundColor(DesignSystem.Colors.eveningAccent)
+                                        
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 12, weight: .semibold))
+                                            .foregroundColor(DesignSystem.Colors.tertiaryText)
                                     }
+                                    .padding(DesignSystem.Spacing.md)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                                            .fill(DesignSystem.Colors.cardBackground)
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                                            .stroke(DesignSystem.Colors.border, lineWidth: 1)
+                                    )
                                 }
                                 .buttonStyle(.plain)
                             }
