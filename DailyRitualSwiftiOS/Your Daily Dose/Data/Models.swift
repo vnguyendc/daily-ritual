@@ -670,6 +670,57 @@ struct TrainingPlan: Codable, Identifiable, Sendable, Hashable {
     }
 }
 
+// MARK: - Journal Entry (Quick Entries)
+struct JournalEntry: Codable, Identifiable, Sendable, Hashable {
+    let id: UUID
+    let userId: UUID
+    var title: String?
+    var content: String
+    var mood: Int?
+    var energy: Int?
+    var tags: [String]?
+    let isPrivate: Bool
+    let createdAt: Date
+    let updatedAt: Date
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case title, content, mood, energy, tags
+        case isPrivate = "is_private"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+    
+    init(id: UUID = UUID(), userId: UUID, title: String? = nil, content: String, mood: Int? = nil, energy: Int? = nil, tags: [String]? = nil, isPrivate: Bool = true, createdAt: Date = Date(), updatedAt: Date = Date()) {
+        self.id = id
+        self.userId = userId
+        self.title = title
+        self.content = content
+        self.mood = mood
+        self.energy = energy
+        self.tags = tags
+        self.isPrivate = isPrivate
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+    
+    /// Display title - falls back to first line of content or "Quick Entry"
+    var displayTitle: String {
+        if let title = title, !title.isEmpty {
+            return title
+        }
+        let firstLine = content.components(separatedBy: .newlines).first ?? ""
+        return firstLine.isEmpty ? "Quick Entry" : String(firstLine.prefix(50))
+    }
+    
+    /// Preview of content (first 100 chars)
+    var contentPreview: String {
+        let preview = content.prefix(100)
+        return preview.count < content.count ? "\(preview)..." : String(preview)
+    }
+}
+
 enum MorningStep: Int, CaseIterable {
     case goals = 0
     case gratitude = 1

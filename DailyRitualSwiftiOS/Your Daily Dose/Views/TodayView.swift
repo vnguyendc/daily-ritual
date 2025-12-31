@@ -30,7 +30,12 @@ struct TodayView: View {
     @State private var showingQuickEntry = false
     @State private var showingAddActivity = false
     
+    // Journal entries
+    @State private var journalEntries: [JournalEntry] = []
+    @State private var selectedJournalEntry: JournalEntry?
+    
     private let plansService: TrainingPlansServiceProtocol = TrainingPlansService()
+    private let journalService: JournalEntriesServiceProtocol = JournalEntriesService()
     
     private var timeContext: DesignSystem.TimeContext {
         DesignSystem.TimeContext.current()
@@ -259,6 +264,64 @@ struct TodayView: View {
                             onManagePlans: { showingTrainingPlans = true }
                         )
 
+                        // MARK: - Today's Quick Entries
+                        if !todayJournalEntries.isEmpty {
+                            PremiumCard(timeContext: timeContext) {
+                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                                    HStack {
+                                        Text("Quick Entries")
+                                            .font(DesignSystem.Typography.journalTitleSafe)
+                                            .foregroundColor(DesignSystem.Colors.primaryText)
+                                        
+                                        Spacer()
+                                        
+                                        Text("\(todayJournalEntries.count)")
+                                            .font(DesignSystem.Typography.caption)
+                                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 4)
+                                            .background(
+                                                Capsule()
+                                                    .fill(DesignSystem.Colors.secondaryBackground)
+                                            )
+                                    }
+                                    
+                                    VStack(spacing: DesignSystem.Spacing.sm) {
+                                        ForEach(todayJournalEntries) { entry in
+                                            Button {
+                                                selectedJournalEntry = entry
+                                            } label: {
+                                                HStack(spacing: DesignSystem.Spacing.md) {
+                                                    Image(systemName: "doc.text")
+                                                        .foregroundColor(timeContext.primaryColor)
+                                                        .font(.system(size: 16))
+                                                    
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        Text(entry.displayTitle)
+                                                            .font(DesignSystem.Typography.buttonMedium)
+                                                            .foregroundColor(DesignSystem.Colors.primaryText)
+                                                            .lineLimit(1)
+                                                        
+                                                        Text(entry.createdAt, format: .dateTime.hour().minute())
+                                                            .font(DesignSystem.Typography.caption)
+                                                            .foregroundColor(DesignSystem.Colors.tertiaryText)
+                                                    }
+                                                    
+                                                    Spacer()
+                                                    
+                                                    Image(systemName: "chevron.right")
+                                                        .font(.system(size: 12, weight: .semibold))
+                                                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                                                }
+                                                .padding(.vertical, DesignSystem.Spacing.sm)
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         // MARK: - Completed Rituals (shown at bottom)
                         
                         // Compact completed morning card
@@ -405,9 +468,11 @@ struct TodayView: View {
             .refreshable {
                 await SupabaseManager.shared.replayPendingOpsWithBackoff()
                 await viewModel.refresh(for: selectedDate)
+                await loadJournalEntries()
             }
             .task {
                 await viewModel.load(date: selectedDate)
+                await loadJournalEntries()
                 let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
                 let dateString = df.string(from: selectedDate)
                 completedGoals = LocalStore.getCompletedGoals(for: dateString)
@@ -431,22 +496,19 @@ struct TodayView: View {
                     .edgesIgnoringSafeArea(.all)
             }
             .sheet(isPresented: $showingQuickEntry) {
-                QuickEntryView(date: selectedDate) { title, content in
-                    // Save the quick entry to the daily entry's notes/other thoughts
-                    var updatedEntry = viewModel.entry
-                    let existingNotes = updatedEntry.quoteReflection ?? ""
-                    
-                    // Format entry with title
-                    let formattedEntry = "**\(title)**\n\(content)"
-                    let newNotes = existingNotes.isEmpty ? formattedEntry : existingNotes + "\n\n---\n\n" + formattedEntry
-                    updatedEntry.quoteReflection = newNotes
-                    
-                    // Save to backend
+                QuickEntryView(date: Date()) { title, content in
+                    // Save to journal_entries table
                     do {
-                        _ = try await SupabaseManager.shared.updateEntry(updatedEntry)
-                        await viewModel.load(date: selectedDate)
+                        _ = try await journalService.createEntry(
+                            title: title.isEmpty ? nil : title,
+                            content: content,
+                            mood: nil,
+                            energy: nil,
+                            tags: nil
+                        )
+                        await loadJournalEntries()
                     } catch {
-                        print("Failed to save quick entry:", error)
+                        print("Failed to save journal entry:", error)
                     }
                 }
             }
@@ -478,6 +540,31 @@ struct TodayView: View {
                 TrainingPlanFormSheet(mode: .edit, date: selectedDate, existingPlan: plan) {
                     await viewModel.load(date: selectedDate)
                 }
+            }
+            .sheet(item: $selectedJournalEntry) { entry in
+                JournalEntryDetailView(
+                    entry: entry,
+                    onUpdate: { updatedEntry in
+                        do {
+                            _ = try await journalService.updateEntry(
+                                id: updatedEntry.id,
+                                title: updatedEntry.title,
+                                content: updatedEntry.content
+                            )
+                            await loadJournalEntries()
+                        } catch {
+                            print("Failed to update journal entry:", error)
+                        }
+                    },
+                    onDelete: {
+                        do {
+                            try await journalService.deleteEntry(id: entry.id)
+                            await loadJournalEntries()
+                        } catch {
+                            print("Failed to delete journal entry:", error)
+                        }
+                    }
+                )
             }
             .onChange(of: showingTrainingPlans) { isPresented in
                 if !isPresented {
@@ -519,12 +606,33 @@ extension TodayView {
         selectedDate = newDay
         Task {
             await viewModel.load(date: newDay)
+            await loadJournalEntries()
             let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
             let dateString = df.string(from: newDay)
             completedGoals = LocalStore.getCompletedGoals(for: dateString)
         }
     }
     
+    private func loadJournalEntries() async {
+        do {
+            let result = try await journalService.fetchEntries(page: 1, limit: 50)
+            // Filter to entries from the selected date
+            let calendar = Calendar.current
+            let startOfDay = calendar.startOfDay(for: selectedDate)
+            let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? startOfDay
+            
+            journalEntries = result.entries.filter { entry in
+                entry.createdAt >= startOfDay && entry.createdAt < endOfDay
+            }
+        } catch {
+            print("Failed to load journal entries:", error)
+        }
+    }
+    
+    /// Today's journal entries filtered by selected date
+    private var todayJournalEntries: [JournalEntry] {
+        journalEntries
+    }
 }
 
 // ViewModel moved to ViewModels/TodayViewModel.swift

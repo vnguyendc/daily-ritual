@@ -3,6 +3,7 @@ import { Router } from 'express'
 import { DailyEntriesController } from '../controllers/dailyEntries.js'
 import { TrainingPlansController } from '../controllers/trainingPlans.js'
 import { InsightsController } from '../controllers/insights.js'
+import { JournalController } from '../controllers/journalEntries.js'
 import { authenticateToken } from '../middleware/auth.js'
 import { DashboardController } from '../controllers/dashboard.js'
 // Trim to MVP routes only for initial deploy
@@ -21,7 +22,7 @@ router.get('/health', (req, res) => {
 // Dashboard routes (TODO – trimmed for MVP)
 
 // Authenticated routes
-router.use(['/profile', '/daily-entries', '/training-plans', '/insights'], authenticateToken)
+router.use(['/profile', '/daily-entries', '/training-plans', '/insights', '/journal'], authenticateToken)
 
 // Profile routes
 router.get('/profile', DashboardController.getUserProfile)
@@ -65,11 +66,11 @@ router.post('/insights/:id/read', InsightsController.markAsRead)
 // router.post('/competitions/:id/prep', CompetitionsController.createPrepEntry)
 
 // Journal entries routes
-// router.get('/journal', JournalController.getJournalEntries)
-// router.post('/journal', JournalController.createJournalEntry)
-// router.get('/journal/:id', JournalController.getJournalEntry)
-// router.put('/journal/:id', JournalController.updateJournalEntry)
-// router.delete('/journal/:id', JournalController.deleteJournalEntry)
+router.get('/journal', JournalController.getJournalEntries)
+router.post('/journal', JournalController.createJournalEntry)
+router.get('/journal/:id', JournalController.getJournalEntry)
+router.put('/journal/:id', JournalController.updateJournalEntry)
+router.delete('/journal/:id', JournalController.deleteJournalEntry)
 
 // Integration routes
 // router.get('/integrations', IntegrationsController.getIntegrations)

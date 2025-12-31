@@ -10,12 +10,16 @@ import SwiftUI
 @MainActor
 final class HistoryViewModel: ObservableObject {
     @Published var entries: [DailyEntry] = []
+    @Published var journalEntries: [JournalEntry] = []
     @Published var page: Int = 1
+    @Published var journalPage: Int = 1
     @Published var hasNext: Bool = false
+    @Published var journalHasNext: Bool = false
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
     private let supabase = SupabaseManager.shared
+    private let journalService = JournalEntriesService()
 
     func load(reset: Bool = false) async {
         if reset {
@@ -34,6 +38,22 @@ final class HistoryViewModel: ObservableObject {
             errorMessage = error.localizedDescription
         }
     }
+    
+    func loadJournal(reset: Bool = false) async {
+        if reset {
+            journalPage = 1
+            journalEntries.removeAll()
+        }
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let result = try await journalService.fetchEntries(page: journalPage, limit: 20)
+            if reset { journalEntries = result.entries } else { journalEntries += result.entries }
+            journalHasNext = result.hasNext
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 
     func loadMoreIfNeeded(current item: DailyEntry?) async {
         guard let item = item else { return }
@@ -43,32 +63,147 @@ final class HistoryViewModel: ObservableObject {
             await load(reset: false)
         }
     }
+    
+    func loadMoreJournalIfNeeded(current item: JournalEntry?) async {
+        guard let item = item else { return }
+        guard journalEntries.count >= 5 else { return }
+        let thresholdIndex = journalEntries.index(journalEntries.endIndex, offsetBy: -5)
+        if journalEntries.firstIndex(where: { $0.id == item.id }) == thresholdIndex, journalHasNext, !isLoading {
+            journalPage += 1
+            await loadJournal(reset: false)
+        }
+    }
+    
+    func deleteJournalEntry(_ entry: JournalEntry) async {
+        do {
+            try await journalService.deleteEntry(id: entry.id)
+            journalEntries.removeAll { $0.id == entry.id }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+}
+
+enum HistoryTab: String, CaseIterable {
+    case rituals = "Rituals"
+    case journal = "Journal"
 }
 
 struct HistoryListView: View {
     @StateObject private var viewModel = HistoryViewModel()
     @State private var selectedEntry: DailyEntry?
+    @State private var selectedJournalEntry: JournalEntry?
+    @State private var selectedTab: HistoryTab = .rituals
     private var timeContext: DesignSystem.TimeContext { .morning }
 
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(viewModel.entries) { entry in
-                    NavigationLink(value: entry) {
-                        HistoryRow(entry: entry)
+            VStack(spacing: 0) {
+                // Tab picker
+                Picker("View", selection: $selectedTab) {
+                    ForEach(HistoryTab.allCases, id: \.self) { tab in
+                        Text(tab.rawValue).tag(tab)
                     }
-                    .task { await viewModel.loadMoreIfNeeded(current: entry) }
                 }
-                if viewModel.isLoading {
-                    HStack { Spacer(); ProgressView(); Spacer() }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, DesignSystem.Spacing.md)
+                .padding(.vertical, DesignSystem.Spacing.sm)
+                
+                // Content based on tab
+                if selectedTab == .rituals {
+                    ritualsListContent
+                } else {
+                    journalListContent
                 }
             }
-            .navigationTitle("Entries")
+            .background(DesignSystem.Colors.background)
+            .navigationTitle("History")
             .navigationDestination(for: DailyEntry.self) { entry in
                 EntryDetailView(entry: entry)
             }
-            .task { await viewModel.load(reset: true) }
-            .refreshable { await viewModel.load(reset: true) }
+            .task {
+                await viewModel.load(reset: true)
+                await viewModel.loadJournal(reset: true)
+            }
+            .refreshable {
+                if selectedTab == .rituals {
+                    await viewModel.load(reset: true)
+                } else {
+                    await viewModel.loadJournal(reset: true)
+                }
+            }
+            .sheet(item: $selectedJournalEntry) { entry in
+                JournalEntryDetailView(
+                    entry: entry,
+                    onUpdate: { _ in
+                        await viewModel.loadJournal(reset: true)
+                    },
+                    onDelete: {
+                        await viewModel.deleteJournalEntry(entry)
+                    }
+                )
+            }
+        }
+    }
+    
+    private var ritualsListContent: some View {
+        List {
+            ForEach(viewModel.entries) { entry in
+                NavigationLink(value: entry) {
+                    HistoryRow(entry: entry)
+                }
+                .task { await viewModel.loadMoreIfNeeded(current: entry) }
+            }
+            if viewModel.isLoading {
+                HStack { Spacer(); ProgressView(); Spacer() }
+            }
+        }
+        .listStyle(.plain)
+    }
+    
+    private var journalListContent: some View {
+        Group {
+            if viewModel.journalEntries.isEmpty && !viewModel.isLoading {
+                VStack(spacing: DesignSystem.Spacing.md) {
+                    Image(systemName: "doc.text")
+                        .font(.system(size: 48))
+                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                    
+                    Text("No journal entries yet")
+                        .font(DesignSystem.Typography.bodyLargeSafe)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                    
+                    Text("Tap the + button on Today to add your first entry")
+                        .font(DesignSystem.Typography.caption)
+                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding()
+            } else {
+                List {
+                    ForEach(viewModel.journalEntries) { entry in
+                        Button {
+                            selectedJournalEntry = entry
+                        } label: {
+                            JournalHistoryRow(entry: entry)
+                        }
+                        .task { await viewModel.loadMoreJournalIfNeeded(current: entry) }
+                    }
+                    .onDelete { indexSet in
+                        Task {
+                            for index in indexSet {
+                                let entry = viewModel.journalEntries[index]
+                                await viewModel.deleteJournalEntry(entry)
+                            }
+                        }
+                    }
+                    if viewModel.isLoading {
+                        HStack { Spacer(); ProgressView(); Spacer() }
+                    }
+                }
+                .listStyle(.plain)
+            }
         }
     }
 }
@@ -79,6 +214,7 @@ private struct HistoryRow: View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
             Text(entry.date, format: .dateTime.weekday(.abbreviated).month(.abbreviated).day().year())
                 .font(DesignSystem.Typography.buttonMedium)
+                .foregroundColor(DesignSystem.Colors.primaryText)
             HStack(spacing: DesignSystem.Spacing.md) {
                 if entry.isMorningComplete {
                     Label("Morning", systemImage: "sun.max.fill")
@@ -91,6 +227,29 @@ private struct HistoryRow: View {
             }
             .font(DesignSystem.Typography.metadata)
             .foregroundColor(DesignSystem.Colors.secondaryText)
+        }
+    }
+}
+
+private struct JournalHistoryRow: View {
+    let entry: JournalEntry
+    private var timeContext: DesignSystem.TimeContext { .morning }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+            Text(entry.displayTitle)
+                .font(DesignSystem.Typography.buttonMedium)
+                .foregroundColor(DesignSystem.Colors.primaryText)
+                .lineLimit(1)
+            
+            Text(entry.contentPreview)
+                .font(DesignSystem.Typography.bodySmall)
+                .foregroundColor(DesignSystem.Colors.secondaryText)
+                .lineLimit(2)
+            
+            Text(entry.createdAt, format: .dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute())
+                .font(DesignSystem.Typography.metadata)
+                .foregroundColor(DesignSystem.Colors.tertiaryText)
         }
     }
 }
