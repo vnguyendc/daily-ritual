@@ -25,15 +25,16 @@ struct DesignSystem {
     // MARK: - Dual Theme Color System - Elite Performance in Any Light
     struct Colors {
         // MARK: - Universal Performance Accents (Consistent Across Themes)
-        static let eliteGold = Color(red: 1.0, green: 0.72, blue: 0.0)      // #FFB800 - Primary CTA, achievements, PR indicators
-        static let championBlue = Color(red: 0.0, green: 0.6, blue: 1.0)    // #0099FF - Secondary actions, links, data highlights
-        static let alertRed = Color(red: 1.0, green: 0.2, blue: 0.4)        // #FF3366 - Warnings, missed targets, critical data
+        // Vibrant neon palette for high-energy athletic feel
+        static let eliteGold = Color(red: 1.0, green: 0.42, blue: 0.0)      // #FF6B00 - Neon Orange - Primary CTA, achievements
+        static let championBlue = Color(red: 0.0, green: 0.75, blue: 1.0)   // #00BFFF - Electric Blue - Evening reflection
+        static let alertRed = Color(red: 1.0, green: 0.25, blue: 0.35)      // #FF4059 - Vivid Red - Warnings, critical data
         
         // MARK: - Theme-Aware Colors (Automatically adapt based on system appearance)
         
-        // Power Green - Success states, goals completed
-        static let powerGreen = Color(red: 0.0, green: 0.9, blue: 0.46)     // #00E676 (dark) / will auto-adapt
-        static let powerGreenLight = Color(red: 0.0, green: 0.78, blue: 0.32) // #00C851 (light mode version)
+        // Power Green - Success states, goals completed (Neon Lime)
+        static let powerGreen = Color(red: 0.22, green: 1.0, blue: 0.08)    // #39FF14 - Electric Lime
+        static let powerGreenLight = Color(red: 0.0, green: 0.9, blue: 0.3) // #00E64D - Bright Green (light mode)
         
         // Background Foundation (Theme-aware - automatically adapts to light/dark mode)
         static let background = Color(
@@ -369,9 +370,9 @@ struct DesignSystem {
         
         var primaryColor: Color {
             switch self {
-            case .morning: return DesignSystem.Colors.eliteGold      // Elite Gold for morning energy
-            case .evening: return DesignSystem.Colors.championBlue   // Champion Blue for evening reflection
-            case .neutral: return DesignSystem.Colors.eliteGold      // Default to Elite Gold
+            case .morning: return DesignSystem.Colors.eliteGold      // Neon Orange for morning energy
+            case .evening: return DesignSystem.Colors.championBlue   // Electric Blue for evening reflection
+            case .neutral: return DesignSystem.Colors.eliteGold      // Default to Neon Orange
             }
         }
         
