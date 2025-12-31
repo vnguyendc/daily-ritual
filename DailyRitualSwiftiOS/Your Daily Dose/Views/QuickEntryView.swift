@@ -122,7 +122,7 @@ struct QuickEntryView: View {
     
     private func promptButton(_ text: String) -> some View {
         Button {
-            entryText = text + "\n\n"
+            entryTitle = text
             isTextFieldFocused = true
         } label: {
             HStack {
