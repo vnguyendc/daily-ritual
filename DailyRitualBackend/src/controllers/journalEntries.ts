@@ -1,12 +1,16 @@
 import { Request, Response } from 'express'
 import { supabaseServiceClient } from '../services/supabase.js'
-import { ok, fail, JournalEntry, JournalEntryInsert, JournalEntryUpdate, PaginatedResponse } from '../types/api.js'
+import { ok, fail, PaginatedResponse } from '../types/api.js'
+import type { Database } from '../types/database.js'
+
+type JournalEntry = Database['public']['Tables']['journal_entries']['Row']
+type JournalEntryInsert = Database['public']['Tables']['journal_entries']['Insert']
 
 export const JournalController = {
   // Get all journal entries for a user (paginated)
   async getJournalEntries(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.userId
+      const userId = req.user?.id
       if (!userId) {
         res.status(401).json(fail('Unauthorized'))
         return
@@ -59,7 +63,7 @@ export const JournalController = {
   // Get a single journal entry
   async getJournalEntry(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.userId
+      const userId = req.user?.id
       const { id } = req.params
 
       if (!userId) {
@@ -92,7 +96,7 @@ export const JournalController = {
   // Create a new journal entry
   async createJournalEntry(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.userId
+      const userId = req.user?.id
       if (!userId) {
         res.status(401).json(fail('Unauthorized'))
         return
@@ -109,8 +113,8 @@ export const JournalController = {
         user_id: userId,
         title: title || null,
         content: content.trim(),
-        mood: mood || null,
-        energy: energy || null,
+        mood: mood ?? null,
+        energy: energy ?? null,
         tags: tags || null,
         is_private: true
       }
@@ -133,7 +137,7 @@ export const JournalController = {
   // Update a journal entry
   async updateJournalEntry(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.userId
+      const userId = req.user?.id
       const { id } = req.params
 
       if (!userId) {
@@ -143,7 +147,7 @@ export const JournalController = {
 
       const { title, content, mood, energy, tags } = req.body
 
-      const updateData: JournalEntryUpdate = {}
+      const updateData: Record<string, any> = {}
       if (title !== undefined) updateData.title = title
       if (content !== undefined) updateData.content = content
       if (mood !== undefined) updateData.mood = mood
@@ -176,7 +180,7 @@ export const JournalController = {
   // Delete a journal entry
   async deleteJournalEntry(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.userId
+      const userId = req.user?.id
       const { id } = req.params
 
       if (!userId) {
@@ -199,4 +203,3 @@ export const JournalController = {
     }
   }
 }
-
