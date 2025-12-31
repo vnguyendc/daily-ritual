@@ -37,7 +37,7 @@ struct QuickEntryView: View {
                             .foregroundColor(DesignSystem.Colors.primaryText)
                             .focused($isTitleFocused)
                         
-                        Text(date, format: .dateTime.weekday(.wide).month(.wide).day())
+                        Text("Created at \(date.formatted(date: .abbreviated, time: .shortened))")
                             .font(DesignSystem.Typography.caption)
                             .foregroundColor(DesignSystem.Colors.secondaryText)
                     }
