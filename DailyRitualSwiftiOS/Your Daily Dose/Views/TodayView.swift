@@ -26,6 +26,10 @@ struct TodayView: View {
     @State private var selectedTrainingPlan: TrainingPlan?
     @State private var trainingPlanToEdit: TrainingPlan?
     
+    // Quick actions
+    @State private var showingQuickEntry = false
+    @State private var showingAddActivity = false
+    
     private let plansService: TrainingPlansServiceProtocol = TrainingPlansService()
     
     private var timeContext: DesignSystem.TimeContext {
@@ -360,21 +364,27 @@ struct TodayView: View {
             .navigationTitle("")
             .navigationBarHidden(true)
             // Removed sticky top-right profile overlay (moved into header)
-            // Floating + action button
+            // Floating + action button with menu
             .overlay(alignment: .bottomTrailing) {
                 if !viewModel.isLoading {
-                    Button {
-                        // Quick action: open Morning or Evening depending on state
-                        if !viewModel.entry.isMorningComplete {
-                            showingMorningRitual = true
-                        } else if viewModel.shouldShowEvening && !viewModel.entry.isEveningComplete {
-                            showingEveningReflection = true
-                        } else {
-                            showingMorningRitual = true
+                    Menu {
+                        Button {
+                            showingQuickEntry = true
+                            #if canImport(UIKit)
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            #endif
+                        } label: {
+                            Label("New Entry", systemImage: "square.and.pencil")
                         }
-                        #if canImport(UIKit)
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        #endif
+                        
+                        Button {
+                            showingAddActivity = true
+                            #if canImport(UIKit)
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            #endif
+                        } label: {
+                            Label("Add Activity", systemImage: "figure.run")
+                        }
                     } label: {
                         ZStack {
                             Circle()
@@ -386,9 +396,8 @@ struct TodayView: View {
                                 .font(.system(size: 22, weight: .bold))
                         }
                     }
-                    .buttonStyle(.plain)
                     .accessibilityLabel("Quick Action")
-                    .accessibilityHint("Opens your next ritual")
+                    .accessibilityHint("Opens menu to add new entry or activity")
                     .padding(.trailing, DesignSystem.Spacing.lg)
                     .padding(.bottom, DesignSystem.Spacing.lg)
                 }
@@ -420,6 +429,28 @@ struct TodayView: View {
             .sheet(isPresented: $showingEveningReflection) {
                 EveningReflectionView(entry: $viewModel.entry)
                     .edgesIgnoringSafeArea(.all)
+            }
+            .sheet(isPresented: $showingQuickEntry) {
+                QuickEntryView(date: selectedDate) { entryText in
+                    // Save the quick entry to the daily entry's notes/other thoughts
+                    var updatedEntry = viewModel.entry
+                    let existingNotes = updatedEntry.quoteReflection ?? ""
+                    let newNotes = existingNotes.isEmpty ? entryText : existingNotes + "\n\n---\n\n" + entryText
+                    updatedEntry.quoteReflection = newNotes
+                    
+                    // Save to backend
+                    do {
+                        _ = try await SupabaseManager.shared.updateEntry(updatedEntry)
+                        await viewModel.load(date: selectedDate)
+                    } catch {
+                        print("Failed to save quick entry:", error)
+                    }
+                }
+            }
+            .sheet(isPresented: $showingAddActivity) {
+                TrainingPlanFormSheet(mode: .create, date: selectedDate) {
+                    await viewModel.load(date: selectedDate)
+                }
             }
             .sheet(item: $selectedTrainingPlan) { plan in
                 TrainingPlanDetailSheet(
