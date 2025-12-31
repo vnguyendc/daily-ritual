@@ -38,9 +38,6 @@ struct TrainingWeekView: View {
             // Week navigation header
             weekNavigationHeader
             
-            // Week day headers
-            weekDayHeaders
-            
             // Week calendar grid
             weekCalendarGrid
         }
@@ -125,34 +122,6 @@ struct TrainingWeekView: View {
         }
         .padding(.horizontal, DesignSystem.Spacing.sm)
         .padding(.vertical, DesignSystem.Spacing.sm)
-    }
-    
-    // MARK: - Week Day Headers
-    private var weekDayHeaders: some View {
-        HStack(spacing: 0) {
-            ForEach(weekDays, id: \.self) { day in
-                VStack(spacing: 4) {
-                    Text(dayOfWeekLetter(day))
-                        .font(DesignSystem.Typography.caption)
-                        .foregroundColor(DesignSystem.Colors.tertiaryText)
-                    
-                    Text(dayNumber(day))
-                        .font(DesignSystem.Typography.headlineSmall)
-                        .foregroundColor(isToday(day) ? .white : DesignSystem.Colors.primaryText)
-                        .frame(width: 32, height: 32)
-                        .background(
-                            Circle()
-                                .fill(isToday(day) ? timeContext.primaryColor : Color.clear)
-                        )
-                }
-                .frame(maxWidth: .infinity)
-                .onTapGesture {
-                    onDayTap?(day)
-                }
-            }
-        }
-        .padding(.horizontal, DesignSystem.Spacing.sm)
-        .padding(.bottom, DesignSystem.Spacing.sm)
     }
     
     // MARK: - Week Calendar Grid

@@ -69,13 +69,9 @@ struct TodayView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
 
-                    // Week header showing current week range (always visible)
-                    WeekHeaderView(selectedDate: selectedDate)
-                        .padding(.bottom, DesignSystem.Spacing.sm)
-                    
-                    // Enhanced date slider with centered current date
-                    DateSlider(selectedDate: $selectedDate)
-                        .onChange(of: selectedDate) { newDate in
+                    // Week day strip selector
+                    WeekDayStrip(selectedDate: $selectedDate)
+                        .onChange(of: selectedDate) { _, newDate in
                             print("UI: Selected date changed to", newDate.formatted(date: .abbreviated, time: .omitted))
                             Task {
                                 await viewModel.load(date: newDate)
