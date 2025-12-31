@@ -89,9 +89,6 @@ struct DayDetailSheet: View {
                         // Date header
                         dateHeader
                         
-                        // Sync status
-                        SyncStatusBanner(timeContext: timeContext)
-                        
                         // Content
                         if isLoading && plans.isEmpty {
                             loadingState
