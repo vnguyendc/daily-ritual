@@ -205,3 +205,4 @@ struct WeekDayStrip: View {
     .background(DesignSystem.Colors.background)
 }
 
+

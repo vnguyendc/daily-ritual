@@ -192,3 +192,4 @@ struct JournalEntryDetailView: View {
     )
 }
 
+

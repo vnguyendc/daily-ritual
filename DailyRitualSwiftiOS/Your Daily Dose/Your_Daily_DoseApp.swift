@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import AuthenticationServices
+import CryptoKit
 
 @main
 struct Your_Daily_DoseApp: App {
@@ -54,6 +56,8 @@ struct SignInView: View {
     @EnvironmentObject private var supabase: SupabaseManager
     @State private var isSigningIn = false
     @State private var showProfileSheet = false
+    @State private var errorMessage: String?
+    @State private var currentNonce: String?
     
     var body: some View {
         ZStack {
@@ -99,40 +103,41 @@ struct SignInView: View {
                 
                 Spacer()
                 
+                // Error message
+                if let errorMessage = errorMessage {
+                    Text(errorMessage)
+                        .font(DesignSystem.Typography.captionSafe)
+                        .foregroundColor(DesignSystem.Colors.alertRed)
+                        .padding(.horizontal, DesignSystem.Spacing.lg)
+                        .multilineTextAlignment(.center)
+                }
+                
                 // Sign In Options
                 VStack(spacing: DesignSystem.Spacing.md) {
-                    // Sign in with Apple
-                    Button {
-                        Task {
-                            isSigningIn = true
-                            do {
-                                _ = try await supabase.signInWithApple()
-                            } catch {
-                                print("Apple sign in error: \(error)")
-                            }
-                            isSigningIn = false
-                        }
-                    } label: {
-                        HStack {
-                            Image(systemName: "apple.logo")
-                            Text("Continue with Apple")
-                        }
-                        .font(DesignSystem.Typography.buttonLargeSafe)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: DesignSystem.Spacing.preferredTouchTarget)
-                        .background(Color.black)
-                        .cornerRadius(DesignSystem.CornerRadius.button)
+                    // Native Sign in with Apple button
+                    SignInWithAppleButton(.signIn) { request in
+                        // Generate nonce for security
+                        let nonce = randomNonceString()
+                        currentNonce = nonce
+                        request.requestedScopes = [.fullName, .email]
+                        request.nonce = sha256(nonce)
+                    } onCompletion: { result in
+                        handleAppleSignIn(result)
                     }
+                    .signInWithAppleButtonStyle(.white)
+                    .frame(height: DesignSystem.Spacing.preferredTouchTarget)
+                    .cornerRadius(DesignSystem.CornerRadius.button)
                     
-                    // Sign in with Google
+                    // Sign in with Google (OAuth flow)
                     Button {
                         Task {
                             isSigningIn = true
+                            errorMessage = nil
                             do {
                                 _ = try await supabase.signInWithGoogle()
                             } catch {
                                 print("Google sign in error: \(error)")
+                                errorMessage = "Google sign in failed. Please try again."
                             }
                             isSigningIn = false
                         }
@@ -190,6 +195,80 @@ struct SignInView: View {
         .sheet(isPresented: $showProfileSheet) {
             NavigationStack { ProfileView() }
         }
+    }
+    
+    // MARK: - Apple Sign In Handler
+    private func handleAppleSignIn(_ result: Result<ASAuthorization, Error>) {
+        switch result {
+        case .success(let authorization):
+            guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
+                errorMessage = "Invalid Apple credentials"
+                return
+            }
+            
+            guard let identityTokenData = appleIDCredential.identityToken,
+                  let identityToken = String(data: identityTokenData, encoding: .utf8) else {
+                errorMessage = "Unable to get identity token"
+                return
+            }
+            
+            guard let nonce = currentNonce else {
+                errorMessage = "Invalid state: nonce missing"
+                return
+            }
+            
+            isSigningIn = true
+            errorMessage = nil
+            
+            Task {
+                do {
+                    _ = try await supabase.signInWithApple(
+                        idToken: identityToken,
+                        nonce: nonce,
+                        fullName: appleIDCredential.fullName
+                    )
+                } catch {
+                    print("Apple sign in error: \(error)")
+                    await MainActor.run {
+                        errorMessage = "Apple sign in failed. Please try again."
+                    }
+                }
+                await MainActor.run {
+                    isSigningIn = false
+                }
+            }
+            
+        case .failure(let error):
+            // User cancelled or other error
+            if (error as NSError).code != ASAuthorizationError.canceled.rawValue {
+                errorMessage = "Apple sign in failed: \(error.localizedDescription)"
+            }
+            print("Apple sign in error: \(error)")
+        }
+    }
+    
+    // MARK: - Nonce Generation (for Apple Sign In security)
+    private func randomNonceString(length: Int = 32) -> String {
+        precondition(length > 0)
+        var randomBytes = [UInt8](repeating: 0, count: length)
+        let errorCode = SecRandomCopyBytes(kSecRandomDefault, randomBytes.count, &randomBytes)
+        if errorCode != errSecSuccess {
+            fatalError("Unable to generate nonce. SecRandomCopyBytes failed with OSStatus \(errorCode)")
+        }
+        let charset: [Character] = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        let nonce = randomBytes.map { byte in
+            charset[Int(byte) % charset.count]
+        }
+        return String(nonce)
+    }
+    
+    private func sha256(_ input: String) -> String {
+        let inputData = Data(input.utf8)
+        let hashedData = SHA256.hash(data: inputData)
+        let hashString = hashedData.compactMap {
+            String(format: "%02x", $0)
+        }.joined()
+        return hashString
     }
 }
 

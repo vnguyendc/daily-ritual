@@ -236,7 +236,84 @@ class SupabaseManager: NSObject, ObservableObject {
         self.isAuthenticated = true
     }
     
-    func signInWithApple() async throws -> User {
+    /// Native Sign in with Apple - receives the credential from SignInWithAppleButton
+    func signInWithApple(idToken: String, nonce: String, fullName: PersonNameComponents? = nil) async throws -> User {
+        isLoading = true
+        defer { isLoading = false }
+        
+        // Call Supabase auth endpoint with ID token
+        guard let url = URL(string: "\(supabaseProjectURL)/auth/v1/token?grant_type=id_token") else {
+            throw SupabaseError.invalidData
+        }
+        
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(Config.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        
+        let body: [String: Any] = [
+            "provider": "apple",
+            "id_token": idToken,
+            "nonce": nonce
+        ]
+        req.httpBody = try JSONSerialization.data(withJSONObject: body)
+        
+        print("🍎 Signing in with Apple ID token...")
+        let (data, response) = try await URLSession.shared.data(for: req)
+        
+        guard let http = response as? HTTPURLResponse else {
+            throw SupabaseError.networkError
+        }
+        
+        if http.statusCode == 401 {
+            clearSession()
+            throw SupabaseError.notAuthenticated
+        }
+        
+        guard http.statusCode == 200 else {
+            let errorBody = String(data: data, encoding: .utf8) ?? "Unknown error"
+            print("🍎 Apple sign in failed: \(http.statusCode) - \(errorBody)")
+            throw SupabaseError.networkError
+        }
+        
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        guard let access = json?["access_token"] as? String else {
+            throw SupabaseError.invalidData
+        }
+        
+        self.authToken = access
+        if let rt = json?["refresh_token"] as? String {
+            self.refreshToken = rt
+        }
+        
+        // Extract user info from response
+        var email: String? = nil
+        var name: String? = nil
+        
+        if let userJson = json?["user"] as? [String: Any] {
+            email = userJson["email"] as? String
+            if let meta = userJson["user_metadata"] as? [String: Any] {
+                name = meta["full_name"] as? String ?? meta["name"] as? String
+            }
+        }
+        
+        // Use full name from Apple credential if available (only provided on first sign-in)
+        if let fullName = fullName {
+            let nameComponents = [fullName.givenName, fullName.familyName].compactMap { $0 }
+            if !nameComponents.isEmpty {
+                name = nameComponents.joined(separator: " ")
+            }
+        }
+        
+        self.currentUser = User(email: email ?? "user@apple.com", name: name)
+        self.isAuthenticated = true
+        print("🍎 Apple sign in successful!")
+        
+        return currentUser!
+    }
+    
+    /// Legacy OAuth flow for Apple (fallback)
+    func signInWithAppleOAuth() async throws -> User {
         try await signInWithProvider("apple")
         return currentUser ?? User(email: "user@example.com", name: nil)
     }
@@ -244,6 +321,76 @@ class SupabaseManager: NSObject, ObservableObject {
     func signInWithGoogle() async throws -> User {
         try await signInWithProvider("google")
         return currentUser ?? User(email: "user@example.com", name: nil)
+    }
+    
+    /// Native Sign in with Google - receives the credential from Google Sign-In SDK
+    func signInWithGoogle(idToken: String, accessToken: String? = nil) async throws -> User {
+        isLoading = true
+        defer { isLoading = false }
+        
+        // Call Supabase auth endpoint with ID token
+        guard let url = URL(string: "\(supabaseProjectURL)/auth/v1/token?grant_type=id_token") else {
+            throw SupabaseError.invalidData
+        }
+        
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(Config.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        
+        var body: [String: Any] = [
+            "provider": "google",
+            "id_token": idToken
+        ]
+        if let accessToken = accessToken {
+            body["access_token"] = accessToken
+        }
+        req.httpBody = try JSONSerialization.data(withJSONObject: body)
+        
+        print("🔵 Signing in with Google ID token...")
+        let (data, response) = try await URLSession.shared.data(for: req)
+        
+        guard let http = response as? HTTPURLResponse else {
+            throw SupabaseError.networkError
+        }
+        
+        if http.statusCode == 401 {
+            clearSession()
+            throw SupabaseError.notAuthenticated
+        }
+        
+        guard http.statusCode == 200 else {
+            let errorBody = String(data: data, encoding: .utf8) ?? "Unknown error"
+            print("🔵 Google sign in failed: \(http.statusCode) - \(errorBody)")
+            throw SupabaseError.networkError
+        }
+        
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        guard let access = json?["access_token"] as? String else {
+            throw SupabaseError.invalidData
+        }
+        
+        self.authToken = access
+        if let rt = json?["refresh_token"] as? String {
+            self.refreshToken = rt
+        }
+        
+        // Extract user info from response
+        var email: String? = nil
+        var name: String? = nil
+        
+        if let userJson = json?["user"] as? [String: Any] {
+            email = userJson["email"] as? String
+            if let meta = userJson["user_metadata"] as? [String: Any] {
+                name = meta["full_name"] as? String ?? meta["name"] as? String
+            }
+        }
+        
+        self.currentUser = User(email: email ?? "user@google.com", name: name)
+        self.isAuthenticated = true
+        print("🔵 Google sign in successful!")
+        
+        return currentUser!
     }
     
     func signInDemo() async throws {
