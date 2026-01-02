@@ -107,106 +107,8 @@ struct TodayView: View {
                     
                     if !viewModel.isLoading {
                         // MARK: - Incomplete Rituals (shown at top)
-                        
-                        // Morning ritual card (incomplete)
-                        if !viewModel.entry.isMorningComplete {
-                            Button(action: { showingMorningRitual = true }) {
-                                PremiumCard(timeContext: .morning) {
-                                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                                        HStack {
-                                            Image(systemName: "sun.max.fill")
-                                                .foregroundColor(DesignSystem.Colors.morningAccent)
-                                                .font(DesignSystem.Typography.headlineLargeSafe)
-                                            
-                                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                                Text("Morning Ritual")
-                                                    .font(DesignSystem.Typography.journalTitleSafe)
-                                                    .foregroundColor(DesignSystem.Colors.primaryText)
-                                                
-                                                Text("Start your day with intention")
-                                                    .font(DesignSystem.Typography.bodyMedium)
-                                                    .foregroundColor(DesignSystem.Colors.secondaryText)
-                                            }
-                                            
-                                            Spacer()
-                                            
-                                            Image(systemName: "arrow.right.circle.fill")
-                                                .foregroundColor(DesignSystem.Colors.morningAccent)
-                                                .font(DesignSystem.Typography.headlineMedium)
-                                        }
-                                        
-                                        // Premium progress indicator
-                                        let completedSteps = viewModel.entry.completedMorningSteps
-                                        HStack {
-                                            Text("\(completedSteps)/4 steps completed")
-                                                .font(DesignSystem.Typography.metadata)
-                                                .foregroundColor(DesignSystem.Colors.tertiaryText)
-                                            
-                                            Spacer()
-                                            
-                                            PremiumProgressRing(
-                                                progress: Double(completedSteps) / 4.0,
-                                                size: 32,
-                                                lineWidth: 3,
-                                                timeContext: .morning
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .animation(DesignSystem.Animation.gentle, value: viewModel.entry.completedMorningSteps)
-                        }
-                        
-                        // Evening reflection card (incomplete, show after configured time)
-                        if viewModel.shouldShowEvening && !viewModel.entry.isEveningComplete {
-                            Button(action: { showingEveningReflection = true }) {
-                                PremiumCard(timeContext: .evening) {
-                                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                                        HStack {
-                                            Image(systemName: "moon.fill")
-                                                .foregroundColor(DesignSystem.Colors.eveningAccent)
-                                                .font(DesignSystem.Typography.headlineLargeSafe)
-                                            
-                                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                                Text("Evening Reflection")
-                                                    .font(DesignSystem.Typography.journalTitleSafe)
-                                                    .foregroundColor(DesignSystem.Colors.primaryText)
-                                                
-                                                Text("Reflect on your day")
-                                                    .font(DesignSystem.Typography.bodyMedium)
-                                                    .foregroundColor(DesignSystem.Colors.secondaryText)
-                                            }
-                                            
-                                            Spacer()
-                                            
-                                            Image(systemName: "arrow.right.circle.fill")
-                                                .foregroundColor(DesignSystem.Colors.eveningAccent)
-                                                .font(DesignSystem.Typography.headlineMedium)
-                                        }
-                                        
-                                        // Premium progress indicator
-                                        let completedSteps = viewModel.entry.completedEveningSteps
-                                        HStack {
-                                            Text("\(completedSteps)/3 steps completed")
-                                                .font(DesignSystem.Typography.metadata)
-                                                .foregroundColor(DesignSystem.Colors.tertiaryText)
-                                            
-                                            Spacer()
-                                            
-                                            PremiumProgressRing(
-                                                progress: Double(completedSteps) / 3.0,
-                                                size: 32,
-                                                lineWidth: 3,
-                                                timeContext: .evening
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .animation(DesignSystem.Animation.gentle, value: viewModel.entry.completedEveningSteps)
-                        }
+                        incompleteMorningCard
+                        incompleteEveningCard
 
                         // Today's Goals (read-only summary)
                         if let goals = viewModel.entry.goals, !goals.isEmpty {
@@ -323,70 +225,8 @@ struct TodayView: View {
                         }
 
                         // MARK: - Completed Rituals (shown at bottom)
-                        
-                        // Compact completed morning card
-                        if viewModel.entry.isMorningComplete {
-                            Button(action: { showingMorningRitual = true }) {
-                                HStack(spacing: DesignSystem.Spacing.md) {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(DesignSystem.Colors.success)
-                                        .font(.system(size: 18))
-                                    
-                                    Text("Morning Complete")
-                                        .font(DesignSystem.Typography.bodySmall)
-                                        .foregroundColor(DesignSystem.Colors.secondaryText)
-                                    
-                                    Spacer()
-                                    
-                                    Text("Edit")
-                                        .font(DesignSystem.Typography.caption)
-                                        .foregroundColor(DesignSystem.Colors.tertiaryText)
-                                    
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 10, weight: .semibold))
-                                        .foregroundColor(DesignSystem.Colors.tertiaryText)
-                                }
-                                .padding(.horizontal, DesignSystem.Spacing.md)
-                                .padding(.vertical, DesignSystem.Spacing.sm)
-                                .background(
-                                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
-                                        .fill(DesignSystem.Colors.cardBackground.opacity(0.5))
-                                )
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        
-                        // Compact completed evening card
-                        if viewModel.entry.isEveningComplete {
-                            Button(action: { showingEveningReflection = true }) {
-                                HStack(spacing: DesignSystem.Spacing.md) {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(DesignSystem.Colors.success)
-                                        .font(.system(size: 18))
-                                    
-                                    Text("Evening Complete")
-                                        .font(DesignSystem.Typography.bodySmall)
-                                        .foregroundColor(DesignSystem.Colors.secondaryText)
-                                    
-                                    Spacer()
-                                    
-                                    Text("Edit")
-                                        .font(DesignSystem.Typography.caption)
-                                        .foregroundColor(DesignSystem.Colors.tertiaryText)
-                                    
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 10, weight: .semibold))
-                                        .foregroundColor(DesignSystem.Colors.tertiaryText)
-                                }
-                                .padding(.horizontal, DesignSystem.Spacing.md)
-                                .padding(.vertical, DesignSystem.Spacing.sm)
-                                .background(
-                                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
-                                        .fill(DesignSystem.Colors.cardBackground.opacity(0.5))
-                                )
-                            }
-                            .buttonStyle(.plain)
-                        }
+                        completedMorningCard
+                        completedEveningCard
 
                         // Premium celebration card for full completion
                         if viewModel.entry.isFullyComplete {
@@ -592,6 +432,179 @@ struct TodayView: View {
                     handlePotentialDayChange()
                 }
             }
+        }
+    }
+}
+
+// MARK: - Extracted Views
+extension TodayView {
+    @ViewBuilder
+    private var incompleteMorningCard: some View {
+        if !viewModel.entry.isMorningComplete {
+            Button(action: { showingMorningRitual = true }) {
+                PremiumCard(timeContext: .morning) {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                        HStack {
+                            Image(systemName: "sun.max.fill")
+                                .foregroundColor(DesignSystem.Colors.morningAccent)
+                                .font(DesignSystem.Typography.headlineLargeSafe)
+                            
+                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                                Text("Morning Ritual")
+                                    .font(DesignSystem.Typography.journalTitleSafe)
+                                    .foregroundColor(DesignSystem.Colors.primaryText)
+                                
+                                Text("Start your day with intention")
+                                    .font(DesignSystem.Typography.bodyMedium)
+                                    .foregroundColor(DesignSystem.Colors.secondaryText)
+                            }
+                            
+                            Spacer()
+                            
+                            Image(systemName: "arrow.right.circle.fill")
+                                .foregroundColor(DesignSystem.Colors.morningAccent)
+                                .font(DesignSystem.Typography.headlineMedium)
+                        }
+                        
+                        let completedSteps = viewModel.entry.completedMorningSteps
+                        HStack {
+                            Text("\(completedSteps)/4 steps completed")
+                                .font(DesignSystem.Typography.metadata)
+                                .foregroundColor(DesignSystem.Colors.tertiaryText)
+                            
+                            Spacer()
+                            
+                            PremiumProgressRing(
+                                progress: Double(completedSteps) / 4.0,
+                                size: 32,
+                                lineWidth: 3,
+                                timeContext: .morning
+                            )
+                        }
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+            .animation(DesignSystem.Animation.gentle, value: viewModel.entry.completedMorningSteps)
+        }
+    }
+    
+    @ViewBuilder
+    private var incompleteEveningCard: some View {
+        if viewModel.shouldShowEvening && !viewModel.entry.isEveningComplete {
+            Button(action: { showingEveningReflection = true }) {
+                PremiumCard(timeContext: .evening) {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                        HStack {
+                            Image(systemName: "moon.fill")
+                                .foregroundColor(DesignSystem.Colors.eveningAccent)
+                                .font(DesignSystem.Typography.headlineLargeSafe)
+                            
+                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                                Text("Evening Reflection")
+                                    .font(DesignSystem.Typography.journalTitleSafe)
+                                    .foregroundColor(DesignSystem.Colors.primaryText)
+                                
+                                Text("Reflect on your day")
+                                    .font(DesignSystem.Typography.bodyMedium)
+                                    .foregroundColor(DesignSystem.Colors.secondaryText)
+                            }
+                            
+                            Spacer()
+                            
+                            Image(systemName: "arrow.right.circle.fill")
+                                .foregroundColor(DesignSystem.Colors.eveningAccent)
+                                .font(DesignSystem.Typography.headlineMedium)
+                        }
+                        
+                        let completedSteps = viewModel.entry.completedEveningSteps
+                        HStack {
+                            Text("\(completedSteps)/3 steps completed")
+                                .font(DesignSystem.Typography.metadata)
+                                .foregroundColor(DesignSystem.Colors.tertiaryText)
+                            
+                            Spacer()
+                            
+                            PremiumProgressRing(
+                                progress: Double(completedSteps) / 3.0,
+                                size: 32,
+                                lineWidth: 3,
+                                timeContext: .evening
+                            )
+                        }
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+            .animation(DesignSystem.Animation.gentle, value: viewModel.entry.completedEveningSteps)
+        }
+    }
+    
+    @ViewBuilder
+    private var completedMorningCard: some View {
+        if viewModel.entry.isMorningComplete {
+            Button(action: { showingMorningRitual = true }) {
+                HStack(spacing: DesignSystem.Spacing.md) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(DesignSystem.Colors.success)
+                        .font(.system(size: 18))
+                    
+                    Text("Morning Complete")
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                    
+                    Spacer()
+                    
+                    Text("Edit")
+                        .font(DesignSystem.Typography.caption)
+                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                }
+                .padding(.horizontal, DesignSystem.Spacing.md)
+                .padding(.vertical, DesignSystem.Spacing.sm)
+                .background(
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
+                        .fill(DesignSystem.Colors.cardBackground.opacity(0.5))
+                )
+            }
+            .buttonStyle(.plain)
+        }
+    }
+    
+    @ViewBuilder
+    private var completedEveningCard: some View {
+        if viewModel.entry.isEveningComplete {
+            Button(action: { showingEveningReflection = true }) {
+                HStack(spacing: DesignSystem.Spacing.md) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(DesignSystem.Colors.success)
+                        .font(.system(size: 18))
+                    
+                    Text("Evening Complete")
+                        .font(DesignSystem.Typography.bodySmall)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                    
+                    Spacer()
+                    
+                    Text("Edit")
+                        .font(DesignSystem.Typography.caption)
+                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                }
+                .padding(.horizontal, DesignSystem.Spacing.md)
+                .padding(.vertical, DesignSystem.Spacing.sm)
+                .background(
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
+                        .fill(DesignSystem.Colors.cardBackground.opacity(0.5))
+                )
+            }
+            .buttonStyle(.plain)
         }
     }
 }
