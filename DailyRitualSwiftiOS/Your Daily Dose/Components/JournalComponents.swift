@@ -10,7 +10,7 @@ import SwiftUI
 
 // MARK: - DS-styled Journal Entry Component (legacy-compatible)
 
-struct JournalEntry: View {
+struct JournalTextField: View {
     let title: String
     let prompt: String
     @Binding var text: String?
@@ -47,7 +47,7 @@ struct JournalEntry: View {
 
 #Preview {
     @Previewable @State var sampleText: String? = nil
-    return JournalEntry(
+    return JournalTextField(
         title: "Goals",
         prompt: "What are your main goals for today?",
         text: $sampleText
