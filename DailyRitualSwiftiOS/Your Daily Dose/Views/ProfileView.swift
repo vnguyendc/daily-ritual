@@ -570,7 +570,7 @@ struct ProfileView: View {
                 SocialSignInButton(
                     provider: "Apple",
                     icon: "apple.logo",
-                    action: { Task { try? await supabase.signInWithApple() } }
+                    action: { Task { try? await supabase.signInWithAppleOAuth() } }
                 )
                 
                 SocialSignInButton(
