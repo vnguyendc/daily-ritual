@@ -3,10 +3,36 @@
 //  Your Daily Dose
 //
 //  Service for managing journal/quick entries
-//  Created by VinhNguyen on 12/31/25.
 //
 
 import Foundation
+
+// Response types for journal API
+struct JournalEntryResponse: Codable {
+    let success: Bool
+    let data: JournalEntry?
+    let message: String?
+}
+
+struct JournalEntriesListResponse: Codable {
+    let success: Bool
+    let data: JournalEntriesPaginatedData?
+    let message: String?
+}
+
+struct JournalEntriesPaginatedData: Codable {
+    let data: [JournalEntry]
+    let pagination: JournalPagination
+}
+
+struct JournalPagination: Codable {
+    let page: Int
+    let limit: Int
+    let total: Int
+    let total_pages: Int
+    let has_next: Bool
+    let has_prev: Bool
+}
 
 protocol JournalEntriesServiceProtocol: Sendable {
     func fetchEntries(page: Int, limit: Int) async throws -> (entries: [JournalEntry], hasNext: Bool)
@@ -14,75 +40,41 @@ protocol JournalEntriesServiceProtocol: Sendable {
     func createEntry(title: String?, content: String, mood: Int?, energy: Int?, tags: [String]?) async throws -> JournalEntry
     func updateEntry(id: UUID, title: String?, content: String?, mood: Int?, energy: Int?, tags: [String]?) async throws -> JournalEntry
     func deleteEntry(id: UUID) async throws
+    func fetchEntriesForDate(_ date: Date) async throws -> [JournalEntry]
 }
 
 final class JournalEntriesService: JournalEntriesServiceProtocol, @unchecked Sendable {
-    private let apiClient = APIClient.shared
+    private let api = SupabaseManager.shared
     
     func fetchEntries(page: Int = 1, limit: Int = 20) async throws -> (entries: [JournalEntry], hasNext: Bool) {
-        struct Response: Decodable {
-            let data: PaginatedData
-            struct PaginatedData: Decodable {
-                let data: [JournalEntry]
-                let pagination: Pagination
-            }
-            struct Pagination: Decodable {
-                let has_next: Bool
-            }
-        }
-        
-        let response: Response = try await apiClient.get(
-            endpoint: "journal",
-            queryParams: ["page": "\(page)", "limit": "\(limit)"]
-        )
-        return (response.data.data, response.data.pagination.has_next)
+        try await api.listJournalEntries(page: page, limit: limit)
     }
     
     func fetchEntry(id: UUID) async throws -> JournalEntry {
-        struct Response: Decodable {
-            let data: JournalEntry
+        guard let entry = try await api.getJournalEntry(id: id) else {
+            throw SupabaseError.invalidData
         }
-        let response: Response = try await apiClient.get(endpoint: "journal/\(id.uuidString)")
-        return response.data
+        return entry
     }
     
     func createEntry(title: String?, content: String, mood: Int? = nil, energy: Int? = nil, tags: [String]? = nil) async throws -> JournalEntry {
-        struct Response: Decodable {
-            let data: JournalEntry
-        }
-        
-        var body: [String: Any] = ["content": content]
-        if let title = title { body["title"] = title }
-        if let mood = mood { body["mood"] = mood }
-        if let energy = energy { body["energy"] = energy }
-        if let tags = tags { body["tags"] = tags }
-        
-        let response: Response = try await apiClient.post(endpoint: "journal", body: body)
-        return response.data
+        try await api.createJournalEntry(title: title, content: content, mood: mood, energy: energy, tags: tags)
     }
     
     func updateEntry(id: UUID, title: String? = nil, content: String? = nil, mood: Int? = nil, energy: Int? = nil, tags: [String]? = nil) async throws -> JournalEntry {
-        struct Response: Decodable {
-            let data: JournalEntry
-        }
-        
-        var body: [String: Any] = [:]
-        if let title = title { body["title"] = title }
-        if let content = content { body["content"] = content }
-        if let mood = mood { body["mood"] = mood }
-        if let energy = energy { body["energy"] = energy }
-        if let tags = tags { body["tags"] = tags }
-        
-        let response: Response = try await apiClient.put(endpoint: "journal/\(id.uuidString)", body: body)
-        return response.data
+        try await api.updateJournalEntry(id: id, title: title, content: content, mood: mood, energy: energy, tags: tags)
     }
     
     func deleteEntry(id: UUID) async throws {
-        struct Response: Decodable {
-            let success: Bool
+        try await api.deleteJournalEntry(id: id)
+    }
+    
+    func fetchEntriesForDate(_ date: Date) async throws -> [JournalEntry] {
+        // Fetch all entries and filter by date (could be optimized with backend filter)
+        let (entries, _) = try await fetchEntries(page: 1, limit: 100)
+        let calendar = Calendar.current
+        return entries.filter { entry in
+            calendar.isDate(entry.createdAt, inSameDayAs: date)
         }
-        let _: Response = try await apiClient.delete(endpoint: "journal/\(id.uuidString)")
     }
 }
-
-

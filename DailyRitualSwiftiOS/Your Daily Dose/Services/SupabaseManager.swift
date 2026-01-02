@@ -1397,6 +1397,61 @@ class SupabaseManager: NSObject, ObservableObject {
         let _: APIResponse<EmptyJSON> = try await api.postRaw("insights/\(id.uuidString)/read", json: nil)
     }
 
+    // MARK: - Journal Entries API
+    
+    func listJournalEntries(page: Int = 1, limit: Int = 20) async throws -> (entries: [JournalEntry], hasNext: Bool) {
+        let response: JournalEntriesListResponse = try await api.get("journal", query: [
+            URLQueryItem(name: "page", value: "\(page)"),
+            URLQueryItem(name: "limit", value: "\(limit)")
+        ])
+        guard let data = response.data else {
+            return ([], false)
+        }
+        return (data.data, data.pagination.has_next)
+    }
+    
+    func getJournalEntry(id: UUID) async throws -> JournalEntry? {
+        let response: JournalEntryResponse = try await api.get("journal/\(id.uuidString)")
+        return response.data
+    }
+    
+    func createJournalEntry(title: String?, content: String, mood: Int?, energy: Int?, tags: [String]?) async throws -> JournalEntry {
+        var body: [String: Any] = ["content": content]
+        if let title = title { body["title"] = title }
+        if let mood = mood { body["mood"] = mood }
+        if let energy = energy { body["energy"] = energy }
+        if let tags = tags { body["tags"] = tags }
+        
+        let response: JournalEntryResponse = try await api.postRaw("journal", json: body)
+        guard let entry = response.data else {
+            throw SupabaseError.invalidData
+        }
+        return entry
+    }
+    
+    func updateJournalEntry(id: UUID, title: String?, content: String?, mood: Int?, energy: Int?, tags: [String]?) async throws -> JournalEntry {
+        var body: [String: Any] = [:]
+        if let title = title { body["title"] = title }
+        if let content = content { body["content"] = content }
+        if let mood = mood { body["mood"] = mood }
+        if let energy = energy { body["energy"] = energy }
+        if let tags = tags { body["tags"] = tags }
+        
+        let response: JournalEntryResponse = try await api.putRaw("journal/\(id.uuidString)", json: body)
+        guard let entry = response.data else {
+            throw SupabaseError.invalidData
+        }
+        return entry
+    }
+    
+    func deleteJournalEntry(id: UUID) async throws {
+        struct DeleteResponse: Codable {
+            let success: Bool
+            let message: String?
+        }
+        let _: DeleteResponse = try await api.delete("journal/\(id.uuidString)")
+    }
+    
     // MARK: - Profile API
     func fetchProfile() async throws -> User? {
         isLoading = true
