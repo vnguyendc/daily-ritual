@@ -28,7 +28,9 @@ final class AuthService: AuthServiceProtocol {
     }
 
     func signInWithApple() async throws -> User {
-        try await manager.signInWithApple()
+        // Uses OAuth fallback for legacy callers (ProfileView)
+        // SignInView uses native Sign in with Apple directly
+        try await manager.signInWithAppleOAuth()
     }
 
     func signInWithGoogle() async throws -> User {
