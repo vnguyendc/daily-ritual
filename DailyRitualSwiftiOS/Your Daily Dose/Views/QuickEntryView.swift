@@ -28,6 +28,11 @@ struct QuickEntryView: View {
         NavigationStack {
             ZStack {
                 DesignSystem.Colors.background.ignoresSafeArea()
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        isTitleFocused = false
+                        isTextFieldFocused = false
+                    }
                 
                 VStack(spacing: 0) {
                     // Title and date header
@@ -36,6 +41,10 @@ struct QuickEntryView: View {
                             .font(DesignSystem.Typography.headlineMedium)
                             .foregroundColor(DesignSystem.Colors.primaryText)
                             .focused($isTitleFocused)
+                            .submitLabel(.next)
+                            .onSubmit {
+                                isTextFieldFocused = true
+                            }
                         
                         Text("Created at \(date.formatted(date: .abbreviated, time: .shortened))")
                             .font(DesignSystem.Typography.caption)
@@ -74,6 +83,7 @@ struct QuickEntryView: View {
                     }
                 }
             }
+            .scrollDismissesKeyboard(.interactively)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {

@@ -2,7 +2,7 @@
 //  TrainingPlanDetailSheet.swift
 //  Your Daily Dose
 //
-//  Full detail view for a training plan with edit/delete actions
+//  Full detail view for a training session with edit/delete actions
 //  Created by VinhNguyen on 12/10/25.
 //
 
@@ -44,7 +44,7 @@ struct TrainingPlanDetailSheet: View {
                 .padding(DesignSystem.Spacing.cardPadding)
             }
             .background(DesignSystem.Colors.background)
-            .navigationTitle("Training Plan")
+            .navigationTitle("Training Session")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -55,7 +55,7 @@ struct TrainingPlanDetailSheet: View {
                 }
             }
             .confirmationDialog(
-                "Delete Training Plan",
+                "Delete Session",
                 isPresented: $showDeleteConfirmation,
                 titleVisibility: .visible
             ) {
@@ -69,7 +69,7 @@ struct TrainingPlanDetailSheet: View {
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("Are you sure you want to delete this training plan? This action cannot be undone.")
+                Text("Are you sure you want to delete this training session? This action cannot be undone.")
             }
         }
     }
@@ -250,7 +250,7 @@ struct TrainingPlanDetailSheet: View {
     private var actionButtons: some View {
         VStack(spacing: DesignSystem.Spacing.md) {
             // Edit button
-            PremiumPrimaryButton("Edit Plan", timeContext: timeContext) {
+            PremiumPrimaryButton("Edit Session", timeContext: timeContext) {
                 onEdit()
             }
             
@@ -265,7 +265,7 @@ struct TrainingPlanDetailSheet: View {
                             .scaleEffect(0.8)
                     }
                     Image(systemName: "trash")
-                    Text(isDeleting ? "Deleting..." : "Delete Plan")
+                    Text(isDeleting ? "Deleting..." : "Delete Session")
                 }
                 .font(DesignSystem.Typography.buttonMedium)
                 .foregroundColor(DesignSystem.Colors.alertRed)

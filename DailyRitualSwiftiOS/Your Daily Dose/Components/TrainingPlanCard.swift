@@ -157,12 +157,13 @@ struct IntensityIndicator: View {
     }
 }
 
-/// Training plans summary for Today view showing multiple plans
+/// Training sessions summary for Today view showing multiple sessions
 struct TrainingPlansSummary: View {
     let plans: [TrainingPlan]
     let timeContext: DesignSystem.TimeContext
     var onPlanTap: ((TrainingPlan) -> Void)?
     var onManagePlans: (() -> Void)?
+    var onAddPlan: (() -> Void)?
     
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
@@ -194,16 +195,16 @@ struct TrainingPlansSummary: View {
             if plans.isEmpty {
                 // Empty state
                 VStack(spacing: DesignSystem.Spacing.sm) {
-                    Text("No training planned")
+                    Text("No sessions scheduled")
                         .font(DesignSystem.Typography.bodyMedium)
                         .foregroundColor(DesignSystem.Colors.secondaryText)
                     
                     Button {
-                        onManagePlans?()
+                        onAddPlan?()
                     } label: {
                         HStack(spacing: DesignSystem.Spacing.xs) {
                             Image(systemName: "plus")
-                            Text("Add Plan")
+                            Text("Add Session")
                         }
                         .font(DesignSystem.Typography.buttonSmall)
                         .foregroundColor(timeContext.primaryColor)
@@ -212,12 +213,12 @@ struct TrainingPlansSummary: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, DesignSystem.Spacing.md)
             } else if plans.count == 1 {
-                // Single plan - show full card
+                // Single session - show full card
                 TrainingPlanCard(plan: plans[0], timeContext: timeContext) {
                     onPlanTap?(plans[0])
                 }
             } else {
-                // Multiple plans - show compact cards in a row
+                // Multiple sessions - show compact cards in a row
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: DesignSystem.Spacing.sm) {
                         ForEach(plans.sorted(by: { $0.sequence < $1.sequence })) { plan in
@@ -229,7 +230,7 @@ struct TrainingPlansSummary: View {
                 }
                 
                 // Summary text
-                Text("\(plans.count) sessions planned")
+                Text("\(plans.count) sessions scheduled")
                     .font(DesignSystem.Typography.caption)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
             }

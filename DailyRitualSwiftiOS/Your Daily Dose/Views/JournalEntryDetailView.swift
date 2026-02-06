@@ -38,6 +38,10 @@ struct JournalEntryDetailView: View {
         NavigationStack {
             ZStack {
                 DesignSystem.Colors.background.ignoresSafeArea()
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        hideKeyboard()
+                    }
                 
                 ScrollView {
                     VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
@@ -47,6 +51,7 @@ struct JournalEntryDetailView: View {
                                 TextField("Title", text: $title)
                                     .font(DesignSystem.Typography.headlineMedium)
                                     .foregroundColor(DesignSystem.Colors.primaryText)
+                                    .submitLabel(.next)
                             } else {
                                 Text(entry.displayTitle)
                                     .font(DesignSystem.Typography.headlineMedium)
@@ -79,6 +84,7 @@ struct JournalEntryDetailView: View {
                     }
                     .padding(DesignSystem.Spacing.lg)
                 }
+                .scrollDismissesKeyboard(.interactively)
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -134,6 +140,14 @@ struct JournalEntryDetailView: View {
                                 .foregroundColor(timeContext.primaryColor)
                         }
                     }
+                }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        hideKeyboard()
+                    }
+                    .font(DesignSystem.Typography.buttonMedium)
+                    .foregroundColor(timeContext.primaryColor)
                 }
             }
             .confirmationDialog("Delete Entry?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {

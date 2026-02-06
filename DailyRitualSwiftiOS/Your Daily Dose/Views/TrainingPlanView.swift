@@ -128,23 +128,22 @@ struct DayDetailSheet: View {
             }
             .task { await load() }
             .sheet(isPresented: $showingAddForm) {
-                TrainingPlanFormView(
+                TrainingPlanFormSheet(
                     mode: .create,
                     date: date,
-                    nextSequence: (plans.map(\.sequence).max() ?? 0) + 1,
-                    onSave: { await load() }
+                    onSaved: { await load() }
                 )
             }
             .sheet(item: $editingPlan) { plan in
-                TrainingPlanFormView(
-                    mode: .edit(plan),
-                    date: date,
-                    nextSequence: plan.sequence,
-                    onSave: { await load() }
+                TrainingPlanFormSheet(
+                    mode: .edit,
+                    date: plan.date,
+                    existingPlan: plan,
+                    onSaved: { await load() }
                 )
             }
             .confirmationDialog(
-                "Delete Training Plan",
+                "Delete Session",
                 isPresented: $showDeleteConfirmation,
                 titleVisibility: .visible
             ) {
@@ -161,7 +160,7 @@ struct DayDetailSheet: View {
                     planToDelete = nil
                 }
             } message: {
-                Text("This training plan will be permanently deleted.")
+                Text("This training session will be permanently deleted.")
             }
         }
     }
@@ -208,7 +207,7 @@ struct DayDetailSheet: View {
             ProgressView()
                 .scaleEffect(1.2)
                 .tint(timeContext.primaryColor)
-            Text("Loading plans...")
+            Text("Loading sessions...")
                 .font(DesignSystem.Typography.bodyMedium)
                 .foregroundColor(DesignSystem.Colors.secondaryText)
         }
@@ -228,7 +227,7 @@ struct DayDetailSheet: View {
                     .font(DesignSystem.Typography.headlineMedium)
                     .foregroundColor(DesignSystem.Colors.primaryText)
                 
-                Text("No training planned for this day")
+                Text("No sessions scheduled for this day")
                     .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(DesignSystem.Colors.secondaryText)
                     .multilineTextAlignment(.center)
@@ -240,7 +239,7 @@ struct DayDetailSheet: View {
             } label: {
                 HStack(spacing: DesignSystem.Spacing.sm) {
                     Image(systemName: "plus")
-                    Text("Add Training")
+                    Text("Add Session")
                 }
                 .font(DesignSystem.Typography.buttonMedium)
                 .foregroundColor(DesignSystem.Colors.invertedText)
@@ -281,7 +280,7 @@ struct DayDetailSheet: View {
             } label: {
                 HStack(spacing: DesignSystem.Spacing.sm) {
                     Image(systemName: "plus.circle")
-                    Text("Add Another")
+                    Text("Add Session")
                 }
                 .font(DesignSystem.Typography.buttonMedium)
                 .foregroundColor(timeContext.primaryColor)
@@ -318,7 +317,7 @@ struct DayDetailSheet: View {
                 plans = loadedPlans
             }
         } catch {
-            print("❌ Failed to load training plans:", error)
+            print("❌ Failed to load training sessions:", error)
         }
     }
     

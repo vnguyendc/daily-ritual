@@ -2,11 +2,14 @@
 //  MorningRitualView.swift
 //  Your Daily Dose
 //
-//  Morning ritual with premium design system - step by step flow
+//  Morning ritual with clean step-by-step flow
 //  Created by VinhNguyen on 8/19/25.
 //
 
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct MorningRitualView: View {
     @Binding var entry: DailyEntry
@@ -17,116 +20,113 @@ struct MorningRitualView: View {
     @State private var isSaving = false
     
     private let timeContext: DesignSystem.TimeContext = .morning
+    private let totalSteps = 4
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Premium progress indicator (4 steps)
-                HStack(spacing: DesignSystem.Spacing.sm) {
-                    ForEach(0..<4, id: \.self) { index in
-                        Circle()
-                            .fill(index <= currentStep ? timeContext.primaryColor : DesignSystem.Colors.divider)
-                            .frame(width: 12, height: 12)
-                            .animation(DesignSystem.Animation.spring, value: currentStep)
-                    }
-                }
-                .padding(.top, DesignSystem.Spacing.lg)
+            ZStack {
+                DesignSystem.Colors.background.ignoresSafeArea()
                 
-                // Premium step content with time-based theming (4 steps)
-                TabView(selection: $currentStep) {
-                    // Step 1: Today's 3 Goals
-                    PremiumGoalsStepView(goalsText: $entry.goalsText, timeContext: timeContext)
+                VStack(spacing: 0) {
+                    // Minimal progress bar
+                    progressBar
+                        .padding(.horizontal, DesignSystem.Spacing.md)
+                        .padding(.top, DesignSystem.Spacing.sm)
+                    
+                    // Step content
+                    TabView(selection: $currentStep) {
+                        CleanGoalsStepView(
+                            goalsText: $entry.goalsText,
+                            timeContext: timeContext
+                        )
                         .tag(0)
-                    
-                    // Step 2: 3 Things I'm Grateful For
-                    PremiumGratitudeStepView(gratitudeText: $entry.gratitudeText, timeContext: timeContext)
+                        
+                        CleanGratitudeStepView(
+                            gratitudeText: $entry.gratitudeText,
+                            timeContext: timeContext
+                        )
                         .tag(1)
-                    
-                    // Step 3: Affirmation (user writes; suggested text shown)
-                    PremiumAffirmationStepView(
-                        affirmation: $entry.affirmation,
-                        suggestedText: viewModel.suggestedAffirmation,
-                        timeContext: timeContext
-                    )
-                    .tag(2)
-                    
-                    // Step 4: Notes / Thoughts for the Day
-                    PremiumOtherThoughtsStepView(otherThoughts: $entry.otherThoughts, timeContext: timeContext)
+                        
+                        CleanAffirmationStepView(
+                            affirmation: $entry.affirmation,
+                            suggestedText: viewModel.suggestedAffirmation,
+                            timeContext: timeContext
+                        )
+                        .tag(2)
+                        
+                        CleanThoughtsStepView(
+                            otherThoughts: $entry.otherThoughts,
+                            timeContext: timeContext
+                        )
                         .tag(3)
+                    }
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .animation(.easeInOut(duration: 0.3), value: currentStep)
                 }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                
-                // Premium navigation with design system
-                HStack {
-                    Spacer()
-                    
-                    if currentStep < 3 {
-                        Button {
-                            withAnimation(DesignSystem.Animation.spring) {
-                                currentStep += 1
+            }
+            .loadingOverlay(isLoading: isSaving, message: "Saving...")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        if currentStep > 0 {
+                            withAnimation { currentStep -= 1 }
+                        } else {
+                            dismiss()
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: currentStep > 0 ? "chevron.left" : "xmark")
+                                .font(.system(size: 14, weight: .medium))
+                            if currentStep > 0 {
+                                Text("Back")
+                                    .font(DesignSystem.Typography.bodyMedium)
                             }
-                        } label: {
-                            Image(systemName: "arrow.right")
-                                .font(DesignSystem.Typography.headlineMedium)
-                                .foregroundColor(DesignSystem.Colors.invertedText)
-                                .frame(width: DesignSystem.Spacing.preferredTouchTarget, 
-                                       height: DesignSystem.Spacing.preferredTouchTarget)
-                                .background(Circle().fill(timeContext.primaryColor))
-                                .shadow(
-                                    color: DesignSystem.Shadow.elevated.color,
-                                    radius: DesignSystem.Shadow.elevated.radius,
-                                    x: DesignSystem.Shadow.elevated.x,
-                                    y: DesignSystem.Shadow.elevated.y
-                                )
                         }
-                        .disabled(!canProceed || SupabaseManager.shared.isLoading)
-                        .opacity((canProceed && !SupabaseManager.shared.isLoading) ? 1.0 : 0.5)
-                        .animation(DesignSystem.Animation.quick, value: canProceed)
-                    } else {
-                        Button {
-                            completeRitual()
-                        } label: {
-                            Image(systemName: "checkmark")
-                                .font(DesignSystem.Typography.headlineMedium)
-                                .foregroundColor(DesignSystem.Colors.invertedText)
-                                .frame(width: DesignSystem.Spacing.preferredTouchTarget, 
-                                       height: DesignSystem.Spacing.preferredTouchTarget)
-                                .background(Circle().fill(DesignSystem.Colors.success))
-                                .shadow(
-                                    color: DesignSystem.Shadow.elevated.color,
-                                    radius: DesignSystem.Shadow.elevated.radius,
-                                    x: DesignSystem.Shadow.elevated.x,
-                                    y: DesignSystem.Shadow.elevated.y
-                                )
-                        }
-                        .disabled(!canProceed || isSaving)
-                        .opacity((canProceed && !isSaving) ? 1.0 : 0.5)
-                        .animation(DesignSystem.Animation.quick, value: canProceed)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
                     }
                 }
-                .padding(DesignSystem.Spacing.cardPadding)
-            }
-            .loadingOverlay(isLoading: isSaving, message: "Saving your morning ritual...")
-            .navigationTitle("Morning Ritual")
-            .premiumBackgroundGradient(timeContext)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(DesignSystem.Colors.cardBackground.opacity(0.95), for: .navigationBar)
-            // Inherit theme; remove forced light scheme for better contrast
-            .toolbar {
+                
+                ToolbarItem(placement: .principal) {
+                    Text("Morning Ritual")
+                        .font(DesignSystem.Typography.headlineSmall)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                }
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
-                        dismiss()
+                        if currentStep < totalSteps - 1 {
+                            withAnimation { currentStep += 1 }
+                        } else {
+                            completeRitual()
+                        }
                     } label: {
-                        Image(systemName: "xmark")
-                            .font(DesignSystem.Typography.buttonMedium)
-                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                        if isSaving {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                                .tint(timeContext.primaryColor)
+                        } else {
+                            Text(currentStep < totalSteps - 1 ? "Next" : "Done")
+                                .font(DesignSystem.Typography.buttonMedium)
+                                .foregroundColor(canProceed ? timeContext.primaryColor : DesignSystem.Colors.tertiaryText)
+                        }
                     }
+                    .disabled(!canProceed || isSaving)
+                }
+                
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        hideKeyboard()
+                    }
+                    .foregroundColor(timeContext.primaryColor)
                 }
             }
             .sheet(isPresented: $showingCompletion) {
-                PremiumCompletionView(
-                    title: "Morning Ritual Complete!", 
-                    subtitle: "Great start to your day!",
+                CleanCompletionView(
+                    title: "Morning Ritual Complete!",
+                    subtitle: "Great start to your day",
+                    emoji: "☀️",
                     timeContext: timeContext,
                     onDismiss: { dismiss() }
                 )
@@ -135,38 +135,52 @@ struct MorningRitualView: View {
         }
     }
     
+    private var progressBar: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                // Background track
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(DesignSystem.Colors.divider)
+                    .frame(height: 4)
+                
+                // Progress fill
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(timeContext.primaryColor)
+                    .frame(width: geometry.size.width * CGFloat(currentStep + 1) / CGFloat(totalSteps), height: 4)
+                    .animation(.easeInOut(duration: 0.3), value: currentStep)
+            }
+        }
+        .frame(height: 4)
+    }
+    
     private var canProceed: Bool {
         switch currentStep {
-        case 0: 
-            // Allow proceeding if goalsText has any non-whitespace content
+        case 0:
             if let goals = entry.goalsText {
                 return !goals.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             }
             return false
-        case 1: 
-            // Allow proceeding if gratitudeText has any non-whitespace content
+        case 1:
             if let gratitude = entry.gratitudeText {
                 return !gratitude.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             }
             return false
-        case 2: 
-            // Allow proceeding if affirmation has any non-whitespace content
+        case 2:
             if let affirmation = entry.affirmation {
                 return !affirmation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             }
             return false
-        case 3: 
-            // Allow proceeding if otherThoughts has any non-whitespace content
+        case 3:
             if let thoughts = entry.otherThoughts {
                 return !thoughts.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             }
             return false
-        default: return false
+        default:
+            return false
         }
     }
     
     private func completeRitual() {
-        print("Tapped complete morning")
         isSaving = true
         Task {
             defer { isSaving = false }
@@ -174,10 +188,12 @@ struct MorningRitualView: View {
                 let updated = try await DailyEntriesService().completeMorning(for: entry)
                 entry = updated
                 entry.morningCompletedAt = Date()
+                #if canImport(UIKit)
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                #endif
                 showingCompletion = true
             } catch {
                 print("completeMorning() failed:", error.localizedDescription)
-                // Still show completion to not block the flow; queued retry can be added later
                 entry.morningCompletedAt = Date()
                 showingCompletion = true
             }
@@ -185,17 +201,16 @@ struct MorningRitualView: View {
     }
 }
 
-// MARK: - Premium Step Views
+// MARK: - Clean Step Views
 
-struct PremiumGoalsStepView: View {
+struct CleanGoalsStepView: View {
     @Binding var goalsText: String?
     let timeContext: DesignSystem.TimeContext
+    @FocusState private var isFocused: Bool
     
-    private var numberedPlaceholder: String {
-        "1. Performance goal\n2. Process goal\n3. Personal goal"
-    }
+    private let placeholder = "1. \n2. \n3. "
     @State private var displayGoals: String = ""
-
+    
     private func enforceNumbering(_ text: String) -> (display: String, lines: [String]) {
         var rawLines = text.components(separatedBy: CharacterSet.newlines)
         if rawLines.count > 3 { rawLines = Array(rawLines.prefix(3)) }
@@ -214,65 +229,109 @@ struct PremiumGoalsStepView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-                PremiumSectionHeader(
-                    "Today's 3 Goals",
-                    subtitle: "These are your nonnegotiable goals to complete today — they can be performance, process, or personal goals.",
-                    timeContext: timeContext
-                )
+                // Clean header
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                    Text("Today's 3 Goals")
+                        .font(DesignSystem.Typography.headlineMedium)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                    
+                    Text("What must you accomplish today?")
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                }
                 
-                PremiumTextEditor(
-                    nil,
-                    placeholder: numberedPlaceholder,
-                    text: Binding(
-                        get: { displayGoals },
-                        set: { newValue in
-                            let result = enforceNumbering(newValue)
-                            displayGoals = result.display
-                            goalsText = result.lines.isEmpty ? nil : result.lines.joined(separator: "\n")
-                        }
-                    ),
-                    timeContext: timeContext,
-                    minHeight: 150,
-                    contentFont: DesignSystem.Typography.journalTextSafe,
-                    accessibilityHint: "Enter three numbered goals"
-                )
+                Divider()
+                    .background(DesignSystem.Colors.divider)
+                
+                // Clean text editor (no card wrapper)
+                TextEditor(text: Binding(
+                    get: { displayGoals },
+                    set: { newValue in
+                        let result = enforceNumbering(newValue)
+                        displayGoals = result.display
+                        goalsText = result.lines.isEmpty ? nil : result.lines.joined(separator: "\n")
+                    }
+                ))
+                .font(DesignSystem.Typography.bodyLargeSafe)
+                .foregroundColor(DesignSystem.Colors.primaryText)
+                .scrollContentBackground(.hidden)
+                .background(Color.clear)
+                .focused($isFocused)
+                .frame(minHeight: 120)
                 .onAppear {
                     let existing = goalsText?.components(separatedBy: "\n").joined(separator: "\n") ?? ""
                     displayGoals = enforceNumbering(existing).display
                 }
                 
+                // Suggestions when empty
                 if goalsText?.isEmpty ?? true {
-                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, showsBorder: false) {
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                            HStack {
-                                Text("💡")
-                                    .font(DesignSystem.Typography.headlineSmall)
-                                Text("Tip: Type on new lines — we'll number them for you")
-                                    .font(DesignSystem.Typography.buttonMedium)
-                                    .foregroundColor(DesignSystem.Colors.primaryText)
-                            }
-                            
-                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                Text(numberedPlaceholder)
-                            }
-                            .font(DesignSystem.Typography.bodyMedium)
-                            .foregroundColor(DesignSystem.Colors.secondaryText)
-                        }
-                    }
+                    suggestionButtons
                 }
+                
+                Spacer()
             }
-            .padding(DesignSystem.Spacing.cardPadding)
+            .padding(DesignSystem.Spacing.md)
         }
+        .scrollDismissesKeyboard(.interactively)
+        .contentShape(Rectangle())
+        .onTapGesture { isFocused = false }
+    }
+    
+    private var suggestionButtons: some View {
+        VStack(spacing: DesignSystem.Spacing.sm) {
+            Text("Try these:")
+                .font(DesignSystem.Typography.caption)
+                .foregroundColor(DesignSystem.Colors.tertiaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            suggestionButton("Performance goal", example: "Hit my target workout numbers")
+            suggestionButton("Process goal", example: "Stay focused for 2 hours deep work")
+            suggestionButton("Personal goal", example: "Connect with a friend or family")
+        }
+    }
+    
+    private func suggestionButton(_ label: String, example: String) -> some View {
+        Button {
+            // Append to goals
+            let currentCount = displayGoals.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.count
+            if currentCount < 3 {
+                let result = enforceNumbering(displayGoals + (displayGoals.isEmpty ? "" : "\n") + example)
+                displayGoals = result.display
+                goalsText = result.lines.isEmpty ? nil : result.lines.joined(separator: "\n")
+            }
+            isFocused = true
+        } label: {
+            HStack {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 12))
+                    .foregroundColor(timeContext.primaryColor)
+                
+                Text(label)
+                    .font(DesignSystem.Typography.bodyMedium)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+                
+                Spacer()
+                
+                Text(example)
+                    .font(DesignSystem.Typography.caption)
+                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+                    .lineLimit(1)
+            }
+            .padding(DesignSystem.Spacing.sm)
+            .background(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
+                    .fill(DesignSystem.Colors.cardBackground)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
-struct PremiumGratitudeStepView: View {
+struct CleanGratitudeStepView: View {
     @Binding var gratitudeText: String?
     let timeContext: DesignSystem.TimeContext
+    @FocusState private var isFocused: Bool
     
-    private var numberedPlaceholder: String {
-        "1. Family and friends who support me\n2. My health and ability to pursue my goals\n3. The opportunity to learn and grow today"
-    }
     @State private var displayGratitudes: String = ""
     
     private func enforceNumbering(_ text: String) -> (display: String, lines: [String]) {
@@ -293,283 +352,313 @@ struct PremiumGratitudeStepView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-                PremiumSectionHeader(
-                    "3 Things to Be Grateful For",
-                    subtitle: "What are 3 things you're grateful for today? Write about what brings you joy.",
-                    timeContext: timeContext
-                )
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                    Text("3 Things I'm Grateful For")
+                        .font(DesignSystem.Typography.headlineMedium)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                    
+                    Text("What brings you joy today?")
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                }
                 
-                PremiumTextEditor(
-                    nil,
-                    placeholder: numberedPlaceholder,
-                    text: Binding(
-                        get: { displayGratitudes },
-                        set: { newValue in
-                            let result = enforceNumbering(newValue)
-                            displayGratitudes = result.display
-                            gratitudeText = result.lines.isEmpty ? nil : result.lines.joined(separator: "\n")
-                        }
-                    ),
-                    timeContext: timeContext,
-                    minHeight: 150,
-                    contentFont: DesignSystem.Typography.journalTextSafe,
-                    accessibilityHint: "Enter three gratitudes"
-                )
+                Divider()
+                    .background(DesignSystem.Colors.divider)
+                
+                TextEditor(text: Binding(
+                    get: { displayGratitudes },
+                    set: { newValue in
+                        let result = enforceNumbering(newValue)
+                        displayGratitudes = result.display
+                        gratitudeText = result.lines.isEmpty ? nil : result.lines.joined(separator: "\n")
+                    }
+                ))
+                .font(DesignSystem.Typography.bodyLargeSafe)
+                .foregroundColor(DesignSystem.Colors.primaryText)
+                .scrollContentBackground(.hidden)
+                .background(Color.clear)
+                .focused($isFocused)
+                .frame(minHeight: 120)
                 .onAppear {
                     let existing = gratitudeText?.components(separatedBy: "\n").joined(separator: "\n") ?? ""
                     displayGratitudes = enforceNumbering(existing).display
                 }
                 
                 if gratitudeText?.isEmpty ?? true {
-                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, showsBorder: false) {
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                            HStack {
-                                Text("🙏")
-                                    .font(DesignSystem.Typography.headlineSmall)
-                                Text("Tip: Type on new lines — we'll number them for you")
-                                    .font(DesignSystem.Typography.buttonMedium)
-                                    .foregroundColor(DesignSystem.Colors.primaryText)
-                            }
-                            
-                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                Text(numberedPlaceholder)
-                            }
-                            .font(DesignSystem.Typography.bodyMedium)
-                            .foregroundColor(DesignSystem.Colors.secondaryText)
-                        }
+                    VStack(spacing: DesignSystem.Spacing.sm) {
+                        Text("Ideas:")
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(DesignSystem.Colors.tertiaryText)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        suggestionButton("My health and ability to train")
+                        suggestionButton("Supportive people in my life")
+                        suggestionButton("Opportunities to grow today")
                     }
                 }
+                
+                Spacer()
             }
-            .padding(DesignSystem.Spacing.cardPadding)
+            .padding(DesignSystem.Spacing.md)
         }
+        .scrollDismissesKeyboard(.interactively)
+        .contentShape(Rectangle())
+        .onTapGesture { isFocused = false }
+    }
+    
+    private func suggestionButton(_ text: String) -> some View {
+        Button {
+            let currentCount = displayGratitudes.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.count
+            if currentCount < 3 {
+                let result = enforceNumbering(displayGratitudes + (displayGratitudes.isEmpty ? "" : "\n") + text)
+                displayGratitudes = result.display
+                gratitudeText = result.lines.isEmpty ? nil : result.lines.joined(separator: "\n")
+            }
+            isFocused = true
+        } label: {
+            HStack {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 12))
+                    .foregroundColor(timeContext.primaryColor)
+                
+                Text(text)
+                    .font(DesignSystem.Typography.bodyMedium)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+                
+                Spacer()
+                
+                Image(systemName: "plus")
+                    .font(.system(size: 12))
+                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+            }
+            .padding(DesignSystem.Spacing.sm)
+            .background(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
+                    .fill(DesignSystem.Colors.cardBackground)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
-struct PremiumAffirmationStepView: View {
+struct CleanAffirmationStepView: View {
     @Binding var affirmation: String?
     let suggestedText: String?
     let timeContext: DesignSystem.TimeContext
+    @FocusState private var isFocused: Bool
     
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-                PremiumSectionHeader(
-                    "Affirmation",
-                    subtitle: "Write your own affirmation. We'll suggest one to inspire you.",
-                    timeContext: timeContext
-                )
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                    Text("Today's Affirmation")
+                        .font(DesignSystem.Typography.headlineMedium)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                    
+                    Text("What positive truth do you want to embody?")
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                }
                 
-                PremiumTextEditor(
-                    nil,
-                    placeholder: "Write your affirmation",
-                    text: Binding(
-                        get: { affirmation ?? "" },
-                        set: { affirmation = $0.isEmpty ? nil : $0 }
-                    ),
-                    timeContext: timeContext,
-                    minHeight: 150,
-                    contentFont: DesignSystem.Typography.affirmationTextSafe,
-                    accessibilityHint: "Write your personal affirmation"
-                )
+                Divider()
+                    .background(DesignSystem.Colors.divider)
                 
+                TextEditor(text: Binding(
+                    get: { affirmation ?? "" },
+                    set: { affirmation = $0.isEmpty ? nil : $0 }
+                ))
+                .font(DesignSystem.Typography.bodyLargeSafe)
+                .foregroundColor(DesignSystem.Colors.primaryText)
+                .scrollContentBackground(.hidden)
+                .background(Color.clear)
+                .focused($isFocused)
+                .frame(minHeight: 100)
+                
+                // AI suggestion
                 if let suggestion = suggestedText, (affirmation?.isEmpty ?? true) {
-                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, showsBorder: false) {
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                            HStack {
-                                Text("💪")
-                                    .font(DesignSystem.Typography.headlineSmall)
-                                Text("Suggested affirmation:")
-                                    .font(DesignSystem.Typography.buttonMedium)
-                                    .foregroundColor(DesignSystem.Colors.primaryText)
-                            }
+                    Button {
+                        affirmation = suggestion
+                        #if canImport(UIKit)
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        #endif
+                    } label: {
+                        HStack(alignment: .top, spacing: DesignSystem.Spacing.sm) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 14))
+                                .foregroundColor(timeContext.primaryColor)
                             
                             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                Text("\(suggestion)")
+                                Text("Suggested for you")
+                                    .font(DesignSystem.Typography.caption)
+                                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+                                
+                                Text(suggestion)
+                                    .font(DesignSystem.Typography.bodyMedium)
+                                    .foregroundColor(DesignSystem.Colors.primaryText)
+                                    .italic()
+                                    .multilineTextAlignment(.leading)
                             }
-                            .font(DesignSystem.Typography.bodyMedium)
-                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                            
+                            Spacer()
+                            
+                            Text("Use")
+                                .font(DesignSystem.Typography.buttonSmall)
+                                .foregroundColor(timeContext.primaryColor)
                         }
+                        .padding(DesignSystem.Spacing.md)
+                        .background(
+                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                                .fill(timeContext.primaryColor.opacity(0.08))
+                        )
                     }
+                    .buttonStyle(.plain)
                 }
+                
+                Spacer()
             }
-            .padding(DesignSystem.Spacing.cardPadding)
+            .padding(DesignSystem.Spacing.md)
         }
+        .scrollDismissesKeyboard(.interactively)
+        .contentShape(Rectangle())
+        .onTapGesture { isFocused = false }
     }
 }
 
-struct PremiumOtherThoughtsStepView: View {
+struct CleanThoughtsStepView: View {
     @Binding var otherThoughts: String?
     let timeContext: DesignSystem.TimeContext
+    @FocusState private var isFocused: Bool
     
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-                PremiumSectionHeader(
-                    "Any Other Thoughts for the Day",
-                    subtitle: "Anything else on your mind? Write about your thoughts, feelings, or anything you want to remember about today.",
-                    timeContext: timeContext
-                )
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                    Text("Other Thoughts")
+                        .font(DesignSystem.Typography.headlineMedium)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                    
+                    Text("Anything else on your mind for today?")
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                }
                 
-                PremiumTextEditor(
-                    nil,
-                    placeholder: "Notes for the day",
-                    text: Binding(
-                        get: { otherThoughts ?? "" },
-                        set: { otherThoughts = $0.isEmpty ? nil : $0 }
-                    ),
-                    timeContext: timeContext,
-                    minHeight: 200,
-                    contentFont: DesignSystem.Typography.journalTextSafe,
-                    accessibilityHint: "Add any other thoughts for today"
-                )
+                Divider()
+                    .background(DesignSystem.Colors.divider)
+                
+                TextEditor(text: Binding(
+                    get: { otherThoughts ?? "" },
+                    set: { otherThoughts = $0.isEmpty ? nil : $0 }
+                ))
+                .font(DesignSystem.Typography.bodyLargeSafe)
+                .foregroundColor(DesignSystem.Colors.primaryText)
+                .scrollContentBackground(.hidden)
+                .background(Color.clear)
+                .focused($isFocused)
+                .frame(minHeight: 150)
                 
                 if otherThoughts?.isEmpty ?? true {
-                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, showsBorder: false) {
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                            HStack {
-                                Text("💭")
-                                    .font(DesignSystem.Typography.headlineSmall)
-                                Text("Example thoughts:")
-                                    .font(DesignSystem.Typography.buttonMedium)
-                                    .foregroundColor(timeContext.primaryColor)
-                            }
-                            
-                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                Text("• I'm excited about the new project starting today")
-                                Text("• Feeling a bit nervous but ready for the challenge")
-                                Text("• Remember to take breaks and be kind to myself")
-                            }
-                            .font(DesignSystem.Typography.bodyMedium)
-                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                        Text("You might write about:")
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(DesignSystem.Colors.tertiaryText)
+                        
+                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                            promptRow("How you're feeling right now")
+                            promptRow("Something you're looking forward to")
+                            promptRow("A challenge you want to overcome")
                         }
                     }
+                    .padding(DesignSystem.Spacing.md)
+                    .background(
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                            .fill(DesignSystem.Colors.cardBackground)
+                    )
                 }
+                
+                Spacer()
             }
-            .padding(DesignSystem.Spacing.cardPadding)
+            .padding(DesignSystem.Spacing.md)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .contentShape(Rectangle())
+        .onTapGesture { isFocused = false }
+    }
+    
+    private func promptRow(_ text: String) -> some View {
+        HStack(spacing: DesignSystem.Spacing.sm) {
+            Circle()
+                .fill(timeContext.primaryColor.opacity(0.5))
+                .frame(width: 6, height: 6)
+            
+            Text(text)
+                .font(DesignSystem.Typography.bodyMedium)
+                .foregroundColor(DesignSystem.Colors.secondaryText)
         }
     }
 }
 
-struct PremiumQuoteDisplayStepView: View {
-    @Binding var quote: String?
-    let timeContext: DesignSystem.TimeContext
-    
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-                PremiumSectionHeader(
-                    "Quote for Today",
-                    subtitle: "Your quote is prepared for you each morning.",
-                    timeContext: timeContext
-                )
-                
-                if let quote = quote, !quote.isEmpty {
-                    PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md, showsBorder: false) {
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                            Text(quote)
-                                .font(DesignSystem.Typography.quoteText)
-                                .foregroundColor(DesignSystem.Colors.primaryText)
-                                .italic()
-                        }
-                    }
-                }
-            }
-            .padding(DesignSystem.Spacing.cardPadding)
-        }
-    }
-}
+// MARK: - Clean Completion View
 
-struct PremiumTrainingPlanStepView: View {
-    @Binding var plannedTrainingType: String?
-    @Binding var plannedTrainingTime: String?
-    @Binding var plannedIntensity: String?
-    @Binding var plannedDuration: Int?
-    @Binding var plannedNotes: String?
+struct CleanCompletionView: View {
+    let title: String
+    let subtitle: String
+    let emoji: String
     let timeContext: DesignSystem.TimeContext
+    let onDismiss: () -> Void
     
-    private let trainingTypes = ["strength", "cardio", "skills", "competition", "rest", "cross_training", "recovery"]
-    private let intensityLevels = ["light", "moderate", "hard", "very_hard"]
-    @State private var timePickerDate: Date = Date()
+    @State private var showContent = false
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-                PremiumSectionHeader(
-                    "Today's Training Plan",
-                    subtitle: "Plan your training to trigger post-workout reflection and insights.",
-                    timeContext: timeContext
-                )
+        VStack(spacing: DesignSystem.Spacing.xl) {
+            Spacer()
+            
+            VStack(spacing: DesignSystem.Spacing.lg) {
+                Text(emoji)
+                    .font(.system(size: 80))
+                    .scaleEffect(showContent ? 1.0 : 0.5)
+                    .opacity(showContent ? 1.0 : 0)
                 
-                PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.md) {
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                        // Training Type (Picker)
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                            Text("Training Type")
-                                .font(DesignSystem.Typography.buttonMedium)
-                                .foregroundColor(timeContext.primaryColor)
-                            Picker("Training Type", selection: Binding(
-                                get: { plannedTrainingType ?? trainingTypes.first! },
-                                set: { plannedTrainingType = $0 }
-                            )) {
-                                ForEach(trainingTypes, id: \.self) { type in
-                                    Text(type.capitalized).tag(type)
-                                }
-                            }
-                            .pickerStyle(.menu)
-                        }
-                        
-                        Divider()
-                            .background(DesignSystem.Colors.divider)
-                        
-                        // Optional details
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                            Text("Optional Details")
-                                .font(DesignSystem.Typography.buttonMedium)
-                                .foregroundColor(DesignSystem.Colors.secondaryText)
-                            
-                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                Text("Time:")
-                                    .font(DesignSystem.Typography.bodyMedium)
-                                DatePicker("", selection: Binding(
-                                    get: { timePickerDate },
-                                    set: { newDate in
-                                        timePickerDate = newDate
-                                        let fmt = DateFormatter()
-                                        fmt.dateFormat = "h:mm a"
-                                        plannedTrainingTime = fmt.string(from: newDate)
-                                    }
-                                ), displayedComponents: .hourAndMinute)
-                                .datePickerStyle(.wheel)
-                                .labelsHidden()
-                            }
-                            
-                            HStack {
-                                Text("Duration:")
-                                    .font(DesignSystem.Typography.bodyMedium)
-                                TextField("minutes", value: $plannedDuration, format: .number)
-                                    .font(DesignSystem.Typography.bodyMedium)
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                                    .keyboardType(.numberPad)
-                            }
-                            
-                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                Text("Notes:")
-                                    .font(DesignSystem.Typography.bodyMedium)
-                                TextEditor(text: Binding(
-                                    get: { plannedNotes ?? "" },
-                                    set: { plannedNotes = $0.isEmpty ? nil : $0 }
-                                ))
-                                .font(DesignSystem.Typography.journalTextSafe)
-                                .frame(minHeight: 100)
-                                .scrollContentBackground(.hidden)
-                                .background(Color.clear)
-                            }
-                        }
-                    }
+                VStack(spacing: DesignSystem.Spacing.sm) {
+                    Text(title)
+                        .font(DesignSystem.Typography.headlineLarge)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                        .multilineTextAlignment(.center)
+                    
+                    Text(subtitle)
+                        .font(DesignSystem.Typography.bodyLargeSafe)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                        .multilineTextAlignment(.center)
                 }
+                .opacity(showContent ? 1.0 : 0)
+                .offset(y: showContent ? 0 : 20)
             }
-            .padding(DesignSystem.Spacing.cardPadding)
+            
+            Spacer()
+            
+            Button {
+                onDismiss()
+            } label: {
+                Text("Continue")
+                    .font(DesignSystem.Typography.buttonMedium)
+                    .foregroundColor(DesignSystem.Colors.invertedText)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
+                            .fill(timeContext.primaryColor)
+                    )
+            }
+            .padding(.horizontal, DesignSystem.Spacing.lg)
+            .opacity(showContent ? 1.0 : 0)
         }
+        .padding(DesignSystem.Spacing.xl)
+        .background(DesignSystem.Colors.background.ignoresSafeArea())
+        .onAppear {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+                showContent = true
+            }
+        }
+        .interactiveDismissDisabled()
     }
 }
 
@@ -578,67 +667,16 @@ struct PremiumTrainingPlanStepView: View {
 @MainActor
 class MorningRitualViewModel: ObservableObject {
     @Published var suggestedAffirmation: String?
-    @Published var preGeneratedQuote: String?
     @Published var isLoading = false
     
     private let supabase = SupabaseManager.shared
     
     func prepare(goals: [String]) async {
-        // Generate suggested affirmation and quote once in the morning
         if suggestedAffirmation == nil {
             if let text = try? await supabase.generateAffirmation(for: goals) {
                 suggestedAffirmation = text
             }
         }
-        // Quote generation removed from morning flow; keep placeholder if needed later
-    }
-}
-
-// MARK: - Premium Completion View
-
-struct PremiumCompletionView: View {
-    let title: String
-    let subtitle: String
-    let timeContext: DesignSystem.TimeContext
-    let onDismiss: () -> Void
-    
-    var body: some View {
-        VStack(spacing: DesignSystem.Spacing.xl) {
-            Spacer()
-            
-            // Success animation area
-            VStack(spacing: DesignSystem.Spacing.lg) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 100))
-                    .foregroundColor(DesignSystem.Colors.success)
-                    .scaleEffect(1.0)
-                    .animation(DesignSystem.Animation.springGentle, value: true)
-                
-                VStack(spacing: DesignSystem.Spacing.md) {
-                    Text(title)
-                        .font(DesignSystem.Typography.displaySmallSafe)
-                        .foregroundColor(DesignSystem.Colors.primaryText)
-                        .multilineTextAlignment(.center)
-                    
-                    Text(subtitle)
-                        .font(DesignSystem.Typography.bodyLargeSafe)
-                        .foregroundColor(DesignSystem.Colors.secondaryText)
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(DesignSystem.Spacing.lineSpacingRelaxed)
-                }
-            }
-            
-            Spacer()
-            
-            PremiumPrimaryButton(
-                "Continue",
-                timeContext: timeContext,
-                action: onDismiss
-            )
-        }
-        .padding(DesignSystem.Spacing.xl)
-        .premiumBackgroundGradient(timeContext)
-        .interactiveDismissDisabled()
     }
 }
 
