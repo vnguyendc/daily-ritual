@@ -1022,10 +1022,22 @@ enum TextLevel {
 
 extension View {
     /// Dismisses the keyboard when tapping outside of text fields
+    /// Uses a high-priority gesture that doesn't interfere with buttons
     func dismissKeyboardOnTap() -> some View {
-        self.onTapGesture {
-            hideKeyboard()
-        }
+        self.contentShape(Rectangle())
+            .onTapGesture {
+                hideKeyboard()
+            }
+    }
+    
+    /// Better keyboard dismissal that works with ScrollView and doesn't block interactions
+    func dismissKeyboardInteractively() -> some View {
+        self.modifier(KeyboardDismissModifier())
+    }
+    
+    /// Complete form keyboard handling - adds scroll dismiss, tap dismiss, and toolbar
+    func formKeyboardHandling(timeContext: DesignSystem.TimeContext = .neutral) -> some View {
+        self.modifier(FormKeyboardModifier(timeContext: timeContext))
     }
 
     /// Hides the keyboard
@@ -1033,6 +1045,47 @@ extension View {
         #if canImport(UIKit)
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         #endif
+    }
+}
+
+/// Modifier that adds keyboard dismissal on background tap without blocking button taps
+struct KeyboardDismissModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .background(
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        hideKeyboard()
+                    }
+            )
+    }
+}
+
+/// Complete form keyboard handling modifier
+struct FormKeyboardModifier: ViewModifier {
+    let timeContext: DesignSystem.TimeContext
+    
+    func body(content: Content) -> some View {
+        content
+            .scrollDismissesKeyboard(.interactively)
+            .background(
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        hideKeyboard()
+                    }
+            )
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        hideKeyboard()
+                    }
+                    .font(DesignSystem.Typography.buttonMedium)
+                    .foregroundColor(timeContext.primaryColor)
+                }
+            }
     }
 }
 
