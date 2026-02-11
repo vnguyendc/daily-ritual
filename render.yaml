@@ -5,7 +5,7 @@ services:
     rootDir: website
     buildCommand: echo "Static site — no build"
     startCommand: echo "Served by CDN"
-    staticPublishPath: website
+    staticPublishPath: .
     autoDeploy: true
 
   - type: web
