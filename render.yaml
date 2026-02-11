@@ -1,5 +1,14 @@
 services:
   - type: web
+    name: dailyritual
+    runtime: static
+    rootDir: website
+    buildCommand: echo "Static site — no build"
+    startCommand: echo "Served by CDN"
+    staticPublishPath: website
+    autoDeploy: true
+
+  - type: web
     name: daily-ritual-api
     env: node
     rootDir: DailyRitualBackend

@@ -32,7 +32,7 @@ Quick links:
 - `DailyRitualBackend/` — Express + TypeScript API, Supabase schema, RLS, Edge Functions
 - `DailyRitualSwiftiOS/` — SwiftUI iOS app (morning/evening rituals, Today view)
 - `docs/` — Product vision, engineering plan, device testing, guides
-- `render.yaml` — Render blueprint for one‑click backend deployment
+- `render.yaml` — Render blueprint (static website + API, one‑click deploy)
 
 ---
 
