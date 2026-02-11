@@ -13,7 +13,8 @@ struct TrainingPlanCard: View {
     let plan: TrainingPlan
     let timeContext: DesignSystem.TimeContext
     var onTap: (() -> Void)?
-    
+    var onReflect: (() -> Void)?
+
     var body: some View {
         Button {
             onTap?()
@@ -24,18 +25,18 @@ struct TrainingPlanCard: View {
                     Circle()
                         .fill(timeContext.primaryColor.opacity(0.15))
                         .frame(width: 44, height: 44)
-                    
+
                     Image(systemName: plan.activityType.icon)
                         .font(.system(size: 20))
                         .foregroundColor(timeContext.primaryColor)
                 }
-                
+
                 // Plan details
                 VStack(alignment: .leading, spacing: 2) {
                     Text(plan.activityType.displayName)
                         .font(DesignSystem.Typography.headlineSmall)
                         .foregroundColor(DesignSystem.Colors.primaryText)
-                    
+
                     HStack(spacing: DesignSystem.Spacing.sm) {
                         if let time = plan.formattedStartTime {
                             Text(time)
@@ -48,12 +49,34 @@ struct TrainingPlanCard: View {
                     .font(DesignSystem.Typography.caption)
                     .foregroundColor(DesignSystem.Colors.secondaryText)
                 }
-                
+
                 Spacer()
-                
+
+                // Reflect button
+                if let onReflect = onReflect {
+                    Button {
+                        onReflect()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "checkmark.circle")
+                                .font(.system(size: 12))
+                            Text("Reflect")
+                                .font(DesignSystem.Typography.caption)
+                        }
+                        .foregroundColor(DesignSystem.Colors.powerGreen)
+                        .padding(.horizontal, DesignSystem.Spacing.sm)
+                        .padding(.vertical, DesignSystem.Spacing.xs)
+                        .background(
+                            Capsule()
+                                .fill(DesignSystem.Colors.powerGreen.opacity(0.12))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 // Intensity indicator
                 IntensityIndicator(intensity: plan.intensityLevel)
-                
+
                 // Chevron
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .semibold))
@@ -164,6 +187,7 @@ struct TrainingPlansSummary: View {
     var onPlanTap: ((TrainingPlan) -> Void)?
     var onManagePlans: (() -> Void)?
     var onAddPlan: (() -> Void)?
+    var onReflect: ((TrainingPlan) -> Void)?
     
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
@@ -214,9 +238,12 @@ struct TrainingPlansSummary: View {
                 .padding(.vertical, DesignSystem.Spacing.md)
             } else if plans.count == 1 {
                 // Single session - show full card
-                TrainingPlanCard(plan: plans[0], timeContext: timeContext) {
-                    onPlanTap?(plans[0])
-                }
+                TrainingPlanCard(
+                    plan: plans[0],
+                    timeContext: timeContext,
+                    onTap: { onPlanTap?(plans[0]) },
+                    onReflect: onReflect != nil ? { onReflect?(plans[0]) } : nil
+                )
             } else {
                 // Multiple sessions - show compact cards in a row
                 ScrollView(.horizontal, showsIndicators: false) {

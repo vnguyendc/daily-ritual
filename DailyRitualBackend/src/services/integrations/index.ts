@@ -1,6 +1,7 @@
 // Integration services index
 import { WhoopService } from './whoop.js'
 import { StravaService } from './strava.js'
+import { supabaseServiceClient } from '../supabase.js'
 
 export { WhoopService } from './whoop.js'
 export { StravaService } from './strava.js'
@@ -118,19 +119,31 @@ export class IntegrationManager {
     this.stravaService = new StravaService()
   }
 
-  // Get all available integrations for a user
+  // Get all available integrations for a user (real DB query)
   async getUserIntegrations(userId: string): Promise<{
     whoop: { connected: boolean; last_sync?: string }
     strava: { connected: boolean; last_sync?: string }
     apple_health: { connected: boolean; last_sync?: string }
   }> {
-    // This would typically query a user_integrations table
-    // For now, return basic structure
-    return {
+    const result: Record<string, { connected: boolean; last_sync?: string }> = {
       whoop: { connected: false },
       strava: { connected: false },
       apple_health: { connected: false }
     }
+
+    const { data } = await supabaseServiceClient
+      .from('user_integrations')
+      .select('service, last_sync_at')
+      .eq('user_id', userId)
+
+    for (const row of data || []) {
+      result[row.service] = {
+        connected: true,
+        last_sync: row.last_sync_at ?? undefined
+      }
+    }
+
+    return result as any
   }
 
   // Sync data from all connected integrations
@@ -142,33 +155,36 @@ export class IntegrationManager {
   }> {
     const errors: string[] = []
     const results: any = {}
-    const targetDate = date || new Date().toISOString().split('T')[0]
+    const targetDate = date || new Date().toISOString().split('T')[0]!
 
-    // Get user integration tokens (would come from database)
-    // const integrations = await this.getUserIntegrationTokens(userId)
+    // Get user integration tokens from database
+    const { data: integrations } = await supabaseServiceClient
+      .from('user_integrations')
+      .select('*')
+      .eq('user_id', userId)
+
+    const whoopIntegration = integrations?.find(i => i.service === 'whoop')
 
     // Sync Whoop data
-    try {
-      // if (integrations.whoop?.access_token) {
-      //   results.whoop_data = await this.whoopService.getCombinedData(
-      //     integrations.whoop.access_token, 
-      //     targetDate
-      //   )
-      // }
-    } catch (error) {
-      errors.push(`Whoop sync failed: ${error.message}`)
+    if (whoopIntegration?.access_token) {
+      try {
+        results.whoop_data = await this.whoopService.getCombinedData(
+          whoopIntegration.access_token!,
+          targetDate
+        )
+      } catch (error: any) {
+        errors.push(`Whoop sync failed: ${error.message}`)
+      }
     }
 
-    // Sync Strava activities
-    try {
-      // if (integrations.strava?.access_token) {
-      //   results.strava_activities = await this.stravaService.getActivitiesForDate(
-      //     integrations.strava.access_token, 
-      //     targetDate
-      //   )
-      // }
-    } catch (error) {
-      errors.push(`Strava sync failed: ${error.message}`)
+    // Strava sync placeholder
+    const stravaIntegration = integrations?.find(i => i.service === 'strava')
+    if (stravaIntegration?.access_token) {
+      try {
+        // Strava sync would go here when implemented
+      } catch (error: any) {
+        errors.push(`Strava sync failed: ${error.message}`)
+      }
     }
 
     return { ...results, errors }

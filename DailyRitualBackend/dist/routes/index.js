@@ -1,8 +1,11 @@
 import { Router } from 'express';
 import { DailyEntriesController } from '../controllers/dailyEntries.js';
 import { TrainingPlansController } from '../controllers/trainingPlans.js';
+import { WorkoutReflectionsController } from '../controllers/workoutReflections.js';
 import { InsightsController } from '../controllers/insights.js';
 import { JournalController } from '../controllers/journalEntries.js';
+import { IntegrationsController } from '../controllers/integrations.js';
+import { WebhooksController } from '../controllers/webhooks.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { DashboardController } from '../controllers/dashboard.js';
 const router = Router();
@@ -13,7 +16,7 @@ router.get('/health', (req, res) => {
         version: '1.0.0'
     });
 });
-router.use(['/profile', '/daily-entries', '/training-plans', '/insights', '/journal'], authenticateToken);
+router.use(['/profile', '/daily-entries', '/training-plans', '/workout-reflections', '/insights', '/journal', '/integrations'], authenticateToken);
 router.get('/profile', DashboardController.getUserProfile);
 router.put('/profile', DashboardController.updateUserProfile);
 router.get('/daily-entries', DailyEntriesController.getDailyEntries);
@@ -36,10 +39,22 @@ router.delete('/training-plans/:id', TrainingPlansController.remove);
 router.get('/insights', InsightsController.getInsights);
 router.get('/insights/stats', InsightsController.getInsightsStats);
 router.post('/insights/:id/read', InsightsController.markAsRead);
+router.get('/workout-reflections/stats', WorkoutReflectionsController.getWorkoutStats);
+router.get('/workout-reflections', WorkoutReflectionsController.getWorkoutReflections);
+router.get('/workout-reflections/:id', WorkoutReflectionsController.getWorkoutReflection);
+router.post('/workout-reflections', WorkoutReflectionsController.createWorkoutReflection);
+router.put('/workout-reflections/:id', WorkoutReflectionsController.updateWorkoutReflection);
+router.delete('/workout-reflections/:id', WorkoutReflectionsController.deleteWorkoutReflection);
 router.get('/journal', JournalController.getJournalEntries);
 router.post('/journal', JournalController.createJournalEntry);
 router.get('/journal/:id', JournalController.getJournalEntry);
 router.put('/journal/:id', JournalController.updateJournalEntry);
 router.delete('/journal/:id', JournalController.deleteJournalEntry);
+router.get('/integrations', IntegrationsController.getIntegrations);
+router.get('/integrations/whoop/auth-url', IntegrationsController.getWhoopAuthUrl);
+router.post('/integrations/whoop/connect', IntegrationsController.connectWhoop);
+router.delete('/integrations/whoop/disconnect', IntegrationsController.disconnectWhoop);
+router.post('/integrations/whoop/sync', IntegrationsController.syncWhoop);
+router.post('/webhooks/whoop', WebhooksController.handleWhoopWebhook);
 export default router;
 //# sourceMappingURL=index.js.map

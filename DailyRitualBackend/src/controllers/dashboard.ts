@@ -238,7 +238,7 @@ export class DashboardController {
         .limit(limit)
 
       if (insightType) {
-        query = query.eq('insight_type', insightType)
+        query = query.eq('insight_type', insightType as any)
       }
 
       if (unreadOnly) {

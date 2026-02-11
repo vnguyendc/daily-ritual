@@ -302,6 +302,98 @@ struct InsightStats: Codable, Sendable {
     }
 }
 
+// MARK: - Workout Reflections
+struct WorkoutReflection: Codable, Identifiable, Sendable, Hashable {
+    let id: UUID
+    let userId: UUID
+    let date: Date
+    var workoutSequence: Int
+    var trainingFeeling: Int?
+    var whatWentWell: String?
+    var whatToImprove: String?
+    var energyLevel: Int?
+    var focusLevel: Int?
+    var workoutType: String?
+    var workoutIntensity: String?
+    var durationMinutes: Int?
+    var caloriesBurned: Int?
+    var averageHr: Int?
+    var maxHr: Int?
+    var strainScore: Double?
+    var recoveryScore: Double?
+    var sleepPerformance: Double?
+    var hrv: Double?
+    var restingHr: Int?
+    var stravaActivityId: String?
+    var appleWorkoutId: String?
+    var whoopActivityId: String?
+    let createdAt: Date?
+    let updatedAt: Date?
+
+    // Optional client-side link to a training plan (not persisted on backend)
+    var trainingPlanId: UUID?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case date
+        case workoutSequence = "workout_sequence"
+        case trainingFeeling = "training_feeling"
+        case whatWentWell = "what_went_well"
+        case whatToImprove = "what_to_improve"
+        case energyLevel = "energy_level"
+        case focusLevel = "focus_level"
+        case workoutType = "workout_type"
+        case workoutIntensity = "workout_intensity"
+        case durationMinutes = "duration_minutes"
+        case caloriesBurned = "calories_burned"
+        case averageHr = "average_hr"
+        case maxHr = "max_hr"
+        case strainScore = "strain_score"
+        case recoveryScore = "recovery_score"
+        case sleepPerformance = "sleep_performance"
+        case hrv
+        case restingHr = "resting_hr"
+        case stravaActivityId = "strava_activity_id"
+        case appleWorkoutId = "apple_workout_id"
+        case whoopActivityId = "whoop_activity_id"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    /// Returns the activity type enum, falling back to .other if not recognized
+    var activityType: TrainingActivityType {
+        guard let typeString = workoutType,
+              let type = TrainingActivityType(rawValue: typeString) else {
+            return .other
+        }
+        return type
+    }
+
+    /// Returns the intensity enum, falling back to .moderate if not recognized
+    var intensityLevel: TrainingIntensity {
+        guard let intensityString = workoutIntensity,
+              let level = TrainingIntensity(rawValue: intensityString) else {
+            return .moderate
+        }
+        return level
+    }
+
+    /// Formatted duration for display
+    var formattedDuration: String? {
+        guard let minutes = durationMinutes else { return nil }
+        if minutes < 60 {
+            return "\(minutes) min"
+        }
+        let hours = minutes / 60
+        let mins = minutes % 60
+        if mins == 0 {
+            return "\(hours) hr"
+        }
+        return "\(hours) hr \(mins) min"
+    }
+}
+
 // MARK: - Training Activity Types (50+ comprehensive options)
 enum TrainingActivityType: String, Codable, CaseIterable, Sendable {
     // Strength & Conditioning

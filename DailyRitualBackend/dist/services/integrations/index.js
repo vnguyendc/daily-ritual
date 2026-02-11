@@ -1,5 +1,6 @@
 import { WhoopService } from './whoop.js';
 import { StravaService } from './strava.js';
+import { supabaseServiceClient } from '../supabase.js';
 export { WhoopService } from './whoop.js';
 export { StravaService } from './strava.js';
 export { SupabaseEdgeFunctions } from './supabaseEdgeFunctions.js';
@@ -66,25 +67,47 @@ export class IntegrationManager {
         this.stravaService = new StravaService();
     }
     async getUserIntegrations(userId) {
-        return {
+        const result = {
             whoop: { connected: false },
             strava: { connected: false },
             apple_health: { connected: false }
         };
+        const { data } = await supabaseServiceClient
+            .from('user_integrations')
+            .select('service, last_sync_at')
+            .eq('user_id', userId);
+        for (const row of data || []) {
+            result[row.service] = {
+                connected: true,
+                last_sync: row.last_sync_at ?? undefined
+            };
+        }
+        return result;
     }
     async syncAllIntegrations(userId, date) {
         const errors = [];
         const results = {};
         const targetDate = date || new Date().toISOString().split('T')[0];
-        try {
+        const { data: integrations } = await supabaseServiceClient
+            .from('user_integrations')
+            .select('*')
+            .eq('user_id', userId);
+        const whoopIntegration = integrations?.find(i => i.service === 'whoop');
+        if (whoopIntegration?.access_token) {
+            try {
+                results.whoop_data = await this.whoopService.getCombinedData(whoopIntegration.access_token, targetDate);
+            }
+            catch (error) {
+                errors.push(`Whoop sync failed: ${error.message}`);
+            }
         }
-        catch (error) {
-            errors.push(`Whoop sync failed: ${error.message}`);
-        }
-        try {
-        }
-        catch (error) {
-            errors.push(`Strava sync failed: ${error.message}`);
+        const stravaIntegration = integrations?.find(i => i.service === 'strava');
+        if (stravaIntegration?.access_token) {
+            try {
+            }
+            catch (error) {
+                errors.push(`Strava sync failed: ${error.message}`);
+            }
         }
         return { ...results, errors };
     }

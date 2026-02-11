@@ -24,5 +24,6 @@ export declare class WhoopService {
     getWorkouts(accessToken: string, startDate: string, endDate: string): Promise<any>;
     setupWebhook(accessToken: string, webhookUrl: string): Promise<any>;
     validateWebhookSignature(payload: string, signature: string, secret: string): boolean;
+    importWhoopWorkout(userId: string, workout: any): Promise<string | null>;
 }
 //# sourceMappingURL=whoop.d.ts.map

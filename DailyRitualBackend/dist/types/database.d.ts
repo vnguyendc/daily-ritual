@@ -50,6 +50,7 @@ export interface Database {
                     subscription_status?: 'free' | 'premium' | 'trial';
                     subscription_expires_at?: string | null;
                 };
+                Relationships: [];
             };
             daily_entries: {
                 Row: {
@@ -117,6 +118,7 @@ export interface Database {
                     overall_mood?: number | null;
                     evening_completed_at?: string | null;
                 };
+                Relationships: [];
             };
             workout_reflections: {
                 Row: {
@@ -196,6 +198,7 @@ export interface Database {
                     apple_workout_id?: string | null;
                     whoop_activity_id?: string | null;
                 };
+                Relationships: [];
             };
             training_plans: {
                 Row: {
@@ -233,6 +236,7 @@ export interface Database {
                     duration_minutes?: number | null;
                     notes?: string | null;
                 };
+                Relationships: [];
             };
             journal_entries: {
                 Row: {
@@ -267,6 +271,7 @@ export interface Database {
                     tags?: string[] | null;
                     is_private?: boolean;
                 };
+                Relationships: [];
             };
             competitions: {
                 Row: {
@@ -325,6 +330,7 @@ export interface Database {
                     mental_performance_rating?: number | null;
                     lessons_learned?: string | null;
                 };
+                Relationships: [];
             };
             competition_prep_entries: {
                 Row: {
@@ -371,6 +377,7 @@ export interface Database {
                     strategy_notes?: string | null;
                     concerns?: string | null;
                 };
+                Relationships: [];
             };
             ai_insights: {
                 Row: {
@@ -404,6 +411,7 @@ export interface Database {
                     confidence_score?: number | null;
                     is_read?: boolean;
                 };
+                Relationships: [];
             };
             quotes: {
                 Row: {
@@ -431,6 +439,7 @@ export interface Database {
                     category?: 'motivation' | 'perseverance' | 'confidence' | 'preparation' | 'competition' | 'recovery' | 'teamwork' | null;
                     is_active?: boolean;
                 };
+                Relationships: [];
             };
             user_streaks: {
                 Row: {
@@ -458,6 +467,43 @@ export interface Database {
                     longest_streak?: number;
                     last_completed_date?: string | null;
                 };
+                Relationships: [];
+            };
+            user_integrations: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    service: 'whoop' | 'strava' | 'apple_health';
+                    access_token: string | null;
+                    refresh_token: string | null;
+                    token_expires_at: string | null;
+                    external_user_id: string | null;
+                    last_sync_at: string | null;
+                    connected_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    service: 'whoop' | 'strava' | 'apple_health';
+                    access_token?: string | null;
+                    refresh_token?: string | null;
+                    token_expires_at?: string | null;
+                    external_user_id?: string | null;
+                    last_sync_at?: string | null;
+                    connected_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    service?: 'whoop' | 'strava' | 'apple_health';
+                    access_token?: string | null;
+                    refresh_token?: string | null;
+                    token_expires_at?: string | null;
+                    external_user_id?: string | null;
+                    last_sync_at?: string | null;
+                    connected_at?: string;
+                };
+                Relationships: [];
             };
         };
         Views: {

@@ -1,5 +1,63 @@
 // Whoop API integration service
 import type { WhoopData } from '../../types/api.js'
+import type { TrainingActivityType } from '../../types/database.js'
+import { supabaseServiceClient } from '../supabase.js'
+
+// Whoop sport_id → TrainingActivityType mapping
+const WHOOP_SPORT_MAP = new Map<number, string>([
+  [-1, 'other'],
+  [0, 'strength_training'],
+  [1, 'running'],
+  [2, 'cycling'],
+  [3, 'other'],           // Generic Sport
+  [4, 'other'],           // Miscellaneous
+  [5, 'running'],         // Treadmill
+  [6, 'rowing'],
+  [7, 'swimming'],
+  [8, 'crossfit'],
+  [9, 'yoga'],
+  [10, 'basketball'],
+  [11, 'soccer'],
+  [12, 'tennis'],
+  [13, 'hiking'],
+  [14, 'golf'],
+  [15, 'skiing'],
+  [16, 'snowboarding'],
+  [17, 'boxing'],
+  [18, 'mma'],
+  [19, 'cycling'],        // Spin
+  [20, 'pilates'],
+  [21, 'stretching'],
+  [22, 'meditation'],
+  [23, 'football'],
+  [24, 'baseball'],
+  [25, 'volleyball'],
+  [26, 'hockey'],
+  [27, 'lacrosse'],
+  [28, 'rugby'],
+  [29, 'surfing'],
+  [30, 'rock_climbing'],
+  [31, 'walking'],
+  [32, 'elliptical'],
+  [33, 'stair_climbing'],
+  [34, 'jump_rope'],
+  [35, 'skateboarding'],
+  [36, 'wrestling'],
+  [37, 'jiu_jitsu'],
+  [38, 'muay_thai'],
+  [39, 'kickboxing'],
+  [40, 'taekwondo'],
+  [41, 'karate'],
+  [42, 'badminton'],
+  [43, 'squash'],
+  [44, 'racquetball'],
+  [45, 'pickleball'],
+  [46, 'weightlifting'],
+  [47, 'calisthenics'],
+  [48, 'functional_fitness'],
+  [49, 'trail_running'],
+  [50, 'bouldering']
+])
 
 export class WhoopService {
   private readonly baseUrl = 'https://api.prod.whoop.com/developer'
@@ -227,10 +285,101 @@ export class WhoopService {
       .createHmac('sha256', secret)
       .update(payload)
       .digest('hex')
-    
+
     return crypto.timingSafeEqual(
       Buffer.from(signature, 'hex'),
       Buffer.from(expectedSignature, 'hex')
     )
+  }
+
+  // Import a Whoop workout: creates training_plan + draft workout_reflection
+  // Returns the workout_reflection id if created, null if skipped (duplicate)
+  async importWhoopWorkout(userId: string, workout: any): Promise<string | null> {
+    const whoopActivityId = String(workout.id)
+
+    // Dedup check — skip if this Whoop workout was already imported
+    const { data: existing } = await supabaseServiceClient
+      .from('workout_reflections')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('whoop_activity_id', whoopActivityId)
+      .limit(1)
+
+    if (existing && existing.length > 0) {
+      return null // Already imported
+    }
+
+    // Map Whoop sport to TrainingActivityType
+    const sportId = workout.sport_id ?? -1
+    const activityType: TrainingActivityType = (WHOOP_SPORT_MAP.get(sportId) || 'other') as TrainingActivityType
+
+    // Parse dates & duration
+    const startTime = workout.start ? new Date(workout.start) : new Date()
+    const endTime = workout.end ? new Date(workout.end) : startTime
+    const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / 60000)
+    const dateStr = startTime.toISOString().split('T')[0]!
+    const timeStr = startTime.toISOString().split('T')[1]?.substring(0, 8) || '00:00:00'
+
+    // 1. Create a training_plan entry
+    // Get next sequence for this date
+    const { data: existingPlans } = await supabaseServiceClient
+      .from('training_plans')
+      .select('sequence')
+      .eq('user_id', userId)
+      .eq('date', dateStr)
+      .order('sequence', { ascending: false })
+      .limit(1)
+
+    const planSequence = existingPlans?.[0]?.sequence ? existingPlans[0].sequence + 1 : 1
+
+    await supabaseServiceClient
+      .from('training_plans')
+      .insert({
+        user_id: userId,
+        date: dateStr,
+        sequence: planSequence,
+        type: activityType,
+        start_time: timeStr,
+        duration_minutes: durationMinutes > 0 ? durationMinutes : null,
+        notes: 'Imported from Whoop'
+      })
+
+    // 2. Create a draft workout_reflection
+    const { data: existingReflections } = await supabaseServiceClient
+      .from('workout_reflections')
+      .select('workout_sequence')
+      .eq('user_id', userId)
+      .eq('date', dateStr)
+      .order('workout_sequence', { ascending: false })
+      .limit(1)
+
+    const reflectionSequence = existingReflections?.[0]?.workout_sequence
+      ? existingReflections[0].workout_sequence + 1
+      : 1
+
+    const { data: reflection, error } = await supabaseServiceClient
+      .from('workout_reflections')
+      .insert({
+        user_id: userId,
+        date: dateStr,
+        workout_sequence: reflectionSequence,
+        whoop_activity_id: whoopActivityId,
+        workout_type: activityType,
+        duration_minutes: durationMinutes > 0 ? durationMinutes : null,
+        calories_burned: workout.score?.kilojoule ? Math.round(workout.score.kilojoule * 0.239006) : null,
+        average_hr: workout.score?.average_heart_rate ? Math.round(workout.score.average_heart_rate) : null,
+        max_hr: workout.score?.max_heart_rate ? Math.round(workout.score.max_heart_rate) : null,
+        strain_score: workout.score?.strain ?? null
+        // training_feeling, what_went_well, what_to_improve left NULL for user to fill
+      })
+      .select('id')
+      .single()
+
+    if (error) {
+      console.error('Error importing Whoop workout:', error)
+      return null
+    }
+
+    return reflection?.id ?? null
   }
 }

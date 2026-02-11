@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DatabaseService, getUserFromToken } from '../services/supabase.js';
+import { supabaseServiceClient, getUserFromToken } from '../services/supabase.js';
 const workoutReflectionSchema = z.object({
     training_feeling: z.number().min(1).max(5),
     what_went_well: z.string().min(1).max(1000),
@@ -33,7 +33,7 @@ export class WorkoutReflectionsController {
             }
             const reflectionData = validationResult.data;
             const today = new Date().toISOString().split('T')[0];
-            const { data: existingReflections } = await DatabaseService.supabaseServiceClient
+            const { data: existingReflections } = await supabaseServiceClient
                 .from('workout_reflections')
                 .select('workout_sequence')
                 .eq('user_id', user.id)
@@ -42,12 +42,24 @@ export class WorkoutReflectionsController {
                 .limit(1);
             const nextSequence = existingReflections?.[0]?.workout_sequence ?
                 existingReflections[0].workout_sequence + 1 : 1;
-            const reflection = await DatabaseService.createWorkoutReflection(user.id, {
+            const { data: reflection, error: insertError } = await supabaseServiceClient
+                .from('workout_reflections')
+                .insert({
+                user_id: user.id,
                 date: today,
                 workout_sequence: nextSequence,
-                ...reflectionData
+                ...reflectionData,
+                workout_intensity: reflectionData.workout_intensity
+            })
+                .select('*')
+                .single();
+            if (insertError)
+                throw insertError;
+            await supabaseServiceClient.rpc('update_user_streak', {
+                p_user_id: user.id,
+                p_streak_type: 'workout_reflection',
+                p_completed_date: today
             });
-            await DatabaseService.updateUserStreak(user.id, 'workout_reflection', today);
             const response = {
                 success: true,
                 data: reflection,
@@ -77,7 +89,7 @@ export class WorkoutReflectionsController {
             const workoutType = req.query.workout_type;
             const minFeeling = req.query.training_feeling_min ? parseInt(req.query.training_feeling_min) : undefined;
             const maxFeeling = req.query.training_feeling_max ? parseInt(req.query.training_feeling_max) : undefined;
-            let query = DatabaseService.supabaseServiceClient
+            let query = supabaseServiceClient
                 .from('workout_reflections')
                 .select('*', { count: 'exact' })
                 .eq('user_id', user.id)
@@ -134,8 +146,8 @@ export class WorkoutReflectionsController {
                 return res.status(401).json({ error: 'Authorization token required' });
             }
             const user = await getUserFromToken(token);
-            const { id } = req.params;
-            const { data, error } = await DatabaseService.supabaseServiceClient
+            const id = req.params.id;
+            const { data, error } = await supabaseServiceClient
                 .from('workout_reflections')
                 .select('*')
                 .eq('id', id)
@@ -171,7 +183,7 @@ export class WorkoutReflectionsController {
                 return res.status(401).json({ error: 'Authorization token required' });
             }
             const user = await getUserFromToken(token);
-            const { id } = req.params;
+            const id = req.params.id;
             const partialSchema = workoutReflectionSchema.partial();
             const validationResult = partialSchema.safeParse(req.body);
             if (!validationResult.success) {
@@ -181,7 +193,7 @@ export class WorkoutReflectionsController {
                 });
             }
             const updates = validationResult.data;
-            const { data, error } = await DatabaseService.supabaseServiceClient
+            const { data, error } = await supabaseServiceClient
                 .from('workout_reflections')
                 .update({
                 ...updates,
@@ -222,8 +234,8 @@ export class WorkoutReflectionsController {
                 return res.status(401).json({ error: 'Authorization token required' });
             }
             const user = await getUserFromToken(token);
-            const { id } = req.params;
-            const { error } = await DatabaseService.supabaseServiceClient
+            const id = req.params.id;
+            const { error } = await supabaseServiceClient
                 .from('workout_reflections')
                 .delete()
                 .eq('id', id)
@@ -255,7 +267,7 @@ export class WorkoutReflectionsController {
             const startDate = new Date();
             startDate.setDate(startDate.getDate() - days);
             const startDateStr = startDate.toISOString().split('T')[0];
-            const { data, error } = await DatabaseService.supabaseServiceClient
+            const { data, error } = await supabaseServiceClient
                 .from('workout_reflections')
                 .select('training_feeling, workout_type, energy_level, focus_level, duration_minutes')
                 .eq('user_id', user.id)

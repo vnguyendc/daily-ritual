@@ -2,11 +2,13 @@
 import { Router } from 'express'
 import { DailyEntriesController } from '../controllers/dailyEntries.js'
 import { TrainingPlansController } from '../controllers/trainingPlans.js'
+import { WorkoutReflectionsController } from '../controllers/workoutReflections.js'
 import { InsightsController } from '../controllers/insights.js'
 import { JournalController } from '../controllers/journalEntries.js'
+import { IntegrationsController } from '../controllers/integrations.js'
+import { WebhooksController } from '../controllers/webhooks.js'
 import { authenticateToken } from '../middleware/auth.js'
 import { DashboardController } from '../controllers/dashboard.js'
-// Trim to MVP routes only for initial deploy
 
 const router = Router()
 
@@ -22,7 +24,7 @@ router.get('/health', (req, res) => {
 // Dashboard routes (TODO – trimmed for MVP)
 
 // Authenticated routes
-router.use(['/profile', '/daily-entries', '/training-plans', '/insights', '/journal'], authenticateToken)
+router.use(['/profile', '/daily-entries', '/training-plans', '/workout-reflections', '/insights', '/journal', '/integrations'], authenticateToken)
 
 // Profile routes
 router.get('/profile', DashboardController.getUserProfile)
@@ -54,7 +56,13 @@ router.get('/insights', InsightsController.getInsights)
 router.get('/insights/stats', InsightsController.getInsightsStats)
 router.post('/insights/:id/read', InsightsController.markAsRead)
 
-// Workout reflections routes (TODO – trimmed for MVP)
+// Workout reflections routes
+router.get('/workout-reflections/stats', WorkoutReflectionsController.getWorkoutStats)
+router.get('/workout-reflections', WorkoutReflectionsController.getWorkoutReflections)
+router.get('/workout-reflections/:id', WorkoutReflectionsController.getWorkoutReflection)
+router.post('/workout-reflections', WorkoutReflectionsController.createWorkoutReflection)
+router.put('/workout-reflections/:id', WorkoutReflectionsController.updateWorkoutReflection)
+router.delete('/workout-reflections/:id', WorkoutReflectionsController.deleteWorkoutReflection)
 
 // TODO: Add these routes when controllers are implemented
 // Competition routes
@@ -73,14 +81,13 @@ router.put('/journal/:id', JournalController.updateJournalEntry)
 router.delete('/journal/:id', JournalController.deleteJournalEntry)
 
 // Integration routes
-// router.get('/integrations', IntegrationsController.getIntegrations)
-// router.post('/integrations/whoop/connect', IntegrationsController.connectWhoop)
-// router.post('/integrations/strava/connect', IntegrationsController.connectStrava)
-// router.post('/integrations/apple-health/sync', IntegrationsController.syncAppleHealth)
-// router.post('/integrations/sync', IntegrationsController.syncAllIntegrations)
+router.get('/integrations', IntegrationsController.getIntegrations)
+router.get('/integrations/whoop/auth-url', IntegrationsController.getWhoopAuthUrl)
+router.post('/integrations/whoop/connect', IntegrationsController.connectWhoop)
+router.delete('/integrations/whoop/disconnect', IntegrationsController.disconnectWhoop)
+router.post('/integrations/whoop/sync', IntegrationsController.syncWhoop)
 
-// Webhook routes
-// router.post('/webhooks/whoop', WebhooksController.handleWhoopWebhook)
-// router.post('/webhooks/strava', WebhooksController.handleStravaWebhook)
+// Webhook routes (no auth middleware — validated by signature)
+router.post('/webhooks/whoop', WebhooksController.handleWhoopWebhook)
 
 export default router

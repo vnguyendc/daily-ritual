@@ -18,6 +18,7 @@ struct TodayView: View {
     // Sheet presentation state
     @State private var showingMorningRitual = false
     @State private var showingEveningReflection = false
+    @State private var showingWorkoutReflection = false
     @State private var showingTrainingPlans = false
     @State private var showingProfile = false
     @State private var showingQuickEntry = false
@@ -30,6 +31,9 @@ struct TodayView: View {
     @State private var selectedTrainingPlan: TrainingPlan?
     @State private var trainingPlanToEdit: TrainingPlan?
     
+    // Workout reflection
+    @State private var workoutReflectionPlan: TrainingPlan?
+
     // Journal entries
     @State private var journalEntries: [JournalEntry] = []
     @State private var selectedJournalEntry: JournalEntry?
@@ -71,7 +75,8 @@ struct TodayView: View {
                     TodayFloatingActionButton(
                         timeContext: timeContext,
                         onNewEntry: { showingQuickEntry = true },
-                        onAddActivity: { showingAddActivity = true }
+                        onAddActivity: { showingAddActivity = true },
+                        onWorkoutReflection: { showingWorkoutReflection = true }
                     )
                 }
             }
@@ -101,6 +106,11 @@ struct TodayView: View {
             .sheet(isPresented: $showingEveningReflection, onDismiss: refreshData) {
                 EveningReflectionView(entry: $viewModel.entry)
                     .edgesIgnoringSafeArea(.all)
+            }
+            .sheet(isPresented: $showingWorkoutReflection, onDismiss: refreshData) {
+                WorkoutReflectionView(linkedPlan: workoutReflectionPlan)
+                    .edgesIgnoringSafeArea(.all)
+                    .onDisappear { workoutReflectionPlan = nil }
             }
             .sheet(isPresented: $showingTrainingPlans, onDismiss: refreshData) {
                 TrainingPlanView()
@@ -195,7 +205,11 @@ extension TodayView {
                 timeContext: timeContext,
                 onPlanTap: { selectedTrainingPlan = $0 },
                 onManagePlans: { showingTrainingPlans = true },
-                onAddPlan: { showingAddActivity = true }
+                onAddPlan: { showingAddActivity = true },
+                onReflect: { plan in
+                    workoutReflectionPlan = plan
+                    showingWorkoutReflection = true
+                }
             )
             
             // Quick entries

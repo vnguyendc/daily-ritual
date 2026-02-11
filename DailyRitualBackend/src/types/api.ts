@@ -11,6 +11,8 @@ export type CompetitionPrepEntry = Database['public']['Tables']['competition_pre
 export type AIInsight = Database['public']['Tables']['ai_insights']['Row']
 export type Quote = Database['public']['Tables']['quotes']['Row']
 export type UserStreak = Database['public']['Tables']['user_streaks']['Row']
+export type UserIntegration = Database['public']['Tables']['user_integrations']['Row']
+export type UserIntegrationInsert = Database['public']['Tables']['user_integrations']['Insert']
 
 // Insert types
 export type UserInsert = Database['public']['Tables']['users']['Insert']

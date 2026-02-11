@@ -126,7 +126,7 @@ class SupabaseManager: NSObject, ObservableObject {
         }
     }
     private var oauthSession: ASWebAuthenticationSession?
-    private lazy var api: APIClient = {
+    private(set) lazy var api: APIClient = {
         APIClient(
             baseURL: self.baseURL,
             authTokenProvider: { self.authToken },

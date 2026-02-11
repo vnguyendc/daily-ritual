@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy — Daily Ritual</title>
+    <meta name="description" content="Privacy Policy for Daily Ritual, the performance journaling app for athletes.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #0a0a0b;
+            --bg-surface: #111113;
+            --bg-elevated: #1a1a1e;
+            --bg-subtle: #141416;
+            --amber: #d4a052;
+            --amber-dim: #b8893f;
+            --text-primary: #e8e4de;
+            --text-secondary: #8a8680;
+            --text-tertiary: #5a5752;
+            --border: rgba(255, 255, 255, 0.06);
+            --border-amber: rgba(212, 160, 82, 0.2);
+            --font-display: 'Cormorant Garamond', Georgia, serif;
+            --font-body: 'DM Sans', -apple-system, sans-serif;
+        }
+
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        nav {
+            padding: 1.5rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .nav-logo {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            font-weight: 300;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .nav-logo span {
+            color: var(--amber);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            font-size: 0.8rem;
+            font-weight: 400;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--amber);
+        }
+
+        /* Content */
+        .policy-container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 5rem 2rem 6rem;
+        }
+
+        .policy-header {
+            margin-bottom: 4rem;
+            padding-bottom: 3rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .policy-header .label {
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--amber);
+            margin-bottom: 1.5rem;
+        }
+
+        .policy-header h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            font-weight: 300;
+            line-height: 1.15;
+            margin-bottom: 1rem;
+        }
+
+        .policy-header .effective-date {
+            font-size: 0.9rem;
+            color: var(--text-tertiary);
+        }
+
+        /* Policy sections */
+        .policy-section {
+            margin-bottom: 3rem;
+        }
+
+        .policy-section h2 {
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            font-weight: 400;
+            color: var(--text-primary);
+            margin-bottom: 1.25rem;
+            padding-top: 0.5rem;
+        }
+
+        .policy-section h3 {
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .policy-section p {
+            font-size: 0.95rem;
+            font-weight: 300;
+            line-height: 1.75;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .policy-section ul {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 1rem;
+        }
+
+        .policy-section ul li {
+            position: relative;
+            padding-left: 1.5rem;
+            font-size: 0.95rem;
+            font-weight: 300;
+            line-height: 1.75;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+        }
+
+        .policy-section ul li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.75em;
+            width: 5px;
+            height: 1px;
+            background: var(--amber-dim);
+        }
+
+        .policy-section a {
+            color: var(--amber);
+            text-decoration: none;
+            border-bottom: 1px solid rgba(212, 160, 82, 0.3);
+            transition: border-color 0.3s;
+        }
+
+        .policy-section a:hover {
+            border-color: var(--amber);
+        }
+
+        .policy-divider {
+            width: 40px;
+            height: 1px;
+            background: var(--border-amber);
+            margin: 3rem 0;
+        }
+
+        /* Contact box */
+        .contact-box {
+            margin-top: 3rem;
+            padding: 2rem;
+            background: var(--bg-subtle);
+            border: 1px solid var(--border);
+            border-radius: 2px;
+        }
+
+        .contact-box h3 {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 400;
+            margin-bottom: 0.75rem;
+            color: var(--text-primary);
+        }
+
+        .contact-box p {
+            font-size: 0.9rem;
+            font-weight: 300;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .contact-box a {
+            color: var(--amber);
+            text-decoration: none;
+        }
+
+        /* Footer */
+        footer {
+            padding: 3rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-left {
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            font-weight: 300;
+            color: var(--text-tertiary);
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .footer-links a {
+            font-size: 0.8rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: var(--amber);
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                padding: 1.25rem 1.5rem;
+            }
+
+            .policy-container {
+                padding: 3rem 1.5rem 4rem;
+            }
+
+            footer {
+                flex-direction: column;
+                gap: 1.5rem;
+                text-align: center;
+                padding: 2.5rem 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="index.html" class="nav-logo">Daily <span>Ritual</span></a>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="mailto:support@dailyritual.app">Contact</a></li>
+        </ul>
+    </nav>
+
+    <div class="policy-container">
+        <div class="policy-header">
+            <div class="label">Legal</div>
+            <h1>Privacy Policy</h1>
+            <p class="effective-date">Effective date: February 11, 2026</p>
+        </div>
+
+        <div class="policy-section">
+            <p>Daily Ritual ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application and related services (collectively, the "Service").</p>
+            <p>By using Daily Ritual, you agree to the collection and use of information in accordance with this policy.</p>
+        </div>
+
+        <div class="policy-divider"></div>
+
+        <div class="policy-section">
+            <h2>1. Information We Collect</h2>
+
+            <h3>Account Information</h3>
+            <p>When you create an account, we collect:</p>
+            <ul>
+                <li>Email address</li>
+                <li>Name (optional)</li>
+                <li>Primary sport or activity</li>
+                <li>Timezone and notification preferences</li>
+            </ul>
+
+            <h3>Journal &amp; Ritual Data</h3>
+            <p>The core of Daily Ritual is your personal journal. We store the content you create:</p>
+            <ul>
+                <li>Morning ritual entries (goals, gratitudes, affirmations, quote reflections)</li>
+                <li>Workout reflections (training feeling, what went well, areas to improve, energy and focus ratings)</li>
+                <li>Evening reflections (mood, day review, insights)</li>
+                <li>Quick journal entries and notes</li>
+                <li>Training plans and activity schedules</li>
+            </ul>
+
+            <h3>Fitness Device Data</h3>
+            <p>If you choose to connect third-party fitness services, we may receive:</p>
+            <ul>
+                <li><strong>Whoop</strong> — Recovery score, strain score, sleep performance, HRV, resting heart rate, and workout data</li>
+                <li><strong>Strava</strong> — Workout activities, duration, distance, and performance metrics</li>
+                <li><strong>Apple Health</strong> — Workout data, heart rate, and activity metrics (processed on-device where possible)</li>
+            </ul>
+            <p>We only access the specific data categories you authorize. You can disconnect any integration at any time from your profile settings.</p>
+
+            <h3>Usage Data</h3>
+            <p>We may collect general usage information such as app opens, feature usage patterns, and error logs to improve the Service. This data does not include your journal content.</p>
+        </div>
+
+        <div class="policy-divider"></div>
+
+        <div class="policy-section">
+            <h2>2. How We Use Your Information</h2>
+            <p>We use your information to:</p>
+            <ul>
+                <li>Provide, maintain, and improve the Daily Ritual service</li>
+                <li>Generate AI-powered performance insights based on your journal entries and fitness data</li>
+                <li>Sync workout data from connected fitness devices</li>
+                <li>Track streaks and deliver personalized notifications</li>
+                <li>Analyze aggregate, anonymized usage patterns to improve the product</li>
+            </ul>
+            <p>We do <strong>not</strong> sell your personal data. We do <strong>not</strong> share your journal content with third parties. Your entries remain yours.</p>
+        </div>
+
+        <div class="policy-divider"></div>
+
+        <div class="policy-section">
+            <h2>3. Third-Party Integrations</h2>
+            <p>When you connect Whoop, Strava, or Apple Health, we use industry-standard OAuth 2.0 authentication. This means:</p>
+            <ul>
+                <li>You authorize access directly with the third-party service</li>
+                <li>We store encrypted access tokens to maintain the connection</li>
+                <li>We never see or store your third-party account passwords</li>
+                <li>You can revoke access at any time from within Daily Ritual or directly on the third-party platform</li>
+            </ul>
+            <p>Each integration only requests the minimum data scopes necessary to provide the features described in this app.</p>
+        </div>
+
+        <div class="policy-divider"></div>
+
+        <div class="policy-section">
+            <h2>4. Data Storage &amp; Security</h2>
+            <p>Your data is stored on secure cloud infrastructure provided by Supabase (built on Amazon Web Services). We implement the following security measures:</p>
+            <ul>
+                <li>All data is encrypted in transit (TLS/SSL) and at rest</li>
+                <li>Row-level security policies ensure users can only access their own data</li>
+                <li>OAuth tokens for third-party integrations are stored encrypted</li>
+                <li>Authentication is handled via Supabase Auth with secure token management</li>
+                <li>We regularly review and update our security practices</li>
+            </ul>
+        </div>
+
+        <div class="policy-divider"></div>
+
+        <div class="policy-section">
+            <h2>5. Your Rights</h2>
+            <p>You have the following rights regarding your data:</p>
+            <ul>
+                <li><strong>Access</strong> — You can view all your data within the app at any time</li>
+                <li><strong>Export</strong> — You can request a copy of your data by contacting us</li>
+                <li><strong>Correction</strong> — You can edit or update your journal entries and profile information at any time</li>
+                <li><strong>Deletion</strong> — You can delete individual entries, disconnect integrations, or delete your entire account and all associated data</li>
+                <li><strong>Portability</strong> — Upon request, we will provide your data in a standard machine-readable format</li>
+            </ul>
+            <p>To exercise any of these rights, use the settings within the app or contact us at <a href="mailto:support@dailyritual.app">support@dailyritual.app</a>.</p>
+        </div>
+
+        <div class="policy-divider"></div>
+
+        <div class="policy-section">
+            <h2>6. Data Retention</h2>
+            <p>We retain your data for as long as your account is active. If you delete your account:</p>
+            <ul>
+                <li>All personal data, journal entries, and fitness data are permanently deleted within 30 days</li>
+                <li>Anonymized, aggregate analytics data may be retained</li>
+                <li>Backups containing your data are purged within 90 days</li>
+            </ul>
+        </div>
+
+        <div class="policy-divider"></div>
+
+        <div class="policy-section">
+            <h2>7. Children's Privacy</h2>
+            <p>Daily Ritual is not intended for users under 16 years of age. We do not knowingly collect personal information from children under 16. If you believe we have collected data from a child, please contact us immediately and we will delete it.</p>
+        </div>
+
+        <div class="policy-divider"></div>
+
+        <div class="policy-section">
+            <h2>8. International Users (GDPR &amp; CCPA)</h2>
+
+            <h3>For EU/EEA Users (GDPR)</h3>
+            <p>Our legal basis for processing your data is:</p>
+            <ul>
+                <li><strong>Contract performance</strong> — processing necessary to provide the Service you signed up for</li>
+                <li><strong>Legitimate interest</strong> — aggregate analytics to improve the product</li>
+                <li><strong>Consent</strong> — optional features like fitness device integrations and AI insights</li>
+            </ul>
+            <p>You have the right to lodge a complaint with your local data protection authority.</p>
+
+            <h3>For California Residents (CCPA)</h3>
+            <p>Under the CCPA, you have the right to:</p>
+            <ul>
+                <li>Know what personal information we collect and how it's used</li>
+                <li>Request deletion of your personal information</li>
+                <li>Opt out of the sale of personal information (we do not sell your data)</li>
+                <li>Non-discrimination for exercising your privacy rights</li>
+            </ul>
+        </div>
+
+        <div class="policy-divider"></div>
+
+        <div class="policy-section">
+            <h2>9. Changes to This Policy</h2>
+            <p>We may update this Privacy Policy from time to time. We will notify you of any material changes by posting the new policy within the app and updating the "effective date" above. Continued use of the Service after changes constitutes acceptance of the revised policy.</p>
+        </div>
+
+        <div class="policy-divider"></div>
+
+        <div class="policy-section">
+            <h2>10. Contact Us</h2>
+            <div class="contact-box">
+                <h3>Questions about your privacy?</h3>
+                <p>If you have any questions or concerns about this Privacy Policy or our data practices, please reach out:</p>
+                <p><a href="mailto:support@dailyritual.app">support@dailyritual.app</a></p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-left">&copy; 2025 Daily Ritual</div>
+        <div class="footer-links">
+            <a href="index.html">Home</a>
+            <a href="mailto:support@dailyritual.app">Support</a>
+        </div>
+    </footer>
+</body>
+</html>

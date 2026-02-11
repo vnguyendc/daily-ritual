@@ -1,7 +1,7 @@
 // Workout Reflections Controller
 import { Request, Response } from 'express'
 import { z } from 'zod'
-import { DatabaseService, getUserFromToken } from '../services/supabase.js'
+import { supabaseServiceClient, getUserFromToken } from '../services/supabase.js'
 import type { WorkoutReflectionRequest, APIResponse } from '../types/api.js'
 
 // Validation schema
@@ -45,10 +45,10 @@ export class WorkoutReflectionsController {
       }
 
       const reflectionData: WorkoutReflectionRequest = validationResult.data
-      const today = new Date().toISOString().split('T')[0]
+      const today = new Date().toISOString().split('T')[0]!
 
       // Get the next sequence number for today
-      const { data: existingReflections } = await DatabaseService.supabaseServiceClient
+      const { data: existingReflections } = await supabaseServiceClient
         .from('workout_reflections')
         .select('workout_sequence')
         .eq('user_id', user.id)
@@ -56,18 +56,30 @@ export class WorkoutReflectionsController {
         .order('workout_sequence', { ascending: false })
         .limit(1)
 
-      const nextSequence = existingReflections?.[0]?.workout_sequence ? 
+      const nextSequence = existingReflections?.[0]?.workout_sequence ?
         existingReflections[0].workout_sequence + 1 : 1
 
-      // Create workout reflection
-      const reflection = await DatabaseService.createWorkoutReflection(user.id, {
-        date: today,
-        workout_sequence: nextSequence,
-        ...reflectionData
-      })
+      // Create workout reflection via direct insert
+      const { data: reflection, error: insertError } = await supabaseServiceClient
+        .from('workout_reflections')
+        .insert({
+          user_id: user.id,
+          date: today,
+          workout_sequence: nextSequence,
+          ...reflectionData,
+          workout_intensity: reflectionData.workout_intensity as any
+        })
+        .select('*')
+        .single()
+
+      if (insertError) throw insertError
 
       // Update workout reflection streak
-      await DatabaseService.updateUserStreak(user.id, 'workout_reflection', today)
+      await supabaseServiceClient.rpc('update_user_streak', {
+        p_user_id: user.id,
+        p_streak_type: 'workout_reflection',
+        p_completed_date: today
+      })
 
       const response: APIResponse = {
         success: true,
@@ -105,7 +117,7 @@ export class WorkoutReflectionsController {
       const maxFeeling = req.query.training_feeling_max ? parseInt(req.query.training_feeling_max as string) : undefined
 
       // Build query
-      let query = DatabaseService.supabaseServiceClient
+      let query = supabaseServiceClient
         .from('workout_reflections')
         .select('*', { count: 'exact' })
         .eq('user_id', user.id)
@@ -175,9 +187,9 @@ export class WorkoutReflectionsController {
       }
 
       const user = await getUserFromToken(token)
-      const { id } = req.params
+      const id = req.params.id!
 
-      const { data, error } = await DatabaseService.supabaseServiceClient
+      const { data, error } = await supabaseServiceClient
         .from('workout_reflections')
         .select('*')
         .eq('id', id)
@@ -218,7 +230,7 @@ export class WorkoutReflectionsController {
       }
 
       const user = await getUserFromToken(token)
-      const { id } = req.params
+      const id = req.params.id!
 
       // Validate request body (partial update allowed)
       const partialSchema = workoutReflectionSchema.partial()
@@ -232,7 +244,7 @@ export class WorkoutReflectionsController {
 
       const updates = validationResult.data
 
-      const { data, error } = await DatabaseService.supabaseServiceClient
+      const { data, error } = await supabaseServiceClient
         .from('workout_reflections')
         .update({
           ...updates,
@@ -278,9 +290,9 @@ export class WorkoutReflectionsController {
       }
 
       const user = await getUserFromToken(token)
-      const { id } = req.params
+      const id = req.params.id!
 
-      const { error } = await DatabaseService.supabaseServiceClient
+      const { error } = await supabaseServiceClient
         .from('workout_reflections')
         .delete()
         .eq('id', id)
@@ -316,9 +328,9 @@ export class WorkoutReflectionsController {
 
       const startDate = new Date()
       startDate.setDate(startDate.getDate() - days)
-      const startDateStr = startDate.toISOString().split('T')[0]
+      const startDateStr = startDate.toISOString().split('T')[0]!
 
-      const { data, error } = await DatabaseService.supabaseServiceClient
+      const { data, error } = await supabaseServiceClient
         .from('workout_reflections')
         .select('training_feeling, workout_type, energy_level, focus_level, duration_minutes')
         .eq('user_id', user.id)

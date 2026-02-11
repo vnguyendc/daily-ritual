@@ -14,7 +14,8 @@ struct TodayFloatingActionButton: View {
     let timeContext: DesignSystem.TimeContext
     let onNewEntry: () -> Void
     let onAddActivity: () -> Void
-    
+    var onWorkoutReflection: (() -> Void)?
+
     var body: some View {
         Menu {
             Button {
@@ -25,7 +26,7 @@ struct TodayFloatingActionButton: View {
             } label: {
                 Label("New Entry", systemImage: "square.and.pencil")
             }
-            
+
             Button {
                 onAddActivity()
                 #if canImport(UIKit)
@@ -33,6 +34,17 @@ struct TodayFloatingActionButton: View {
                 #endif
             } label: {
                 Label("Add Activity", systemImage: "figure.run")
+            }
+
+            if let onWorkoutReflection = onWorkoutReflection {
+                Button {
+                    onWorkoutReflection()
+                    #if canImport(UIKit)
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    #endif
+                } label: {
+                    Label("Workout Reflection", systemImage: "checkmark.circle")
+                }
             }
         } label: {
             ZStack {
