@@ -16,6 +16,7 @@ router.get('/health', (req, res) => {
         version: '1.0.0'
     });
 });
+router.get('/integrations/whoop/callback', IntegrationsController.whoopCallback);
 router.use(['/profile', '/daily-entries', '/training-plans', '/workout-reflections', '/insights', '/journal', '/integrations'], authenticateToken);
 router.get('/profile', DashboardController.getUserProfile);
 router.put('/profile', DashboardController.updateUserProfile);

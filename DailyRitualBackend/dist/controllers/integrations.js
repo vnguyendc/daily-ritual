@@ -117,6 +117,53 @@ export class IntegrationsController {
             res.status(500).json({ success: false, error: { error: 'Internal server error', message: error.message } });
         }
     }
+    static async whoopCallback(req, res) {
+        try {
+            const { code, state } = req.query;
+            if (!code || !state) {
+                return res.status(400).send('Missing code or state parameter');
+            }
+            let statePayload;
+            try {
+                statePayload = JSON.parse(Buffer.from(String(state), 'base64url').toString());
+            }
+            catch {
+                return res.status(400).send('Invalid state parameter');
+            }
+            const userId = statePayload.user_id;
+            if (!userId) {
+                return res.status(400).send('Invalid state: missing user_id');
+            }
+            const redirectUri = process.env.WHOOP_REDIRECT_URI || `${process.env.API_BASE_URL || 'http://localhost:3000'}/api/integrations/whoop/callback`;
+            const tokens = await whoopService.exchangeCodeForTokens(String(code), redirectUri);
+            const profile = await whoopService.getUserProfile(tokens.access_token);
+            const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
+            const { error: upsertError } = await supabaseServiceClient
+                .from('user_integrations')
+                .upsert({
+                user_id: userId,
+                service: 'whoop',
+                access_token: tokens.access_token,
+                refresh_token: tokens.refresh_token,
+                token_expires_at: expiresAt,
+                external_user_id: String(profile.user_id),
+                connected_at: new Date().toISOString()
+            }, { onConflict: 'user_id,service' });
+            if (upsertError)
+                throw upsertError;
+            await supabaseServiceClient
+                .from('users')
+                .update({ whoop_connected: true })
+                .eq('id', userId);
+            const deepLink = `dailyritual://whoop/connected?success=true`;
+            res.redirect(deepLink);
+        }
+        catch (error) {
+            console.error('Error in Whoop OAuth callback:', error);
+            const deepLink = `dailyritual://whoop/connected?success=false&error=${encodeURIComponent(error.message)}`;
+            res.redirect(deepLink);
+        }
+    }
     static async syncWhoop(req, res) {
         try {
             const token = req.headers.authorization?.replace('Bearer ', '');

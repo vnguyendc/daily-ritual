@@ -152,6 +152,71 @@ export class IntegrationsController {
     }
   }
 
+  // OAuth callback — Whoop redirects here after user authorizes
+  // This is a GET route with no auth middleware (browser redirect)
+  static async whoopCallback(req: Request, res: Response) {
+    try {
+      const { code, state } = req.query
+
+      if (!code || !state) {
+        return res.status(400).send('Missing code or state parameter')
+      }
+
+      // Decode state to get user_id
+      let statePayload: { user_id: string; nonce: string }
+      try {
+        statePayload = JSON.parse(Buffer.from(String(state), 'base64url').toString())
+      } catch {
+        return res.status(400).send('Invalid state parameter')
+      }
+
+      const userId = statePayload.user_id
+      if (!userId) {
+        return res.status(400).send('Invalid state: missing user_id')
+      }
+
+      const redirectUri = process.env.WHOOP_REDIRECT_URI || `${process.env.API_BASE_URL || 'http://localhost:3000'}/api/integrations/whoop/callback`
+
+      // Exchange code for tokens
+      const tokens = await whoopService.exchangeCodeForTokens(String(code), redirectUri)
+
+      // Get Whoop user profile for external_user_id
+      const profile = await whoopService.getUserProfile(tokens.access_token)
+
+      const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString()
+
+      // Upsert integration record
+      const { error: upsertError } = await supabaseServiceClient
+        .from('user_integrations')
+        .upsert({
+          user_id: userId,
+          service: 'whoop',
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token,
+          token_expires_at: expiresAt,
+          external_user_id: String(profile.user_id),
+          connected_at: new Date().toISOString()
+        }, { onConflict: 'user_id,service' })
+
+      if (upsertError) throw upsertError
+
+      // Update users table flag
+      await supabaseServiceClient
+        .from('users')
+        .update({ whoop_connected: true })
+        .eq('id', userId)
+
+      // Redirect to iOS app via deep link
+      const deepLink = `dailyritual://whoop/connected?success=true`
+      res.redirect(deepLink)
+    } catch (error: any) {
+      console.error('Error in Whoop OAuth callback:', error)
+      // Redirect to app with error
+      const deepLink = `dailyritual://whoop/connected?success=false&error=${encodeURIComponent(error.message)}`
+      res.redirect(deepLink)
+    }
+  }
+
   // Manual sync — pull Whoop workouts for a date range
   static async syncWhoop(req: Request, res: Response) {
     try {

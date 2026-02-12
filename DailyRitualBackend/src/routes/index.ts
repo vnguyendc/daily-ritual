@@ -23,6 +23,9 @@ router.get('/health', (req, res) => {
 
 // Dashboard routes (TODO – trimmed for MVP)
 
+// Unauthenticated integration callbacks (browser redirects — must be before auth middleware)
+router.get('/integrations/whoop/callback', IntegrationsController.whoopCallback)
+
 // Authenticated routes
 router.use(['/profile', '/daily-entries', '/training-plans', '/workout-reflections', '/insights', '/journal', '/integrations'], authenticateToken)
 
