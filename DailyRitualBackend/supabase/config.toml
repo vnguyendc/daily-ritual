@@ -113,7 +113,7 @@ auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
 # `twitter`, `slack`, `spotify`, `workos`, `zoom`.
 [auth.external.apple]
 enabled = true
-client_id = ""
+client_id = "env(SUPABASE_AUTH_EXTERNAL_APPLE_CLIENT_ID)"
 # DO NOT commit your OAuth provider secret to git. Use environment variable substitution instead:
 secret = "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)"
 # Overrides the default auth redirectUrl.
@@ -129,11 +129,6 @@ secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
 redirect_uri = ""
 url = ""
 
-[edge_functions]
-enabled = true
-# Configure one of the supported request policies: `oneshot`, `per_worker`.
-# Use oneshot for hot reload, or per_worker for load testing.
-request_policy = "oneshot"
 
 [analytics]
 enabled = false

@@ -14,7 +14,8 @@ struct Your_Daily_DoseApp: App {
     @StateObject private var supabaseManager = SupabaseManager.shared
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
-    
+    @State private var whoopConnectionAlert: WhoopConnectionAlert?
+
     var body: some Scene {
         WindowGroup {
             Group {
@@ -39,8 +40,15 @@ struct Your_Daily_DoseApp: App {
             .preferredColorScheme(.dark)
             .edgesIgnoringSafeArea(.all)
             .onOpenURL { url in
-                // Handle oauth-callback (defensive; session should already capture)
                 print("onOpenURL:", url.absoluteString)
+                handleDeepLink(url)
+            }
+            .alert(item: $whoopConnectionAlert) { alert in
+                Alert(
+                    title: Text(alert.title),
+                    message: Text(alert.message),
+                    dismissButton: .default(Text("OK"))
+                )
             }
         }
         .onChange(of: scenePhase) { newPhase in
@@ -49,6 +57,34 @@ struct Your_Daily_DoseApp: App {
             }
         }
     }
+
+    private func handleDeepLink(_ url: URL) {
+        guard url.scheme == "dailyritual" else { return }
+
+        if url.host == "whoop" && url.path.contains("connected") {
+            let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+            let success = components?.queryItems?.first(where: { $0.name == "success" })?.value == "true"
+
+            if success {
+                whoopConnectionAlert = WhoopConnectionAlert(
+                    title: "Whoop Connected",
+                    message: "Your Whoop account has been linked successfully."
+                )
+            } else {
+                let errorMsg = components?.queryItems?.first(where: { $0.name == "error" })?.value ?? "Unknown error"
+                whoopConnectionAlert = WhoopConnectionAlert(
+                    title: "Connection Failed",
+                    message: "Could not connect Whoop: \(errorMsg)"
+                )
+            }
+        }
+    }
+}
+
+struct WhoopConnectionAlert: Identifiable {
+    let id = UUID()
+    let title: String
+    let message: String
 }
 
 // MARK: - Sign In View (Post-Onboarding)
