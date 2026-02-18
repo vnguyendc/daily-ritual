@@ -134,6 +134,32 @@ struct ProfileView: View {
             // Subscription section
             subscriptionSection
             
+            // Save button (shown when any field changed)
+            if hasProfileChanges {
+                Button {
+                    Task { await saveProfile() }
+                } label: {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        if isSaving {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                                .tint(DesignSystem.Colors.invertedText)
+                        }
+                        Text(isSaving ? "Saving..." : "Save Changes")
+                    }
+                    .font(DesignSystem.Typography.buttonMedium)
+                    .foregroundColor(DesignSystem.Colors.invertedText)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, DesignSystem.Spacing.md)
+                    .background(
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
+                            .fill(timeContext.primaryColor)
+                    )
+                }
+                .disabled(isSaving || nameValidationError != nil)
+                .opacity(nameValidationError != nil ? 0.5 : 1)
+            }
+
             // Actions
             actionsSection
         }
@@ -194,31 +220,13 @@ struct ProfileView: View {
                     field: .name
                 )
                 
-                // Save button (only show if changed)
-                if hasProfileChanges {
-                    Button {
-                        Task { await saveProfile() }
-                    } label: {
-                        HStack(spacing: DesignSystem.Spacing.sm) {
-                            if isSaving {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                                    .tint(DesignSystem.Colors.invertedText)
-                            }
-                            Text(isSaving ? "Saving..." : "Save Changes")
-                        }
-                        .font(DesignSystem.Typography.buttonMedium)
-                        .foregroundColor(DesignSystem.Colors.invertedText)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, DesignSystem.Spacing.md)
-                        .background(
-                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
-                                .fill(timeContext.primaryColor)
-                        )
-                    }
-                    .disabled(isSaving)
+                // Name validation
+                if let nameError = nameValidationError {
+                    Text(nameError)
+                        .font(DesignSystem.Typography.caption)
+                        .foregroundColor(DesignSystem.Colors.alertRed)
                 }
-                
+
                 if let error = saveError {
                     Text(error)
                         .font(DesignSystem.Typography.caption)
@@ -230,36 +238,82 @@ struct ProfileView: View {
     
     private var hasProfileChanges: Bool {
         guard let user = supabase.currentUser else { return false }
+        let tz = TimeZone(identifier: selectedTimezone) ?? .current
+        let currentTimeStr = supabase.timeString(from: reminderTime, in: tz)
         return name != (user.name ?? "") ||
                primarySport != (user.primarySport ?? "") ||
-               selectedTimezone != user.timezone
+               selectedTimezone != user.timezone ||
+               currentTimeStr != user.morningReminderTime
+    }
+
+    private var nameValidationError: String? {
+        if name.count > 80 { return "Name must be 80 characters or less" }
+        return nil
     }
     
     // MARK: - Integrations Section
     private var integrationsSection: some View {
         ProfileSection(title: "Integrations", icon: "link") {
-            NavigationLink {
-                WhoopConnectView()
-            } label: {
-                HStack {
-                    Image(systemName: "applewatch")
-                        .foregroundColor(timeContext.primaryColor)
-                        .frame(width: 24)
-                    Text("WHOOP")
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .foregroundColor(DesignSystem.Colors.primaryText)
-                    Spacer()
-                    if WhoopService.shared.isConnected {
-                        Text("Connected")
-                            .font(DesignSystem.Typography.caption)
-                            .foregroundColor(DesignSystem.Colors.powerGreen)
-                    }
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+            VStack(spacing: DesignSystem.Spacing.sm) {
+                // Whoop
+                NavigationLink {
+                    WhoopConnectView()
+                } label: {
+                    integrationRow(
+                        icon: "applewatch",
+                        name: "WHOOP",
+                        status: WhoopService.shared.isConnected ? "Connected" : nil,
+                        statusColor: DesignSystem.Colors.powerGreen,
+                        showChevron: true
+                    )
                 }
+
+                Divider().overlay(DesignSystem.Colors.border)
+
+                // Strava — Coming Soon
+                integrationRow(
+                    icon: "figure.outdoor.cycle",
+                    name: "Strava",
+                    status: "Coming Soon",
+                    statusColor: DesignSystem.Colors.secondaryText,
+                    showChevron: false
+                )
+
+                Divider().overlay(DesignSystem.Colors.border)
+
+                // Apple Health — Coming Soon
+                integrationRow(
+                    icon: "heart.fill",
+                    name: "Apple Health",
+                    status: "Coming Soon",
+                    statusColor: DesignSystem.Colors.secondaryText,
+                    showChevron: false
+                )
             }
         }
+    }
+
+    private func integrationRow(icon: String, name: String, status: String?, statusColor: Color, showChevron: Bool) -> some View {
+        HStack {
+            Image(systemName: icon)
+                .foregroundColor(timeContext.primaryColor)
+                .frame(width: 24)
+            Text(name)
+                .font(DesignSystem.Typography.bodyMedium)
+                .foregroundColor(DesignSystem.Colors.primaryText)
+            Spacer()
+            if let status {
+                Text(status)
+                    .font(DesignSystem.Typography.caption)
+                    .foregroundColor(statusColor)
+            }
+            if showChevron {
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+            }
+        }
+        .padding(.vertical, 4)
     }
 
     // MARK: - Preferences Section
@@ -686,7 +740,13 @@ struct ProfileView: View {
             updates["timezone"] = selectedTimezone
             
             _ = try await supabase.updateProfile(updates)
-            
+
+            // Reschedule notifications with updated times
+            await NotificationService.shared.scheduleReminders(
+                morningTime: reminderTime,
+                eveningTime: eveningReminderTime
+            )
+
             // Show success
             withAnimation {
                 showSaveSuccess = true
