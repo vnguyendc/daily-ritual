@@ -308,6 +308,24 @@ export class DatabaseService {
     if (error) throw error
   }
 
+  static async getCompletionHistory(userId: string, startDate: string, endDate: string) {
+    if (useMock) {
+      console.log(`📝 Mock completion history: ${userId} from ${startDate} to ${endDate}`)
+      return []
+    }
+
+    const { data, error } = await supabaseServiceClient
+      .from('daily_entries')
+      .select('id, date, morning_completed_at, evening_completed_at')
+      .eq('user_id', userId)
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .order('date', { ascending: false })
+
+    if (error) throw error
+    return data
+  }
+
   static async getDailyQuote(userId: string, dateParam?: string) {
     // For development with placeholder credentials, return mock quote
     const date = dateParam || new Date().toISOString().split('T')[0]

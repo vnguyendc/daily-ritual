@@ -43,91 +43,32 @@ enum AppTab: Int, CaseIterable {
     }
 }
 
-// MARK: - Placeholder Views
-struct InsightsView: View {
-    private var timeContext: DesignSystem.TimeContext { DesignSystem.TimeContext.current() }
-    
-    var body: some View {
-        ZStack {
-            DesignSystem.Colors.background.ignoresSafeArea()
-            
-            VStack(spacing: DesignSystem.Spacing.xl) {
-                Spacer()
-                
-                // Icon with glow
-                ZStack {
-                    Circle()
-                        .fill(timeContext.primaryColor.opacity(0.1))
-                        .frame(width: 140, height: 140)
-                        .blur(radius: 20)
-                    
-                    Image(systemName: "brain.head.profile")
-                        .font(.system(size: 60, weight: .light))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [timeContext.primaryColor, timeContext.primaryColor.opacity(0.6)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                }
-                
-                VStack(spacing: DesignSystem.Spacing.sm) {
-                    Text("AI Insights")
-                        .font(DesignSystem.Typography.headlineMedium)
-                        .foregroundColor(DesignSystem.Colors.primaryText)
-                    
-                    Text("Personalized insights based on your\ndaily rituals and training patterns")
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .foregroundColor(DesignSystem.Colors.secondaryText)
-                        .multilineTextAlignment(.center)
-                }
-                
-                // Coming soon badge
-                HStack(spacing: 6) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 14))
-                    Text("Coming Soon")
-                        .font(.system(size: 14, weight: .medium))
-                }
-                .foregroundColor(timeContext.primaryColor)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule()
-                        .fill(timeContext.primaryColor.opacity(0.15))
-                )
-                
-                Spacer()
-            }
-            .padding()
-        }
-    }
-}
-
 struct MainTabView: View {
     @State private var selectedTab: AppTab = .today
-    
+    @ObservedObject private var notificationService = NotificationService.shared
+    @State private var showMorningFromNotification = false
+    @State private var showEveningFromNotification = false
+
     private var timeContext: DesignSystem.TimeContext {
         DesignSystem.TimeContext.current()
     }
-    
+
     init(initialTab: Int = 0) {
         _selectedTab = State(initialValue: AppTab(rawValue: initialTab) ?? .today)
-        
+
         // Configure tab bar appearance
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = UIColor(DesignSystem.Colors.cardBackground)
-        
+
         // Remove the separator line
         appearance.shadowImage = UIImage()
         appearance.shadowColor = .clear
-        
+
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
     }
-    
+
     var body: some View {
         TabView(selection: $selectedTab) {
             TodayView()
@@ -142,7 +83,7 @@ struct MainTabView: View {
                     Label(AppTab.training.title, systemImage: AppTab.training.icon)
                 }
             
-            InsightsView()
+            InsightsListView()
                 .tag(AppTab.insights)
                 .tabItem {
                     Label(AppTab.insights.title, systemImage: AppTab.insights.icon)
@@ -155,6 +96,12 @@ struct MainTabView: View {
                 }
         }
         .tint(timeContext.primaryColor)
+        .onChange(of: notificationService.pendingAction) { action in
+            guard let action = action else { return }
+            // Switch to Today tab and let the notification action propagate
+            selectedTab = .today
+            notificationService.pendingAction = nil
+        }
     }
 }
 

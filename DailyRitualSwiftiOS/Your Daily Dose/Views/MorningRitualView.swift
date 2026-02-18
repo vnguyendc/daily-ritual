@@ -17,6 +17,8 @@ struct MorningRitualView: View {
     @StateObject private var viewModel = MorningRitualViewModel()
     @State private var currentStep = 0
     @State private var showingCompletion = false
+    @State private var showingCelebration = false
+    @State private var celebrationStreakCount = 0
     @State private var isSaving = false
     
     private let timeContext: DesignSystem.TimeContext = .morning
@@ -131,6 +133,17 @@ struct MorningRitualView: View {
                     onDismiss: { dismiss() }
                 )
             }
+            .fullScreenCover(isPresented: $showingCelebration) {
+                CelebrationOverlay(
+                    type: .morning,
+                    streakCount: celebrationStreakCount,
+                    onDismiss: {
+                        showingCelebration = false
+                        showingCompletion = true
+                    }
+                )
+                .presentationBackground(.clear)
+            }
             .task { await viewModel.prepare(goals: entry.goals ?? []) }
         }
     }
@@ -188,10 +201,11 @@ struct MorningRitualView: View {
                 let updated = try await DailyEntriesService().completeMorning(for: entry)
                 entry = updated
                 entry.morningCompletedAt = Date()
-                #if canImport(UIKit)
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
-                #endif
-                showingCompletion = true
+
+                // Fetch updated streaks and show celebration
+                await StreaksService.shared.fetchStreaks(force: true)
+                celebrationStreakCount = StreaksService.shared.morningStreak
+                showingCelebration = true
             } catch {
                 print("completeMorning() failed:", error.localizedDescription)
                 entry.morningCompletedAt = Date()

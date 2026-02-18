@@ -12,6 +12,7 @@ import CryptoKit
 @main
 struct Your_Daily_DoseApp: App {
     @StateObject private var supabaseManager = SupabaseManager.shared
+    @StateObject private var notificationService = NotificationService.shared
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
     @State private var whoopConnectionAlert: WhoopConnectionAlert?
@@ -55,6 +56,11 @@ struct Your_Daily_DoseApp: App {
             if newPhase == .active {
                 Task { await supabaseManager.replayPendingOpsWithBackoff() }
             }
+        }
+        .task {
+            notificationService.configure()
+            notificationService.registerCategories()
+            await notificationService.rescheduleFromStoredTimes()
         }
     }
 

@@ -911,15 +911,8 @@ class SupabaseManager: NSObject, ObservableObject {
     // MARK: - Streak Tracking
     func getCurrentStreak() async throws -> Int {
         guard currentUser != nil else { return 0 }
-        
-        isLoading = true
-        defer { isLoading = false }
-        
-        // TODO: Replace with actual streak calculation from Supabase
-        try await Task.sleep(nanoseconds: 300_000_000)
-        
-        // Mock streak for now
-        return 7
+        await StreaksService.shared.fetchStreaks(force: true)
+        return StreaksService.shared.dailyStreak
     }
     
     // MARK: - AI Features (Mock for now)

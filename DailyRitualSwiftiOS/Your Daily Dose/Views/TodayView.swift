@@ -23,6 +23,7 @@ struct TodayView: View {
     @State private var showingProfile = false
     @State private var showingQuickEntry = false
     @State private var showingAddActivity = false
+    @State private var showingStreakHistory = false
     
     // Selection state
     @State private var selectedDate: Date = Date()
@@ -56,6 +57,14 @@ struct TodayView: View {
                         )
                         
                         weekDayStripView
+
+                        // Streak widget
+                        StreakWidgetView(
+                            streaksService: StreaksService.shared,
+                            timeContext: timeContext,
+                            showingHistory: $showingStreakHistory
+                        )
+
                         loadingView
                         mainContentView
                         
@@ -89,6 +98,7 @@ struct TodayView: View {
                 await viewModel.load(date: selectedDate)
                 await loadJournalEntries()
                 completedGoals = loadCompletedGoals(for: selectedDate)
+                await StreaksService.shared.fetchStreaks()
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
                 handlePotentialDayChange()
@@ -137,6 +147,9 @@ struct TodayView: View {
             }
             .sheet(item: $selectedJournalEntry) { entry in
                 journalEntryDetailSheet(for: entry)
+            }
+            .sheet(isPresented: $showingStreakHistory) {
+                StreakHistoryView(streaksService: StreaksService.shared)
             }
         }
     }
@@ -320,6 +333,7 @@ extension TodayView {
     private func refreshData() {
         Task {
             await viewModel.load(date: selectedDate)
+            await StreaksService.shared.fetchStreaks(force: true)
         }
     }
     

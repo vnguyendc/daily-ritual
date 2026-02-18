@@ -7,6 +7,7 @@ import { InsightsController } from '../controllers/insights.js'
 import { JournalController } from '../controllers/journalEntries.js'
 import { IntegrationsController } from '../controllers/integrations.js'
 import { WebhooksController } from '../controllers/webhooks.js'
+import { StreaksController } from '../controllers/streaks.js'
 import { authenticateToken } from '../middleware/auth.js'
 import { DashboardController } from '../controllers/dashboard.js'
 
@@ -27,7 +28,7 @@ router.get('/health', (req, res) => {
 router.get('/integrations/whoop/callback', IntegrationsController.whoopCallback)
 
 // Authenticated routes
-router.use(['/profile', '/daily-entries', '/training-plans', '/workout-reflections', '/insights', '/journal', '/integrations'], authenticateToken)
+router.use(['/profile', '/daily-entries', '/training-plans', '/workout-reflections', '/insights', '/journal', '/integrations', '/streaks'], authenticateToken)
 
 // Profile routes
 router.get('/profile', DashboardController.getUserProfile)
@@ -89,6 +90,10 @@ router.get('/integrations/whoop/auth-url', IntegrationsController.getWhoopAuthUr
 router.post('/integrations/whoop/connect', IntegrationsController.connectWhoop)
 router.delete('/integrations/whoop/disconnect', IntegrationsController.disconnectWhoop)
 router.post('/integrations/whoop/sync', IntegrationsController.syncWhoop)
+
+// Streak routes
+router.get('/streaks/current', StreaksController.getCurrentStreaks)
+router.get('/streaks/history', StreaksController.getCompletionHistory)
 
 // Webhook routes (no auth middleware — validated by signature)
 router.post('/webhooks/whoop', WebhooksController.handleWhoopWebhook)

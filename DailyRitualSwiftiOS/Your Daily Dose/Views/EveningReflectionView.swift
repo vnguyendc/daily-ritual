@@ -16,6 +16,9 @@ struct EveningReflectionView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var currentStep = 0
     @State private var showingCompletion = false
+    @State private var showingCelebration = false
+    @State private var celebrationStreakCount = 0
+    @State private var celebrationType: CelebrationType = .evening
     @State private var overallMood: Int = 3
     @State private var isSaving = false
     
@@ -130,6 +133,17 @@ struct EveningReflectionView: View {
                     onDismiss: { dismiss() }
                 )
             }
+            .fullScreenCover(isPresented: $showingCelebration) {
+                CelebrationOverlay(
+                    type: celebrationType,
+                    streakCount: celebrationStreakCount,
+                    onDismiss: {
+                        showingCelebration = false
+                        showingCompletion = true
+                    }
+                )
+                .presentationBackground(.clear)
+            }
         }
     }
     
@@ -162,16 +176,27 @@ struct EveningReflectionView: View {
     private func completeReflection() async {
         entry.overallMood = overallMood
         isSaving = true
-        
+
         do {
             let updatedEntry = try await DailyEntriesService().completeEvening(for: entry)
             await MainActor.run {
                 entry = updatedEntry
                 isSaving = false
-                #if canImport(UIKit)
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
-                #endif
-                showingCompletion = true
+            }
+
+            // Fetch updated streaks
+            await StreaksService.shared.fetchStreaks(force: true)
+
+            await MainActor.run {
+                // Check if both morning and evening are done (perfect day)
+                if updatedEntry.isMorningComplete && updatedEntry.isEveningComplete {
+                    celebrationType = .dailyComplete
+                    celebrationStreakCount = StreaksService.shared.dailyStreak
+                } else {
+                    celebrationType = .evening
+                    celebrationStreakCount = StreaksService.shared.eveningStreak
+                }
+                showingCelebration = true
             }
         } catch {
             print("Error completing evening reflection: \(error)")
