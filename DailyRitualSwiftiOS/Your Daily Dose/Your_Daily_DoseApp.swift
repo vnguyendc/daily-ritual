@@ -70,17 +70,20 @@ struct Your_Daily_DoseApp: App {
         if url.host == "whoop" && url.path.contains("connected") {
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
             let success = components?.queryItems?.first(where: { $0.name == "success" })?.value == "true"
+            let errorMsg = components?.queryItems?.first(where: { $0.name == "error" })?.value
+
+            // Update WhoopService state
+            WhoopService.shared.handleConnectionCallback(success: success, errorMessage: errorMsg)
 
             if success {
                 whoopConnectionAlert = WhoopConnectionAlert(
                     title: "Whoop Connected",
-                    message: "Your Whoop account has been linked successfully."
+                    message: "Your Whoop account has been linked successfully. Recovery data will appear on your dashboard."
                 )
             } else {
-                let errorMsg = components?.queryItems?.first(where: { $0.name == "error" })?.value ?? "Unknown error"
                 whoopConnectionAlert = WhoopConnectionAlert(
                     title: "Connection Failed",
-                    message: "Could not connect Whoop: \(errorMsg)"
+                    message: "Could not connect Whoop: \(errorMsg ?? "Unknown error")"
                 )
             }
         }

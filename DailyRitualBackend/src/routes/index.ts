@@ -90,6 +90,7 @@ router.get('/integrations/whoop/auth-url', IntegrationsController.getWhoopAuthUr
 router.post('/integrations/whoop/connect', IntegrationsController.connectWhoop)
 router.delete('/integrations/whoop/disconnect', IntegrationsController.disconnectWhoop)
 router.post('/integrations/whoop/sync', IntegrationsController.syncWhoop)
+router.get('/integrations/whoop/data', IntegrationsController.getWhoopData)
 
 // Streak routes
 router.get('/streaks/current', StreaksController.getCurrentStreaks)

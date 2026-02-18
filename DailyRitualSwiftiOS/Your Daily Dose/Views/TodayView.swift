@@ -24,6 +24,7 @@ struct TodayView: View {
     @State private var showingQuickEntry = false
     @State private var showingAddActivity = false
     @State private var showingStreakHistory = false
+    @State private var showingSleepDetail = false
     
     // Selection state
     @State private var selectedDate: Date = Date()
@@ -65,6 +66,17 @@ struct TodayView: View {
                             showingHistory: $showingStreakHistory
                         )
 
+                        // Whoop Recovery Card (only when connected with data)
+                        if WhoopService.shared.isConnected,
+                           let whoopData = WhoopService.shared.dailyData {
+                            WhoopRecoveryCard(
+                                data: whoopData,
+                                timeContext: timeContext,
+                                onTap: { showingSleepDetail = true }
+                            )
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+
                         loadingView
                         mainContentView
                         
@@ -99,6 +111,8 @@ struct TodayView: View {
                 await loadJournalEntries()
                 completedGoals = loadCompletedGoals(for: selectedDate)
                 await StreaksService.shared.fetchStreaks()
+                await WhoopService.shared.checkConnectionStatus()
+                await WhoopService.shared.fetchDailyData()
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
                 handlePotentialDayChange()
@@ -150,6 +164,11 @@ struct TodayView: View {
             }
             .sheet(isPresented: $showingStreakHistory) {
                 StreakHistoryView(streaksService: StreaksService.shared)
+            }
+            .sheet(isPresented: $showingSleepDetail) {
+                if let data = WhoopService.shared.dailyData {
+                    SleepDetailView(data: data)
+                }
             }
         }
     }

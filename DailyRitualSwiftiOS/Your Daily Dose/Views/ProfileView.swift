@@ -125,6 +125,9 @@ struct ProfileView: View {
             // Account section
             accountSection
             
+            // Integrations section
+            integrationsSection
+
             // Preferences section
             preferencesSection
             
@@ -232,6 +235,33 @@ struct ProfileView: View {
                selectedTimezone != user.timezone
     }
     
+    // MARK: - Integrations Section
+    private var integrationsSection: some View {
+        ProfileSection(title: "Integrations", icon: "link") {
+            NavigationLink {
+                WhoopConnectView()
+            } label: {
+                HStack {
+                    Image(systemName: "applewatch")
+                        .foregroundColor(timeContext.primaryColor)
+                        .frame(width: 24)
+                    Text("WHOOP")
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                    Spacer()
+                    if WhoopService.shared.isConnected {
+                        Text("Connected")
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(DesignSystem.Colors.powerGreen)
+                    }
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                }
+            }
+        }
+    }
+
     // MARK: - Preferences Section
     private var preferencesSection: some View {
         ProfileSection(title: "Preferences", icon: "gearshape.fill") {

@@ -217,6 +217,106 @@ export class IntegrationsController {
     }
   }
 
+  // Get combined Whoop data (recovery + sleep + strain) for a date
+  static async getWhoopData(req: Request, res: Response) {
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '')
+      if (!token) return res.status(401).json({ error: 'Authorization token required' })
+
+      const user = await getUserFromToken(token)
+      const date = (req.query.date as string) || new Date().toISOString().split('T')[0]!
+
+      // Check for connected integration
+      const { data: integration, error: fetchError } = await supabaseServiceClient
+        .from('user_integrations')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('service', 'whoop')
+        .single()
+
+      if (fetchError || !integration) {
+        return res.status(400).json({
+          success: false,
+          error: { error: 'Not connected', message: 'Whoop is not connected' }
+        })
+      }
+
+      // Check server-side cache
+      const { data: cached } = await supabaseServiceClient
+        .from('whoop_daily_data')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('date', date)
+        .single()
+
+      const cacheAge = cached?.fetched_at
+        ? Date.now() - new Date(cached.fetched_at).getTime()
+        : Infinity
+      const CACHE_TTL = 15 * 60 * 1000 // 15 minutes
+
+      if (cached && cacheAge < CACHE_TTL) {
+        return res.json({ success: true, data: formatWhoopResponse(cached) })
+      }
+
+      // Refresh token if needed
+      let accessToken = integration.access_token!
+      if (integration.token_expires_at && new Date(integration.token_expires_at) < new Date()) {
+        const refreshed = await whoopService.refreshAccessToken(integration.refresh_token!)
+        accessToken = refreshed.access_token
+        await supabaseServiceClient
+          .from('user_integrations')
+          .update({
+            access_token: refreshed.access_token,
+            refresh_token: refreshed.refresh_token,
+            token_expires_at: new Date(Date.now() + refreshed.expires_in * 1000).toISOString()
+          })
+          .eq('id', integration.id)
+      }
+
+      // Fetch all data in parallel
+      const [recoveryData, sleepData, strainData] = await Promise.all([
+        whoopService.getRecoveryData(accessToken, date),
+        whoopService.getSleepData(accessToken, date),
+        whoopService.getStrainData(accessToken, date)
+      ])
+
+      if (!recoveryData && !sleepData && !strainData) {
+        return res.json({ success: true, data: null, message: 'No Whoop data available for this date' })
+      }
+
+      // Compute recovery zone
+      const recoveryScore = recoveryData?.recovery_score ?? 0
+      const recoveryZone = recoveryScore >= 67 ? 'green' : recoveryScore >= 34 ? 'yellow' : 'red'
+
+      // Upsert cache
+      const cacheRow = {
+        user_id: user.id,
+        date,
+        recovery_score: recoveryData?.recovery_score ?? null,
+        recovery_zone: recoveryData ? recoveryZone : null,
+        sleep_performance: sleepData?.performance ?? recoveryData?.sleep_performance ?? null,
+        sleep_duration_minutes: sleepData?.duration_minutes ?? null,
+        sleep_efficiency: sleepData?.efficiency ?? null,
+        sleep_stages: sleepData?.stages ?? null,
+        respiratory_rate: sleepData?.respiratory_rate ?? null,
+        skin_temp_delta: sleepData?.skin_temp_delta ?? null,
+        hrv: recoveryData?.hrv ?? null,
+        resting_hr: recoveryData?.resting_hr ?? null,
+        strain_score: strainData?.strain_score ?? null,
+        fetched_at: new Date().toISOString()
+      }
+
+      await supabaseServiceClient
+        .from('whoop_daily_data')
+        .upsert(cacheRow as any, { onConflict: 'user_id,date' })
+
+      res.json({ success: true, data: formatWhoopResponse(cacheRow) })
+    } catch (error: any) {
+      console.error('Error fetching Whoop data:', error)
+      res.status(500).json({ success: false, error: { error: 'Internal server error', message: error.message } })
+    }
+  }
+
   // Manual sync — pull Whoop workouts for a date range
   static async syncWhoop(req: Request, res: Response) {
     try {
@@ -291,5 +391,29 @@ export class IntegrationsController {
       console.error('Error syncing Whoop:', error)
       res.status(500).json({ success: false, error: { error: 'Internal server error', message: error.message } })
     }
+  }
+}
+
+// Helper to format whoop_daily_data row into API response shape
+function formatWhoopResponse(row: any) {
+  return {
+    recovery: {
+      score: row.recovery_score,
+      zone: row.recovery_zone,
+      hrv: row.hrv,
+      resting_hr: row.resting_hr
+    },
+    sleep: {
+      performance: row.sleep_performance,
+      duration_minutes: row.sleep_duration_minutes,
+      efficiency: row.sleep_efficiency,
+      stages: row.sleep_stages,
+      respiratory_rate: row.respiratory_rate,
+      skin_temp_delta: row.skin_temp_delta
+    },
+    strain: {
+      score: row.strain_score
+    },
+    fetched_at: row.fetched_at
   }
 }

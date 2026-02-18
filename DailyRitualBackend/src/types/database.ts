@@ -503,6 +503,67 @@ export interface Database {
         }
         Relationships: []
       }
+      whoop_daily_data: {
+        Row: {
+          id: string
+          user_id: string
+          date: string
+          recovery_score: number | null
+          recovery_zone: 'green' | 'yellow' | 'red' | null
+          sleep_performance: number | null
+          sleep_duration_minutes: number | null
+          sleep_efficiency: number | null
+          sleep_stages: Json | null
+          respiratory_rate: number | null
+          skin_temp_delta: number | null
+          hrv: number | null
+          resting_hr: number | null
+          strain_score: number | null
+          raw_recovery_json: Json | null
+          raw_sleep_json: Json | null
+          raw_cycle_json: Json | null
+          fetched_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          date: string
+          recovery_score?: number | null
+          recovery_zone?: 'green' | 'yellow' | 'red' | null
+          sleep_performance?: number | null
+          sleep_duration_minutes?: number | null
+          sleep_efficiency?: number | null
+          sleep_stages?: Json | null
+          respiratory_rate?: number | null
+          skin_temp_delta?: number | null
+          hrv?: number | null
+          resting_hr?: number | null
+          strain_score?: number | null
+          raw_recovery_json?: Json | null
+          raw_sleep_json?: Json | null
+          raw_cycle_json?: Json | null
+          fetched_at?: string
+        }
+        Update: {
+          recovery_score?: number | null
+          recovery_zone?: 'green' | 'yellow' | 'red' | null
+          sleep_performance?: number | null
+          sleep_duration_minutes?: number | null
+          sleep_efficiency?: number | null
+          sleep_stages?: Json | null
+          respiratory_rate?: number | null
+          skin_temp_delta?: number | null
+          hrv?: number | null
+          resting_hr?: number | null
+          strain_score?: number | null
+          raw_recovery_json?: Json | null
+          raw_sleep_json?: Json | null
+          raw_cycle_json?: Json | null
+          fetched_at?: string
+        }
+        Relationships: []
+      }
       user_integrations: {
         Row: {
           id: string
