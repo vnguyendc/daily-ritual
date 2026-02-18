@@ -26,6 +26,7 @@ struct TrainingPlanFormSheet: View {
     @State private var selectedDate: Date
     @State private var activityType: TrainingActivityType = .strengthTraining
     @State private var durationMinutes: Int = 60
+    @State private var intensity: TrainingIntensity = .moderate
     @State private var startTime: Date = Calendar.current.date(from: DateComponents(hour: 7, minute: 0)) ?? Date()
     @State private var notes: String = ""
     @State private var isSaving = false
@@ -50,6 +51,7 @@ struct TrainingPlanFormSheet: View {
         if let plan = existingPlan {
             _selectedDate = State(initialValue: plan.date)
             _activityType = State(initialValue: plan.activityType)
+            _intensity = State(initialValue: plan.intensityLevel)
             _durationMinutes = State(initialValue: plan.durationMinutes ?? 60)
             _notes = State(initialValue: plan.notes ?? "")
             
@@ -115,7 +117,10 @@ struct TrainingPlanFormSheet: View {
                     VStack(alignment: .leading, spacing: DesignSystem.Spacing.xl) {
                         // Session Details Section
                         sessionDetailsSection
-                        
+
+                        // Intensity Section
+                        intensitySection
+
                         // Schedule Section
                         scheduleSection
                         
@@ -210,6 +215,64 @@ struct TrainingPlanFormSheet: View {
         }
     }
     
+    // MARK: - Intensity Section
+    private var intensitySection: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+            Text("Intensity")
+                .font(DesignSystem.Typography.headlineSmall)
+                .foregroundColor(DesignSystem.Colors.primaryText)
+
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: DesignSystem.Spacing.sm) {
+                ForEach(TrainingIntensity.allCases, id: \.self) { level in
+                    intensityButton(level)
+                }
+            }
+        }
+    }
+
+    private func intensityButton(_ level: TrainingIntensity) -> some View {
+        let isSelected = intensity == level
+        let color = intensityColor(level)
+
+        return Button {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                intensity = level
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(color)
+                    .frame(width: 10, height: 10)
+                Text(level.displayName)
+                    .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
+            }
+            .foregroundColor(isSelected ? DesignSystem.Colors.primaryText : DesignSystem.Colors.secondaryText)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isSelected ? color.opacity(0.15) : DesignSystem.Colors.cardBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(isSelected ? color : DesignSystem.Colors.border, lineWidth: isSelected ? 2 : 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func intensityColor(_ level: TrainingIntensity) -> Color {
+        switch level {
+        case .light: return DesignSystem.Colors.powerGreen
+        case .moderate: return DesignSystem.Colors.eliteGold
+        case .hard: return .orange
+        case .veryHard: return DesignSystem.Colors.alertRed
+        }
+    }
+
     // MARK: - Schedule Section
     private var scheduleSection: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
@@ -379,7 +442,7 @@ struct TrainingPlanFormSheet: View {
                     sequence: 1,
                     trainingType: activityType.rawValue,
                     startTime: timeString,
-                    intensity: "moderate", // Default since we removed intensity picker
+                    intensity: intensity.rawValue,
                     durationMinutes: durationMinutes,
                     notes: notes.isEmpty ? nil : notes,
                     createdAt: nil,
@@ -394,7 +457,7 @@ struct TrainingPlanFormSheet: View {
                     sequence: existingPlan.sequence,
                     trainingType: activityType.rawValue,
                     startTime: timeString,
-                    intensity: existingPlan.intensity ?? "moderate",
+                    intensity: intensity.rawValue,
                     durationMinutes: durationMinutes,
                     notes: notes.isEmpty ? nil : notes,
                     createdAt: existingPlan.createdAt,
