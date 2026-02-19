@@ -126,6 +126,7 @@ class SupabaseManager: NSObject, ObservableObject {
         }
     }
     private var oauthSession: ASWebAuthenticationSession?
+    private var refreshTask: Task<Void, Error>?
     private(set) lazy var api: APIClient = {
         APIClient(
             baseURL: self.baseURL,
@@ -412,10 +413,17 @@ class SupabaseManager: NSObject, ObservableObject {
     func signOut() async throws {
         isLoading = true
         defer { isLoading = false }
-        
-        // TODO: Implement actual sign out
-        try await Task.sleep(nanoseconds: 500_000_000)
-        
+
+        // Revoke session on Supabase server
+        if let token = authToken {
+            var req = URLRequest(url: URL(string: "\(Config.authEndpoint)/logout")!)
+            req.httpMethod = "POST"
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            req.setValue(Config.supabaseAnonKey, forHTTPHeaderField: "apikey")
+            // Best-effort — don't block sign-out on network failure
+            _ = try? await URLSession.shared.data(for: req)
+        }
+
         clearSession()
     }
 
@@ -481,28 +489,42 @@ class SupabaseManager: NSObject, ObservableObject {
 
     // Refresh Supabase access token using refresh token
     func refreshAuthToken() async throws {
-        guard let rt = refreshToken, !rt.isEmpty else { throw SupabaseError.notAuthenticated }
-        guard let url = URL(string: "\(Config.authEndpoint)/token?grant_type=refresh_token") else {
-            throw SupabaseError.invalidData
+        // Deduplicate concurrent refresh requests
+        if let existingTask = refreshTask {
+            return try await existingTask.value
         }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue(Config.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        req.httpBody = try JSONSerialization.data(withJSONObject: [
-            "refresh_token": rt
-        ])
-        print("AUTH: refreshing access token…")
-        let (data, response) = try await URLSession.shared.data(for: req)
-        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-            print("AUTH: refresh failed status", (response as? HTTPURLResponse)?.statusCode ?? -1, String(data: data, encoding: .utf8) ?? "")
-            throw SupabaseError.notAuthenticated
+
+        let task = Task<Void, Error> { [weak self] in
+            guard let self else { throw SupabaseError.notAuthenticated }
+            guard let rt = refreshToken, !rt.isEmpty else { throw SupabaseError.notAuthenticated }
+            guard let url = URL(string: "\(Config.authEndpoint)/token?grant_type=refresh_token") else {
+                throw SupabaseError.invalidData
+            }
+            var req = URLRequest(url: url)
+            req.httpMethod = "POST"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.setValue(Config.supabaseAnonKey, forHTTPHeaderField: "apikey")
+            req.httpBody = try JSONSerialization.data(withJSONObject: [
+                "refresh_token": rt
+            ])
+            print("AUTH: refreshing access token…")
+            let (data, response) = try await URLSession.shared.data(for: req)
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+                print("AUTH: refresh failed status", (response as? HTTPURLResponse)?.statusCode ?? -1, String(data: data, encoding: .utf8) ?? "")
+                throw SupabaseError.notAuthenticated
+            }
+            let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+            guard let access = json?["access_token"] as? String else { throw SupabaseError.invalidData }
+            await MainActor.run {
+                self.authToken = access
+                if let newRt = json?["refresh_token"] as? String { self.refreshToken = newRt }
+            }
+            print("AUTH: refresh success")
         }
-        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        guard let access = json?["access_token"] as? String else { throw SupabaseError.invalidData }
-        self.authToken = access
-        if let newRt = json?["refresh_token"] as? String { self.refreshToken = newRt }
-        print("AUTH: refresh success")
+
+        refreshTask = task
+        defer { refreshTask = nil }
+        try await task.value
     }
     
     // MARK: - Daily Entries (Cache-First Strategy)
@@ -1601,6 +1623,7 @@ enum KeychainService {
         SecItemDelete(query as CFDictionary)
         var attributes = query
         attributes[kSecValueData as String] = data
+        attributes[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlocked
         return SecItemAdd(attributes as CFDictionary, nil)
     }
 
