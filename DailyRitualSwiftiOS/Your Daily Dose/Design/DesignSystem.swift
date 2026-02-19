@@ -25,29 +25,29 @@ struct DesignSystem {
     // MARK: - Dual Theme Color System - Elite Performance in Any Light
     struct Colors {
         // MARK: - Universal Performance Accents (Consistent Across Themes)
-        // Vibrant neon palette for high-energy athletic feel
-        static let eliteGold = Color(red: 1.0, green: 0.9, blue: 0.0)       // #FFE600 - Neon Yellow - Primary CTA, achievements
-        static let championBlue = Color(red: 0.0, green: 0.75, blue: 1.0)   // #00BFFF - Electric Blue - Evening reflection
-        static let alertRed = Color(red: 1.0, green: 0.25, blue: 0.35)      // #FF4059 - Vivid Red - Warnings, critical data
-        
+        // Warm muted palette for brutalist aesthetic
+        static let eliteGold = Color(red: 0.78, green: 0.70, blue: 0.55)    // #c8b28c - Warm sand accent
+        static let championBlue = Color(red: 0.41, green: 0.50, blue: 0.63) // #6880a0 - Muted steel blue
+        static let alertRed = Color(red: 0.72, green: 0.36, blue: 0.36)     // #b85c5c - Muted warm red
+
         // MARK: - Theme-Aware Colors (Automatically adapt based on system appearance)
+
+        // Power Green - Success states, goals completed
+        static let powerGreen = Color(red: 0.37, green: 0.58, blue: 0.38)   // #5e9460 - Muted sage green
+        static let powerGreenLight = Color(red: 0.42, green: 0.63, blue: 0.43) // #6ba16e - Lighter sage (light mode)
         
-        // Power Green - Success states, goals completed (Neon Lime)
-        static let powerGreen = Color(red: 0.22, green: 1.0, blue: 0.08)    // #39FF14 - Electric Lime
-        static let powerGreenLight = Color(red: 0.0, green: 0.9, blue: 0.3) // #00E64D - Bright Green (light mode)
-        
-        // Background Foundation (Theme-aware - automatically adapts to light/dark mode)
+        // Background Foundation (Theme-aware - warm brutalist tones)
         static let background = Color(
-            light: Color(red: 0.97, green: 0.97, blue: 0.98),               // #F8F9FA - Clean White (light)
-            dark: Color(red: 0.04, green: 0.05, blue: 0.06)                 // #0B0C10 - Deeper Obsidian (dark)
+            light: Color(red: 0.96, green: 0.95, blue: 0.93),               // #F5F2EE - Warm off-white (light)
+            dark: Color(red: 0.047, green: 0.047, blue: 0.043)              // #0c0c0b - Warm dark base (dark)
         )
         static let secondaryBackground = Color(
-            light: Color.white,                                              // #FFFFFF - Pure White (light)
-            dark: Color(red: 0.08, green: 0.09, blue: 0.10)                // #14161A - Near black (dark)
+            light: Color(red: 0.98, green: 0.97, blue: 0.96),               // #FAF8F5 - Warm white (light)
+            dark: Color(red: 0.08, green: 0.08, blue: 0.07)                 // #141412 - Warm near black (dark)
         )
         static let cardBackground = Color(
-            light: Color(red: 0.95, green: 0.95, blue: 0.96),              // #F1F3F5 - Light Gray (light)
-            dark: Color(red: 0.07, green: 0.07, blue: 0.09)                // #111217 - Deep card (dark)
+            light: Color(red: 0.94, green: 0.93, blue: 0.90),               // #F0EDE6 - Warm light gray (light)
+            dark: Color(red: 0.07, green: 0.07, blue: 0.06)                 // #121210 - Warm deep card (dark)
         )
         
         // Dynamic Text Hierarchy (Theme-aware)
@@ -83,20 +83,20 @@ struct DesignSystem {
         
         // Deep Obsidian Dark Mode Background
         static let deepObsidian = Color(
-            light: Color(red: 0.97, green: 0.97, blue: 0.98),              // #F8F9FA - Clean White (light mode)
-            dark: Color(red: 0.04, green: 0.04, blue: 0.05)                // #0A0B0D - Deep Obsidian (dark mode)
+            light: Color(red: 0.96, green: 0.95, blue: 0.93),              // #F5F2EE - Warm off-white (light mode)
+            dark: Color(red: 0.04, green: 0.04, blue: 0.035)               // #0a0a09 - Warm deep (dark mode)
         )
-        
+
         // Carbon Black Secondary Surfaces
         static let carbonBlack = Color(
-            light: Color.white,                                              // #FFFFFF - Pure White (light mode)
-            dark: Color(red: 0.10, green: 0.11, blue: 0.12)                // #1A1B1F - Carbon Black (dark mode)
+            light: Color(red: 0.98, green: 0.97, blue: 0.96),              // #FAF8F5 - Warm white (light mode)
+            dark: Color(red: 0.10, green: 0.10, blue: 0.09)                // #1a1a17 - Warm carbon (dark mode)
         )
-        
+
         // Graphite Elevated Surfaces
         static let graphite = Color(
-            light: Color(red: 0.95, green: 0.95, blue: 0.96),              // #F1F3F5 - Light Gray (light mode)
-            dark: Color(red: 0.18, green: 0.18, blue: 0.20)                // #2D2E33 - Graphite (dark mode)
+            light: Color(red: 0.94, green: 0.93, blue: 0.90),              // #F0EDE6 - Warm light gray (light mode)
+            dark: Color(red: 0.18, green: 0.18, blue: 0.16)                // #2D2D29 - Warm graphite (dark mode)
         )
         
         // Performance Text Colors with High Contrast
@@ -123,11 +123,11 @@ struct DesignSystem {
         static let success = powerGreen                                      // Success states
         static let warning = Color.orange                                    // Warning states
         
-        // Time-based theming with new palette
-        static let morning = eliteGold.opacity(0.1)                         // Gold tint for morning
-        static let morningAccent = eliteGold                                 // Elite Gold for morning
-        static let evening = championBlue.opacity(0.1)                      // Blue tint for evening
-        static let eveningAccent = championBlue                              // Champion Blue for evening
+        // Time-based theming with warm palette
+        static let morning = Color(red: 0.80, green: 0.48, blue: 0.26).opacity(0.1) // Warm orange tint for morning
+        static let morningAccent = Color(red: 0.80, green: 0.48, blue: 0.26) // #cc7a42 - Warm orange for morning
+        static let evening = championBlue.opacity(0.1)                       // Blue tint for evening
+        static let eveningAccent = championBlue                              // Muted blue for evening
         
         // MARK: - Elite Performance Gradients (Theme-Aware)
         static let morningGradient = LinearGradient(
@@ -180,20 +180,20 @@ struct DesignSystem {
     // MARK: - Premium Typography System
     // Using Instrument Sans + Crimson Pro for distinctive, premium feel
     struct Typography {
-        // Headers & Display - Instrument Sans Variable Font with weights
-        static let displayLarge = Font.custom("Instrument Sans", size: 34, relativeTo: .largeTitle).weight(.semibold)
-        static let displayMedium = Font.custom("Instrument Sans", size: 28, relativeTo: .title).weight(.semibold)
-        static let displaySmall = Font.custom("Instrument Sans", size: 22, relativeTo: .title2).weight(.semibold)
-        
-        // Headlines - Instrument Sans Medium for clear hierarchy
-        static let headlineLarge = Font.custom("Instrument Sans", size: 20, relativeTo: .title3).weight(.semibold)
-        static let headlineMedium = Font.custom("Instrument Sans", size: 18, relativeTo: .headline).weight(.semibold)
-        static let headlineSmall = Font.custom("Instrument Sans", size: 16, relativeTo: .headline).weight(.medium)
-        
-        // Body Text - Instrument Sans Regular (weight 400) for optimal readability
-        static let bodyLarge = Font.custom("Instrument Sans", size: 17, relativeTo: .body).weight(.regular)
-        static let bodyMedium = Font.custom("Instrument Sans", size: 15, relativeTo: .callout).weight(.regular)
-        static let bodySmall = Font.custom("Instrument Sans", size: 13, relativeTo: .subheadline).weight(.regular)
+        // Headers & Display - Instrument Sans Variable Font with heavy weights (brutalist)
+        static let displayLarge = Font.custom("Instrument Sans", size: 34, relativeTo: .largeTitle).weight(.bold)
+        static let displayMedium = Font.custom("Instrument Sans", size: 28, relativeTo: .title).weight(.bold)
+        static let displaySmall = Font.custom("Instrument Sans", size: 22, relativeTo: .title2).weight(.bold)
+
+        // Headlines - Instrument Sans Bold for strong hierarchy (brutalist)
+        static let headlineLarge = Font.custom("Instrument Sans", size: 20, relativeTo: .title3).weight(.bold)
+        static let headlineMedium = Font.custom("Instrument Sans", size: 18, relativeTo: .headline).weight(.bold)
+        static let headlineSmall = Font.custom("Instrument Sans", size: 16, relativeTo: .headline).weight(.semibold)
+
+        // Body Text - Instrument Sans Medium for brutalist weight
+        static let bodyLarge = Font.custom("Instrument Sans", size: 17, relativeTo: .body).weight(.medium)
+        static let bodyMedium = Font.custom("Instrument Sans", size: 15, relativeTo: .callout).weight(.medium)
+        static let bodySmall = Font.custom("Instrument Sans", size: 13, relativeTo: .subheadline).weight(.medium)
         
         // Quotes & Affirmations - Crimson Pro Italic Variable Font
         static let quoteText = Font.custom("Crimson Pro", size: 18, relativeTo: .body).italic()
@@ -206,18 +206,18 @@ struct DesignSystem {
         static let journalText = Font.custom("Instrument Sans", size: 16, relativeTo: .body).weight(.regular)
         static let journalPlaceholder = Font.custom("Instrument Sans", size: 16, relativeTo: .body).weight(.regular)
         
-        // UI Elements & Buttons - Instrument Sans Medium (weight 500)
-        static let buttonLarge = Font.custom("Instrument Sans", size: 17, relativeTo: .headline).weight(.semibold)
-        static let buttonMedium = Font.custom("Instrument Sans", size: 15, relativeTo: .body).weight(.medium)
-        static let buttonSmall = Font.custom("Instrument Sans", size: 13, relativeTo: .subheadline).weight(.medium)
+        // UI Elements & Buttons - Instrument Sans Bold (brutalist)
+        static let buttonLarge = Font.custom("Instrument Sans", size: 17, relativeTo: .headline).weight(.bold)
+        static let buttonMedium = Font.custom("Instrument Sans", size: 15, relativeTo: .body).weight(.semibold)
+        static let buttonSmall = Font.custom("Instrument Sans", size: 13, relativeTo: .subheadline).weight(.semibold)
         
-        // Captions and metadata - Instrument Sans Regular
-        static let caption = Font.custom("Instrument Sans", size: 12, relativeTo: .caption).weight(.regular)
-        static let metadata = Font.custom("Instrument Sans", size: 11, relativeTo: .caption2).weight(.regular)
+        // Captions and metadata - Instrument Sans Medium (brutalist)
+        static let caption = Font.custom("Instrument Sans", size: 12, relativeTo: .caption).weight(.medium)
+        static let metadata = Font.custom("Instrument Sans", size: 11, relativeTo: .caption2).weight(.medium)
         
         // Fallback fonts in case custom fonts aren't available
-        static let displayLargeFallback = Font.system(size: 34, weight: .semibold, design: .default)
-        static let bodyLargeFallback = Font.system(size: 17, weight: .regular, design: .default)
+        static let displayLargeFallback = Font.system(size: 34, weight: .bold, design: .default)
+        static let bodyLargeFallback = Font.system(size: 17, weight: .medium, design: .default)
         static let quoteTextFallback = Font.system(size: 18, weight: .regular, design: .serif).italic()
         
         // MARK: - Font Loading Helpers
@@ -246,16 +246,16 @@ struct DesignSystem {
         }
 
         // MARK: - Safe Font Variants (dynamic)
-        static var displayLargeSafe: Font { safeFont(name: "Instrument Sans", size: 34, relativeTo: .largeTitle, weight: .semibold) }
-        static var displayMediumSafe: Font { safeFont(name: "Instrument Sans", size: 28, relativeTo: .title, weight: .semibold) }
-        static var displaySmallSafe: Font { safeFont(name: "Instrument Sans", size: 22, relativeTo: .title2, weight: .medium) }
-        static var headlineLargeSafe: Font { safeFont(name: "Instrument Sans", size: 20, relativeTo: .title3, weight: .semibold) }
-        static var bodyLargeSafe: Font { safeFont(name: "Instrument Sans", size: 17, relativeTo: .body) }
+        static var displayLargeSafe: Font { safeFont(name: "Instrument Sans", size: 34, relativeTo: .largeTitle, weight: .bold) }
+        static var displayMediumSafe: Font { safeFont(name: "Instrument Sans", size: 28, relativeTo: .title, weight: .bold) }
+        static var displaySmallSafe: Font { safeFont(name: "Instrument Sans", size: 22, relativeTo: .title2, weight: .bold) }
+        static var headlineLargeSafe: Font { safeFont(name: "Instrument Sans", size: 20, relativeTo: .title3, weight: .bold) }
+        static var bodyLargeSafe: Font { safeFont(name: "Instrument Sans", size: 17, relativeTo: .body, weight: .medium) }
         static var quoteTextSafe: Font { safeFont(name: "Crimson Pro", size: 18, relativeTo: .body, fallbackDesign: .serif, italic: true) }
-        static var journalTitleSafe: Font { safeFont(name: "Instrument Sans", size: 20, relativeTo: .title3, weight: .medium) }
-        static var journalTextSafe: Font { safeFont(name: "Instrument Sans", size: 16, relativeTo: .body) }
+        static var journalTitleSafe: Font { safeFont(name: "Instrument Sans", size: 20, relativeTo: .title3, weight: .bold) }
+        static var journalTextSafe: Font { safeFont(name: "Instrument Sans", size: 16, relativeTo: .body, weight: .medium) }
         static var affirmationTextSafe: Font { safeFont(name: "Crimson Pro", size: 16, relativeTo: .body, fallbackDesign: .serif, italic: true) }
-        static var buttonLargeSafe: Font { safeFont(name: "Instrument Sans", size: 17, relativeTo: .headline, weight: .medium) }
+        static var buttonLargeSafe: Font { safeFont(name: "Instrument Sans", size: 17, relativeTo: .headline, weight: .bold) }
     }
     
     // MARK: - Spacing System - Generous & Mindful
@@ -286,64 +286,63 @@ struct DesignSystem {
         static let lineSpacingRelaxed: CGFloat = 6  // For journal text
     }
     
-    // MARK: - Corner Radius - Soft & Modern
+    // MARK: - Corner Radius - Sharp Brutalist
     struct CornerRadius {
-        static let small: CGFloat = 8
-        static let medium: CGFloat = 16     // Primary radius for cards
-        static let large: CGFloat = 24      // For prominent elements
-        static let extraLarge: CGFloat = 32 // For hero elements
-        
+        static let small: CGFloat = 2
+        static let medium: CGFloat = 4      // Primary radius for cards
+        static let large: CGFloat = 6       // For prominent elements
+        static let extraLarge: CGFloat = 8  // For hero elements
+
         // Semantic radii
-        static let card: CGFloat = 16
-        static let button: CGFloat = 12
-        static let input: CGFloat = 12
-        static let badge: CGFloat = 20      // Fully rounded small elements
+        static let card: CGFloat = 4
+        static let button: CGFloat = 4
+        static let input: CGFloat = 4
+        static let badge: CGFloat = 4       // Minimal rounding
     }
     
-    // MARK: - Elite Performance Shadow System - Theme-Aware Elevation
+    // MARK: - Shadow System - Minimal (Brutalist: structure through borders, not depth)
     struct Shadow {
-        // Theme-aware shadows that work in both light and dark modes
         static let subtle = (
-            color: Color.primary.opacity(0.08),
-            radius: CGFloat(4),
+            color: Color.primary.opacity(0.02),
+            radius: CGFloat(1),
+            x: CGFloat(0),
+            y: CGFloat(0)
+        )
+
+        static let card = (
+            color: Color.primary.opacity(0.03),
+            radius: CGFloat(2),
             x: CGFloat(0),
             y: CGFloat(1)
         )
-        
-        static let card = (
-            color: Color.primary.opacity(0.12),
-            radius: CGFloat(8),
+
+        static let elevated = (
+            color: Color.primary.opacity(0.04),
+            radius: CGFloat(3),
+            x: CGFloat(0),
+            y: CGFloat(1)
+        )
+
+        static let floating = (
+            color: Color.primary.opacity(0.06),
+            radius: CGFloat(4),
             x: CGFloat(0),
             y: CGFloat(2)
         )
-        
-        static let elevated = (
-            color: Color.primary.opacity(0.16),
-            radius: CGFloat(12),
-            x: CGFloat(0),
-            y: CGFloat(4)
-        )
-        
-        static let floating = (
-            color: Color.primary.opacity(0.20),
-            radius: CGFloat(16),
-            x: CGFloat(0),
-            y: CGFloat(6)
-        )
-        
-        // Elite performance shadows for special states (still used for floating controls)
+
+        // Special states — still minimal
         static let achievement = (
-            color: DesignSystem.Colors.eliteGold.opacity(0.3),
-            radius: CGFloat(20),
+            color: DesignSystem.Colors.eliteGold.opacity(0.08),
+            radius: CGFloat(4),
             x: CGFloat(0),
-            y: CGFloat(8)
+            y: CGFloat(2)
         )
-        
+
         static let success = (
-            color: DesignSystem.Colors.powerGreen.opacity(0.3),
-            radius: CGFloat(16),
+            color: DesignSystem.Colors.powerGreen.opacity(0.08),
+            radius: CGFloat(4),
             x: CGFloat(0),
-            y: CGFloat(6)
+            y: CGFloat(2)
         )
     }
     
@@ -979,8 +978,8 @@ extension DesignSystem.Colors {
     static func accentOnSurface(for scheme: ColorScheme) -> Color {
         switch scheme {
         case .light:
-            // Darker gold variant for better contrast on light backgrounds
-            return Color(red: 0.80, green: 0.57, blue: 0.00)
+            // Darker warm accent for better contrast on light backgrounds
+            return Color(red: 0.60, green: 0.52, blue: 0.38)
         default:
             return eliteGold
         }
