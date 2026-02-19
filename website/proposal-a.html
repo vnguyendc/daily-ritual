@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Ritual — Proposal A: Kinetic Brutalist</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bebas+Neue&family=JetBrains+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --black: #050505;
+            --white: #f0ede8;
+            --off-white: #d8d4cc;
+            --gray: #6b6660;
+            --dark-gray: #1a1918;
+            --card: #0e0e0d;
+            --volt: #c8ff00;
+            --volt-dim: rgba(200, 255, 0, 0.08);
+            --volt-med: rgba(200, 255, 0, 0.15);
+            --red-accent: #ff3b30;
+            --font-display: 'Bebas Neue', 'Arial Black', sans-serif;
+            --font-heading: 'Syne', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-impact: 'Archivo Black', sans-serif;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background: var(--black);
+            color: var(--white);
+            font-family: var(--font-mono);
+            line-height: 1.6;
+            overflow-x: hidden;
+            cursor: crosshair;
+        }
+
+        /* Noise texture */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.04;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+
+        /* Scan line effect */
+        .scanlines {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9998;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.03) 2px,
+                rgba(0,0,0,0.03) 4px
+            );
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 1.5rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            mix-blend-mode: difference;
+        }
+
+        .nav-brand {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            letter-spacing: 0.15em;
+            color: var(--white);
+            text-decoration: none;
+            text-transform: uppercase;
+        }
+
+        .nav-brand span {
+            color: var(--volt);
+            position: relative;
+        }
+
+        .nav-brand span::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--volt);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--off-white);
+            text-decoration: none;
+            transition: color 0.2s;
+            position: relative;
+        }
+
+        .nav-links a::before {
+            content: '//';
+            margin-right: 0.3rem;
+            color: var(--gray);
+        }
+
+        .nav-links a:hover {
+            color: var(--volt);
+        }
+
+        /* Hero */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 8rem 3rem 4rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-bg-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: var(--font-impact);
+            font-size: clamp(15rem, 30vw, 40rem);
+            color: rgba(255, 255, 255, 0.015);
+            white-space: nowrap;
+            pointer-events: none;
+            user-select: none;
+            text-transform: uppercase;
+            letter-spacing: -0.03em;
+        }
+
+        .hero-tag {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 400;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--volt);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            opacity: 0;
+            animation: slideIn 0.6s ease forwards 0.3s;
+        }
+
+        .hero-tag::before {
+            content: '';
+            width: 40px;
+            height: 1px;
+            background: var(--volt);
+        }
+
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(4.5rem, 12vw, 12rem);
+            font-weight: 400;
+            line-height: 0.9;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            color: var(--white);
+            max-width: 12ch;
+            margin-bottom: 3rem;
+            opacity: 0;
+            animation: slideIn 0.8s ease forwards 0.5s;
+        }
+
+        .hero h1 .accent {
+            color: var(--volt);
+            font-style: italic;
+            display: inline-block;
+            transform: skewX(-6deg);
+        }
+
+        .hero h1 .strikethrough {
+            text-decoration: line-through;
+            color: var(--gray);
+            text-decoration-color: var(--red-accent);
+            text-decoration-thickness: 3px;
+        }
+
+        .hero-desc {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            font-weight: 300;
+            line-height: 1.8;
+            color: var(--gray);
+            max-width: 50ch;
+            margin-bottom: 3.5rem;
+            opacity: 0;
+            animation: slideIn 0.8s ease forwards 0.7s;
+        }
+
+        .hero-desc strong {
+            color: var(--off-white);
+            font-weight: 500;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            opacity: 0;
+            animation: slideIn 0.8s ease forwards 0.9s;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1.1rem 2.5rem;
+            background: var(--volt);
+            color: var(--black);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+        }
+
+        .btn-primary:hover {
+            background: var(--white);
+            transform: translate(-2px, -2px);
+            box-shadow: 4px 4px 0 var(--volt);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1.1rem 2rem;
+            background: transparent;
+            color: var(--off-white);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 400;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            text-decoration: none;
+            border: 1px solid rgba(255,255,255,0.12);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--volt);
+            color: var(--volt);
+        }
+
+        /* Counter strip */
+        .counter-strip {
+            display: flex;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .counter-item {
+            flex: 1;
+            padding: 3rem;
+            text-align: center;
+            border-right: 1px solid rgba(255,255,255,0.06);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .counter-item:last-child { border-right: none; }
+
+        .counter-item::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--volt-dim);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .counter-item:hover::before { opacity: 1; }
+
+        .counter-number {
+            font-family: var(--font-display);
+            font-size: 3.5rem;
+            color: var(--volt);
+            letter-spacing: 0.05em;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .counter-label {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 400;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--gray);
+        }
+
+        /* Features */
+        .features {
+            padding: 8rem 3rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 5rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .section-header h2 {
+            font-family: var(--font-display);
+            font-size: clamp(3rem, 6vw, 5rem);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            line-height: 0.95;
+        }
+
+        .section-header h2 span {
+            display: block;
+            color: var(--gray);
+            font-size: 0.4em;
+            letter-spacing: 0.1em;
+        }
+
+        .section-number {
+            font-family: var(--font-display);
+            font-size: 5rem;
+            color: rgba(255,255,255,0.04);
+            line-height: 1;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .feature-cell {
+            padding: 3rem 2.5rem;
+            border-right: 1px solid rgba(255,255,255,0.06);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            position: relative;
+            transition: all 0.4s;
+            cursor: default;
+        }
+
+        .feature-cell:nth-child(3n) { border-right: none; }
+        .feature-cell:nth-child(n+4) { border-bottom: none; }
+
+        .feature-cell::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--volt-dim), transparent);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .feature-cell:hover::before { opacity: 1; }
+
+        .feature-cell:hover {
+            transform: scale(1.01);
+            z-index: 2;
+        }
+
+        .feature-index {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            color: rgba(200, 255, 0, 0.15);
+            line-height: 1;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-cell h3 {
+            font-family: var(--font-heading);
+            font-size: 1.15rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--white);
+            margin-bottom: 0.75rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .feature-cell p {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            font-weight: 300;
+            line-height: 1.7;
+            color: var(--gray);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Ritual Timeline */
+        .ritual {
+            padding: 8rem 3rem;
+            background: var(--dark-gray);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ritual::before {
+            content: 'RITUAL';
+            position: absolute;
+            top: -2rem;
+            right: -2rem;
+            font-family: var(--font-impact);
+            font-size: 20rem;
+            color: rgba(255,255,255,0.012);
+            line-height: 1;
+            pointer-events: none;
+        }
+
+        .ritual-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0;
+            margin-top: 4rem;
+        }
+
+        .ritual-card {
+            padding: 2.5rem 2rem;
+            border-left: 1px solid rgba(255,255,255,0.06);
+            position: relative;
+        }
+
+        .ritual-card:first-child { border-left: none; }
+
+        .ritual-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--volt);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .ritual-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .ritual-time {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            font-weight: 500;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--volt);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .ritual-time::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--volt);
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+
+        .ritual-card h4 {
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--white);
+            margin-bottom: 1rem;
+        }
+
+        .ritual-card p {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            font-weight: 300;
+            line-height: 1.7;
+            color: var(--gray);
+        }
+
+        /* Integrations */
+        .integrations {
+            padding: 6rem 3rem;
+            text-align: center;
+        }
+
+        .integrations h2 {
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--gray);
+            margin-bottom: 3rem;
+        }
+
+        .int-row {
+            display: flex;
+            justify-content: center;
+            gap: 4rem;
+        }
+
+        .int-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.8rem 1.5rem;
+            border: 1px solid rgba(255,255,255,0.08);
+            clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+            transition: all 0.3s;
+            cursor: default;
+        }
+
+        .int-badge:hover {
+            border-color: var(--volt);
+            background: var(--volt-dim);
+        }
+
+        .int-badge svg {
+            width: 20px;
+            height: 20px;
+            color: var(--volt);
+        }
+
+        .int-badge span {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--off-white);
+        }
+
+        /* Waitlist */
+        .waitlist {
+            padding: 8rem 3rem;
+            max-width: 700px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .waitlist h2 {
+            font-family: var(--font-display);
+            font-size: clamp(3rem, 6vw, 5rem);
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            color: var(--white);
+            margin-bottom: 1rem;
+        }
+
+        .waitlist h2 .accent { color: var(--volt); }
+
+        .waitlist > p {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            font-weight: 300;
+            color: var(--gray);
+            margin-bottom: 3rem;
+        }
+
+        .waitlist-form {
+            display: flex;
+            gap: 0;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .waitlist-form input {
+            flex: 1;
+            padding: 1.1rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--white);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            outline: none;
+        }
+
+        .waitlist-form input::placeholder {
+            color: var(--gray);
+        }
+
+        .waitlist-form button {
+            padding: 1.1rem 2.5rem;
+            background: var(--volt);
+            color: var(--black);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .waitlist-form button:hover {
+            background: var(--white);
+        }
+
+        .waitlist-message {
+            margin-top: 1rem;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            min-height: 1.4em;
+        }
+
+        .waitlist-message.success { color: var(--volt); }
+        .waitlist-message.error { color: var(--red-accent); }
+
+        /* Footer */
+        footer {
+            padding: 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .footer-left {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--gray);
+            letter-spacing: 0.05em;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .footer-links a {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--gray);
+            text-decoration: none;
+            letter-spacing: 0.05em;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover { color: var(--volt); }
+
+        /* Animations */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .features-grid { grid-template-columns: 1fr; }
+            .feature-cell { border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.06) !important; }
+            .ritual-grid { grid-template-columns: 1fr 1fr; }
+            .counter-strip { flex-wrap: wrap; }
+            .counter-item { flex: 1 1 50%; }
+        }
+
+        @media (max-width: 600px) {
+            nav { padding: 1.25rem 1.5rem; }
+            .nav-links { display: none; }
+            .hero { padding: 6rem 1.5rem 4rem; }
+            .features { padding: 5rem 1.5rem; }
+            .ritual { padding: 5rem 1.5rem; }
+            .ritual-grid { grid-template-columns: 1fr; }
+            .ritual-card { border-left: none; border-bottom: 1px solid rgba(255,255,255,0.06); }
+            .section-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+            .hero-actions { flex-direction: column; align-items: flex-start; }
+            .waitlist-form { flex-direction: column; }
+            .int-row { flex-direction: column; align-items: center; gap: 1rem; }
+            footer { flex-direction: column; gap: 1rem; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+
+    <nav>
+        <a href="/" class="nav-brand">DAILY <span>RITUAL</span></a>
+        <ul class="nav-links">
+            <li><a href="#features">Features</a></li>
+            <li><a href="#ritual">Process</a></li>
+            <li><a href="#waitlist">Waitlist</a></li>
+            <li><a href="mailto:support@dailyritual.app">Contact</a></li>
+        </ul>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-bg-text">RITUAL</div>
+        <div class="hero-tag">Performance Journaling for Athletes</div>
+        <h1>
+            TRAIN YOUR<br>
+            <span class="accent">MIND</span> LIKE<br>
+            YOUR <span class="strikethrough">BODY</span> BODY
+        </h1>
+        <p class="hero-desc">
+            <strong>Structured daily practice</strong> that turns mental training
+            into a habit as automatic as your physical training.<br>
+            Morning rituals. Workout reflections. Evening insights. <strong>All connected.</strong>
+        </p>
+        <div class="hero-actions">
+            <a href="#waitlist" class="btn-primary">
+                Join the waitlist
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+            </a>
+            <a href="#features" class="btn-secondary">
+                // explore features
+            </a>
+        </div>
+    </section>
+
+    <div class="counter-strip reveal">
+        <div class="counter-item">
+            <div class="counter-number">03</div>
+            <div class="counter-label">Daily Rituals</div>
+        </div>
+        <div class="counter-item">
+            <div class="counter-number">05</div>
+            <div class="counter-label">Min / Session</div>
+        </div>
+        <div class="counter-item">
+            <div class="counter-number">AI</div>
+            <div class="counter-label">Insight Engine</div>
+        </div>
+        <div class="counter-item">
+            <div class="counter-number">&infin;</div>
+            <div class="counter-label">Pattern Discovery</div>
+        </div>
+    </div>
+
+    <section class="features" id="features">
+        <div class="section-header reveal">
+            <h2>BUILT FOR<br>THE ATHLETE'S<br><span>RHYTHM</span></h2>
+            <div class="section-number">01</div>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-cell reveal">
+                <div class="feature-index">01</div>
+                <h3>Morning Ritual</h3>
+                <p>Set your intention before the day begins. Goals, gratitude, affirmations, and a curated quote to anchor your mindset for training.</p>
+            </div>
+            <div class="feature-cell reveal">
+                <div class="feature-index">02</div>
+                <h3>Workout Reflections</h3>
+                <p>Capture what went well and what to improve while the session is fresh. Rate your energy, focus, and training feeling.</p>
+            </div>
+            <div class="feature-cell reveal">
+                <div class="feature-index">03</div>
+                <h3>Evening Reflection</h3>
+                <p>Close the day with structured reflection. Mood tracking, wins, areas for growth. Build the data that reveals your patterns.</p>
+            </div>
+            <div class="feature-cell reveal">
+                <div class="feature-index">04</div>
+                <h3>AI Insights</h3>
+                <p>Connects your mental state to training outcomes. Surfaces patterns you can't see yourself, from mood-performance links to recovery blind spots.</p>
+            </div>
+            <div class="feature-cell reveal">
+                <div class="feature-index">05</div>
+                <h3>Device Sync</h3>
+                <p>Pulls recovery, strain, and workout data from Whoop, Strava, and Apple Health. Physical data meets mental journal.</p>
+            </div>
+            <div class="feature-cell reveal">
+                <div class="feature-index">06</div>
+                <h3>Streaks & Consistency</h3>
+                <p>Track your daily practice streaks. Morning, workout, and evening rituals each build their own momentum. Small deposits, compounding returns.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="ritual" id="ritual">
+        <div class="section-header reveal">
+            <h2>YOUR DAILY<br>PRACTICE<br><span>PROTOCOL</span></h2>
+            <div class="section-number">02</div>
+        </div>
+
+        <div class="ritual-grid">
+            <div class="ritual-card reveal">
+                <div class="ritual-time">Morning</div>
+                <h4>Set Your Intention</h4>
+                <p>Goals for the day, three gratitudes, a personal affirmation, and reflection on an athlete-curated quote. Five minutes that frame the next sixteen hours.</p>
+            </div>
+            <div class="ritual-card reveal">
+                <div class="ritual-time">Post-Workout</div>
+                <h4>Reflect on the Session</h4>
+                <p>Rate your feeling, energy, and focus. Note what clicked and what didn't. The freshest insights come right after training.</p>
+            </div>
+            <div class="ritual-card reveal">
+                <div class="ritual-time">Evening</div>
+                <h4>Close the Day</h4>
+                <p>How did the day go? Overall mood and honest self-assessment. The loop closes, the data builds, the patterns emerge.</p>
+            </div>
+            <div class="ritual-card reveal">
+                <div class="ritual-time">Continuous</div>
+                <h4>AI Connects the Dots</h4>
+                <p>Over time, Daily Ritual reveals relationships between your mental state and physical performance no single entry could show you.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="integrations reveal">
+        <h2>Connects with your stack</h2>
+        <div class="int-row">
+            <div class="int-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                <span>Whoop</span>
+            </div>
+            <div class="int-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                <span>Strava</span>
+            </div>
+            <div class="int-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                <span>Apple Health</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="waitlist" id="waitlist">
+        <h2>GET <span class="accent">EARLY</span> ACCESS</h2>
+        <p>Be first in line. One email when we launch. No spam. No noise.</p>
+        <form class="waitlist-form" id="waitlist-form" action="https://formspree.io/f/xaqdqapz" method="POST">
+            <input type="email" name="email" placeholder="your@email.com" required autocomplete="email">
+            <button type="submit" id="waitlist-submit">NOTIFY ME</button>
+        </form>
+        <p class="waitlist-message" id="waitlist-message" aria-live="polite"></p>
+    </section>
+
+    <footer>
+        <div class="footer-left">// &copy; 2025 Daily Ritual</div>
+        <div class="footer-links">
+            <a href="privacy.html">Privacy</a>
+            <a href="mailto:support@dailyritual.app">Support</a>
+        </div>
+    </footer>
+
+    <script>
+        const reveals = document.querySelectorAll('.reveal');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry, i) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => entry.target.classList.add('visible'), i * 60);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+        reveals.forEach(el => observer.observe(el));
+
+        const waitlistForm = document.getElementById('waitlist-form');
+        const waitlistSubmit = document.getElementById('waitlist-submit');
+        const waitlistMessage = document.getElementById('waitlist-message');
+        if (waitlistForm) {
+            waitlistForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                waitlistSubmit.disabled = true;
+                waitlistMessage.textContent = '';
+                waitlistMessage.className = 'waitlist-message';
+                try {
+                    const res = await fetch(waitlistForm.action, {
+                        method: 'POST', body: new FormData(waitlistForm),
+                        headers: { Accept: 'application/json' }
+                    });
+                    const data = await res.json();
+                    if (data.ok) {
+                        waitlistMessage.textContent = "You're on the list. Stand by.";
+                        waitlistMessage.className = 'waitlist-message success';
+                        waitlistForm.reset();
+                    } else {
+                        waitlistMessage.textContent = 'Something went wrong. Try again.';
+                        waitlistMessage.className = 'waitlist-message error';
+                    }
+                } catch {
+                    waitlistMessage.textContent = 'Something went wrong. Try again.';
+                    waitlistMessage.className = 'waitlist-message error';
+                }
+                waitlistSubmit.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>

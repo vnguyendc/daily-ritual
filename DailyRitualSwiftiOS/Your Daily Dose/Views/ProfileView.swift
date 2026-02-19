@@ -35,6 +35,13 @@ struct ProfileView: View {
     @State private var showSaveSuccess = false
     @State private var showingTimezoneSheet = false
     @State private var showingEntries = false
+
+    // Stats state
+    @ObservedObject private var streaksService = StreaksService.shared
+    @State private var totalTrainingSessions: Int?
+    @State private var totalMorningReflections: Int?
+    @State private var totalEveningReflections: Int?
+    @State private var isLoadingStats = false
     
     private var timeContext: DesignSystem.TimeContext { DesignSystem.TimeContext.current() }
     
@@ -121,7 +128,10 @@ struct ProfileView: View {
         VStack(spacing: DesignSystem.Spacing.xl) {
             // Profile header
             profileHeader
-            
+
+            // Stats dashboard
+            profileStatsSection
+
             // Account section
             accountSection
             
@@ -166,6 +176,7 @@ struct ProfileView: View {
         .onAppear {
             loadUserData()
             Task { try? await supabase.fetchProfile() }
+            Task { await loadProfileStats() }
         }
     }
     
@@ -691,6 +702,104 @@ struct ProfileView: View {
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: showSaveSuccess)
     }
     
+    // MARK: - Stats Section
+    private var profileStatsSection: some View {
+        ProfileSection(title: "Your Stats", icon: "chart.bar.fill") {
+            HStack(spacing: 0) {
+                statItem(
+                    icon: "flame.fill",
+                    value: streaksService.dailyStreak,
+                    label: "Day Streak",
+                    subtitle: streaksService.longestDailyStreak > streaksService.dailyStreak
+                        ? "Best: \(streaksService.longestDailyStreak)" : nil,
+                    color: DesignSystem.Colors.eliteGold,
+                    isLoading: streaksService.isLoading
+                )
+
+                statItem(
+                    icon: "dumbbell.fill",
+                    value: totalTrainingSessions,
+                    label: "Sessions",
+                    subtitle: nil,
+                    color: DesignSystem.Colors.powerGreen,
+                    isLoading: isLoadingStats && totalTrainingSessions == nil
+                )
+
+                statItem(
+                    icon: "book.fill",
+                    value: totalReflectionsCount,
+                    label: "Reflections",
+                    subtitle: nil,
+                    color: DesignSystem.Colors.championBlue,
+                    isLoading: isLoadingStats && totalMorningReflections == nil
+                )
+            }
+            .padding(.vertical, DesignSystem.Spacing.lg)
+            .background(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                    .fill(DesignSystem.Colors.cardBackground)
+            )
+        }
+    }
+
+    private var totalReflectionsCount: Int? {
+        guard let morning = totalMorningReflections,
+              let evening = totalEveningReflections else { return nil }
+        return morning + evening
+    }
+
+    private func statItem(icon: String, value: Int?, label: String, subtitle: String?, color: Color, isLoading: Bool) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 20))
+                .foregroundColor(color)
+
+            if isLoading {
+                ProgressView()
+                    .scaleEffect(0.7)
+                    .frame(height: 28)
+            } else {
+                Text("\(value ?? 0)")
+                    .font(DesignSystem.Typography.displaySmallSafe)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+            }
+
+            Text(label)
+                .font(DesignSystem.Typography.caption)
+                .foregroundColor(DesignSystem.Colors.secondaryText)
+
+            if let subtitle = subtitle {
+                Text(subtitle)
+                    .font(DesignSystem.Typography.caption)
+                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func loadProfileStats() async {
+        isLoadingStats = true
+        defer { isLoadingStats = false }
+
+        await streaksService.fetchStreaks()
+
+        if let stats = try? await WorkoutReflectionsService().getStats(days: 3650) {
+            totalTrainingSessions = stats.totalWorkouts
+        }
+
+        if let morningResult = try? await supabase.fetchDailyEntries(
+            startDate: nil, endDate: nil, page: 1, limit: 1, hasMorning: true
+        ) {
+            totalMorningReflections = morningResult.pagination.total
+        }
+
+        if let eveningResult = try? await supabase.fetchDailyEntries(
+            startDate: nil, endDate: nil, page: 1, limit: 1, hasEvening: true
+        ) {
+            totalEveningReflections = eveningResult.pagination.total
+        }
+    }
+
     // MARK: - Actions
     private func loadUserData() {
         guard let user = supabase.currentUser else { return }

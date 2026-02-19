@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Ritual — Proposal B: Warm Editorial</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,400;1,9..144,600&family=Outfit:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cream: #f5f0e8;
+            --warm-white: #faf7f2;
+            --sand: #e8e0d2;
+            --clay: #c4a882;
+            --terracotta: #c0704a;
+            --deep-brown: #2a1f14;
+            --charcoal: #1c1815;
+            --text-dark: #1c1815;
+            --text-mid: #5c544a;
+            --text-light: #8a8078;
+            --sage: #7a8c6e;
+            --sage-light: rgba(122, 140, 110, 0.12);
+            --font-serif: 'Fraunces', Georgia, serif;
+            --font-sans: 'Outfit', -apple-system, sans-serif;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background: var(--cream);
+            color: var(--text-dark);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Organic background shapes */
+        .bg-shape {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(80px);
+        }
+
+        .bg-shape-1 {
+            top: -15%;
+            right: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(ellipse, rgba(192, 112, 74, 0.06), transparent 70%);
+            animation: float1 20s ease-in-out infinite;
+        }
+
+        .bg-shape-2 {
+            bottom: 10%;
+            left: -15%;
+            width: 40vw;
+            height: 40vw;
+            background: radial-gradient(ellipse, rgba(122, 140, 110, 0.06), transparent 70%);
+            animation: float2 25s ease-in-out infinite;
+        }
+
+        @keyframes float1 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-3%, 5%); }
+        }
+        @keyframes float2 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(4%, -3%); }
+        }
+
+        .content { position: relative; z-index: 1; }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 1.75rem 4rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, var(--cream) 60%, transparent);
+        }
+
+        .nav-brand {
+            font-family: var(--font-serif);
+            font-size: 1.4rem;
+            font-weight: 300;
+            color: var(--text-dark);
+            text-decoration: none;
+            letter-spacing: 0.02em;
+        }
+
+        .nav-brand em {
+            font-style: italic;
+            color: var(--terracotta);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            font-family: var(--font-sans);
+            font-size: 0.8rem;
+            font-weight: 400;
+            letter-spacing: 0.06em;
+            color: var(--text-mid);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover { color: var(--terracotta); }
+
+        /* Hero */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 8rem 2rem 6rem;
+            position: relative;
+        }
+
+        .hero-eyebrow {
+            font-family: var(--font-sans);
+            font-size: 0.72rem;
+            font-weight: 500;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--terracotta);
+            margin-bottom: 2.5rem;
+            opacity: 0;
+            animation: gentleFade 1s ease forwards 0.3s;
+        }
+
+        .hero h1 {
+            font-family: var(--font-serif);
+            font-size: clamp(3.2rem, 7.5vw, 7rem);
+            font-weight: 300;
+            line-height: 1.08;
+            color: var(--text-dark);
+            max-width: 16ch;
+            margin-bottom: 2.5rem;
+            opacity: 0;
+            animation: gentleFade 1s ease forwards 0.5s;
+        }
+
+        .hero h1 em {
+            font-style: italic;
+            font-weight: 400;
+            color: var(--terracotta);
+            position: relative;
+        }
+
+        .hero h1 em::after {
+            content: '';
+            position: absolute;
+            bottom: 0.05em;
+            left: -2%;
+            right: -2%;
+            height: 0.35em;
+            background: rgba(192, 112, 74, 0.12);
+            border-radius: 50%;
+            z-index: -1;
+        }
+
+        .hero-sub {
+            font-family: var(--font-sans);
+            font-size: 1.1rem;
+            font-weight: 300;
+            line-height: 1.8;
+            color: var(--text-mid);
+            max-width: 48ch;
+            margin-bottom: 3.5rem;
+            opacity: 0;
+            animation: gentleFade 1s ease forwards 0.7s;
+        }
+
+        .hero-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 1.1rem 2.5rem;
+            background: var(--terracotta);
+            color: var(--warm-white);
+            font-family: var(--font-sans);
+            font-size: 0.82rem;
+            font-weight: 500;
+            letter-spacing: 0.06em;
+            text-decoration: none;
+            border-radius: 100px;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            box-shadow: 0 4px 20px rgba(192, 112, 74, 0.2);
+            opacity: 0;
+            animation: gentleFade 1s ease forwards 0.9s;
+        }
+
+        .hero-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(192, 112, 74, 0.3);
+            background: #b3623e;
+        }
+
+        .hero-cta svg {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.3s;
+        }
+
+        .hero-cta:hover svg {
+            transform: translateX(3px);
+        }
+
+        .hero-scroll {
+            position: absolute;
+            bottom: 3rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0;
+            animation: gentleFade 1s ease forwards 1.2s;
+        }
+
+        .hero-scroll span {
+            font-size: 0.65rem;
+            font-weight: 400;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--text-light);
+        }
+
+        .hero-scroll-line {
+            width: 1px;
+            height: 40px;
+            background: linear-gradient(to bottom, var(--clay), transparent);
+            position: relative;
+        }
+
+        .hero-scroll-line::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -1.5px;
+            width: 4px;
+            height: 8px;
+            background: var(--terracotta);
+            border-radius: 4px;
+            animation: scrollDot 2.5s ease-in-out infinite;
+        }
+
+        @keyframes scrollDot {
+            0%, 100% { top: 0; opacity: 1; }
+            80% { top: 32px; opacity: 0; }
+        }
+
+        /* Divider */
+        .divider {
+            max-width: 1100px;
+            margin: 0 auto;
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--sand), transparent);
+        }
+
+        /* Philosophy section */
+        .philosophy {
+            padding: 8rem 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .philosophy blockquote {
+            font-family: var(--font-serif);
+            font-size: clamp(1.6rem, 3vw, 2.4rem);
+            font-weight: 300;
+            font-style: italic;
+            line-height: 1.5;
+            color: var(--text-dark);
+            margin-bottom: 1.5rem;
+        }
+
+        .philosophy blockquote em {
+            color: var(--terracotta);
+            font-weight: 400;
+        }
+
+        .philosophy cite {
+            font-family: var(--font-sans);
+            font-size: 0.75rem;
+            font-weight: 500;
+            font-style: normal;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--text-light);
+        }
+
+        /* Features */
+        .features {
+            padding: 6rem 2rem 8rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .features-header {
+            text-align: center;
+            margin-bottom: 5rem;
+        }
+
+        .features-header h2 {
+            font-family: var(--font-serif);
+            font-size: clamp(2rem, 4vw, 3.2rem);
+            font-weight: 300;
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+        }
+
+        .features-header p {
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            font-weight: 300;
+            color: var(--text-mid);
+            max-width: 48ch;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .feature-card {
+            padding: 2.5rem 2rem;
+            background: var(--warm-white);
+            border: 1px solid rgba(0,0,0,0.04);
+            border-radius: 20px;
+            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(to right, var(--terracotta), var(--sage));
+            opacity: 0;
+            transition: opacity 0.4s;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.06);
+        }
+
+        .feature-card:hover::before { opacity: 1; }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.4rem;
+        }
+
+        .feature-icon.morning { background: rgba(192, 112, 74, 0.1); color: var(--terracotta); }
+        .feature-icon.workout { background: rgba(122, 140, 110, 0.12); color: var(--sage); }
+        .feature-icon.evening { background: rgba(42, 31, 20, 0.08); color: var(--deep-brown); }
+        .feature-icon.ai { background: rgba(192, 112, 74, 0.1); color: var(--terracotta); }
+        .feature-icon.sync { background: rgba(122, 140, 110, 0.12); color: var(--sage); }
+        .feature-icon.streak { background: rgba(196, 168, 130, 0.15); color: var(--clay); }
+
+        .feature-card h3 {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            font-weight: 400;
+            color: var(--text-dark);
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-card p {
+            font-family: var(--font-sans);
+            font-size: 0.88rem;
+            font-weight: 300;
+            line-height: 1.7;
+            color: var(--text-mid);
+        }
+
+        /* Daily Practice */
+        .practice {
+            padding: 6rem 2rem 8rem;
+            max-width: 750px;
+            margin: 0 auto;
+        }
+
+        .practice h2 {
+            font-family: var(--font-serif);
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 300;
+            text-align: center;
+            color: var(--text-dark);
+            margin-bottom: 4rem;
+        }
+
+        .practice-step {
+            display: flex;
+            gap: 2.5rem;
+            margin-bottom: 3rem;
+            align-items: flex-start;
+        }
+
+        .practice-step:last-child { margin-bottom: 0; }
+
+        .step-visual {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+
+        .step-dot {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-serif);
+            font-size: 1rem;
+            font-weight: 400;
+            font-style: italic;
+            flex-shrink: 0;
+        }
+
+        .step-dot.morning { background: rgba(192, 112, 74, 0.1); color: var(--terracotta); }
+        .step-dot.workout { background: rgba(122, 140, 110, 0.12); color: var(--sage); }
+        .step-dot.evening { background: rgba(42, 31, 20, 0.06); color: var(--text-mid); }
+        .step-dot.ai { background: rgba(196, 168, 130, 0.12); color: var(--clay); }
+
+        .step-line {
+            width: 1px;
+            height: 60px;
+            background: linear-gradient(to bottom, var(--sand), transparent);
+        }
+
+        .step-text {
+            padding-top: 0.5rem;
+        }
+
+        .step-label {
+            font-family: var(--font-sans);
+            font-size: 0.65rem;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--terracotta);
+            margin-bottom: 0.5rem;
+        }
+
+        .step-text h4 {
+            font-family: var(--font-serif);
+            font-size: 1.2rem;
+            font-weight: 400;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .step-text p {
+            font-family: var(--font-sans);
+            font-size: 0.88rem;
+            font-weight: 300;
+            line-height: 1.7;
+            color: var(--text-mid);
+        }
+
+        /* Integrations */
+        .integrations {
+            padding: 5rem 2rem;
+            text-align: center;
+        }
+
+        .integrations h3 {
+            font-family: var(--font-serif);
+            font-size: 1.3rem;
+            font-weight: 300;
+            font-style: italic;
+            color: var(--text-mid);
+            margin-bottom: 2.5rem;
+        }
+
+        .int-pills {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .int-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.7rem 1.5rem;
+            background: var(--warm-white);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 100px;
+            transition: all 0.3s;
+            cursor: default;
+        }
+
+        .int-pill:hover {
+            border-color: var(--terracotta);
+            box-shadow: 0 4px 12px rgba(192, 112, 74, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .int-pill svg {
+            width: 18px;
+            height: 18px;
+            color: var(--terracotta);
+        }
+
+        .int-pill span {
+            font-family: var(--font-sans);
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        /* Waitlist */
+        .waitlist {
+            padding: 8rem 2rem;
+            max-width: 560px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .waitlist h2 {
+            font-family: var(--font-serif);
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 300;
+            color: var(--text-dark);
+            margin-bottom: 0.75rem;
+        }
+
+        .waitlist h2 em {
+            font-style: italic;
+            color: var(--terracotta);
+        }
+
+        .waitlist > p {
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            font-weight: 300;
+            color: var(--text-mid);
+            margin-bottom: 2.5rem;
+        }
+
+        .waitlist-form {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .waitlist-form input {
+            width: 100%;
+            padding: 1.1rem 1.5rem;
+            background: var(--warm-white);
+            border: 1px solid rgba(0,0,0,0.06);
+            border-radius: 14px;
+            color: var(--text-dark);
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+            font-weight: 300;
+            transition: all 0.3s;
+        }
+
+        .waitlist-form input::placeholder { color: var(--text-light); }
+
+        .waitlist-form input:focus {
+            outline: none;
+            border-color: var(--terracotta);
+            box-shadow: 0 0 0 4px rgba(192, 112, 74, 0.08);
+        }
+
+        .waitlist-form button {
+            padding: 1.1rem 2rem;
+            background: var(--terracotta);
+            color: var(--warm-white);
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 16px rgba(192, 112, 74, 0.15);
+        }
+
+        .waitlist-form button:hover:not(:disabled) {
+            background: #b3623e;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px rgba(192, 112, 74, 0.2);
+        }
+
+        .waitlist-form button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .waitlist-message {
+            margin-top: 0.75rem;
+            font-size: 0.9rem;
+            font-weight: 400;
+            min-height: 1.4em;
+        }
+
+        .waitlist-message.success { color: var(--sage); }
+        .waitlist-message.error { color: #c0504a; }
+
+        /* Footer */
+        footer {
+            padding: 3rem 4rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-left {
+            font-family: var(--font-serif);
+            font-size: 0.85rem;
+            font-weight: 300;
+            font-style: italic;
+            color: var(--text-light);
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .footer-links a {
+            font-family: var(--font-sans);
+            font-size: 0.78rem;
+            font-weight: 400;
+            color: var(--text-mid);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover { color: var(--terracotta); }
+
+        /* Animations */
+        @keyframes gentleFade {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .features-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 600px) {
+            nav { padding: 1.25rem 1.5rem; }
+            .nav-links { display: none; }
+            .hero { padding: 7rem 1.5rem 4rem; }
+            .features { padding: 4rem 1.5rem 6rem; }
+            .features-grid { grid-template-columns: 1fr; }
+            .practice { padding: 4rem 1.5rem 6rem; }
+            .practice-step { gap: 1.5rem; }
+            footer { flex-direction: column; gap: 1rem; text-align: center; padding: 2rem 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-shape bg-shape-1"></div>
+    <div class="bg-shape bg-shape-2"></div>
+
+    <div class="content">
+        <nav>
+            <a href="/" class="nav-brand">Daily <em>Ritual</em></a>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#practice">Practice</a></li>
+                <li><a href="#waitlist">Waitlist</a></li>
+                <li><a href="privacy.html">Privacy</a></li>
+            </ul>
+        </nav>
+
+        <section class="hero">
+            <div class="hero-eyebrow">Performance Journaling for Athletes</div>
+            <h1>Train your <em>mind</em> like you train your body</h1>
+            <p class="hero-sub">
+                A structured daily practice that turns mental training into a habit
+                as automatic as your physical training. Morning rituals, workout reflections,
+                evening insights — all connected.
+            </p>
+            <a href="#waitlist" class="hero-cta">
+                Join the waitlist
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+            </a>
+            <div class="hero-scroll">
+                <span>Scroll</span>
+                <div class="hero-scroll-line"></div>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <section class="philosophy reveal">
+            <blockquote>
+                "The body achieves what the <em>mind</em> believes.<br>
+                But only if the mind has a <em>practice</em>."
+            </blockquote>
+            <cite>The Daily Ritual Philosophy</cite>
+        </section>
+
+        <div class="divider"></div>
+
+        <section class="features" id="features">
+            <div class="features-header reveal">
+                <h2>Built for the athlete's rhythm</h2>
+                <p>Not another generic journal. Every feature is designed around how athletes actually train, recover, and compete.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card reveal">
+                    <div class="feature-icon morning">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/></svg>
+                    </div>
+                    <h3>Morning Ritual</h3>
+                    <p>Set your intention before the day begins. Goals, gratitude, affirmations, and a curated quote to anchor your mindset.</p>
+                </div>
+
+                <div class="feature-card reveal">
+                    <div class="feature-icon workout">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                    </div>
+                    <h3>Workout Reflections</h3>
+                    <p>Capture what went well while the session is fresh. Rate your energy, focus, and training feeling.</p>
+                </div>
+
+                <div class="feature-card reveal">
+                    <div class="feature-icon evening">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                    </div>
+                    <h3>Evening Reflection</h3>
+                    <p>Close the day with structured reflection. Mood tracking, wins, and areas for growth.</p>
+                </div>
+
+                <div class="feature-card reveal">
+                    <div class="feature-icon ai">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2zM22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+                    </div>
+                    <h3>AI Performance Insights</h3>
+                    <p>Surfaces patterns you can't see yourself — mood-performance links and recovery blind spots.</p>
+                </div>
+
+                <div class="feature-card reveal">
+                    <div class="feature-icon sync">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    </div>
+                    <h3>Device Sync</h3>
+                    <p>Pulls recovery and workout data from Whoop, Strava, and Apple Health.</p>
+                </div>
+
+                <div class="feature-card reveal">
+                    <div class="feature-icon streak">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+                    </div>
+                    <h3>Streaks & Consistency</h3>
+                    <p>Track daily practice streaks. Small deposits, compounding returns.</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <section class="practice" id="practice">
+            <h2 class="reveal">Your daily practice</h2>
+
+            <div class="practice-step reveal">
+                <div class="step-visual">
+                    <div class="step-dot morning">I</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-text">
+                    <div class="step-label">Morning</div>
+                    <h4>Set Your Intention</h4>
+                    <p>Goals for the day, three gratitudes, a personal affirmation, and reflection on an athlete-curated quote. Five minutes that frame the next sixteen hours.</p>
+                </div>
+            </div>
+
+            <div class="practice-step reveal">
+                <div class="step-visual">
+                    <div class="step-dot workout">II</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-text">
+                    <div class="step-label">Post-Workout</div>
+                    <h4>Reflect on the Session</h4>
+                    <p>Rate your feeling, energy, and focus. Note what clicked and what didn't. The freshest insights come right after training.</p>
+                </div>
+            </div>
+
+            <div class="practice-step reveal">
+                <div class="step-visual">
+                    <div class="step-dot evening">III</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-text">
+                    <div class="step-label">Evening</div>
+                    <h4>Close the Day</h4>
+                    <p>How did the day go? Overall mood and honest self-assessment. The loop closes, the data builds, the patterns emerge.</p>
+                </div>
+            </div>
+
+            <div class="practice-step reveal">
+                <div class="step-visual">
+                    <div class="step-dot ai">IV</div>
+                </div>
+                <div class="step-text">
+                    <div class="step-label">Continuous</div>
+                    <h4>AI Connects the Dots</h4>
+                    <p>Over time, Daily Ritual reveals relationships between your mental state and physical performance that no single entry could show.</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <section class="integrations reveal">
+            <h3>Connects with your stack</h3>
+            <div class="int-pills">
+                <div class="int-pill">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    <span>Whoop</span>
+                </div>
+                <div class="int-pill">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    <span>Strava</span>
+                </div>
+                <div class="int-pill">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                    <span>Apple Health</span>
+                </div>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <section class="waitlist" id="waitlist">
+            <h2 class="reveal">Begin your <em>ritual</em></h2>
+            <p class="reveal">Be the first to know when we launch. One email. No noise.</p>
+            <form class="waitlist-form reveal" id="waitlist-form" action="https://formspree.io/f/xaqdqapz" method="POST">
+                <input type="text" name="name" placeholder="Name (optional)" autocomplete="name">
+                <input type="email" name="email" placeholder="Email address" required autocomplete="email">
+                <button type="submit" id="waitlist-submit">Join the waitlist</button>
+                <p class="waitlist-message" id="waitlist-message" aria-live="polite"></p>
+            </form>
+        </section>
+
+        <footer>
+            <div class="footer-left">&copy; 2025 Daily Ritual</div>
+            <div class="footer-links">
+                <a href="privacy.html">Privacy Policy</a>
+                <a href="mailto:support@dailyritual.app">Support</a>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const reveals = document.querySelectorAll('.reveal');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry, i) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => entry.target.classList.add('visible'), i * 80);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+        reveals.forEach(el => observer.observe(el));
+
+        const waitlistForm = document.getElementById('waitlist-form');
+        const waitlistSubmit = document.getElementById('waitlist-submit');
+        const waitlistMessage = document.getElementById('waitlist-message');
+        if (waitlistForm) {
+            waitlistForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                waitlistSubmit.disabled = true;
+                waitlistMessage.textContent = '';
+                waitlistMessage.className = 'waitlist-message';
+                try {
+                    const res = await fetch(waitlistForm.action, {
+                        method: 'POST', body: new FormData(waitlistForm),
+                        headers: { Accept: 'application/json' }
+                    });
+                    const data = await res.json();
+                    if (data.ok) {
+                        waitlistMessage.textContent = "You're on the list. We'll be in touch.";
+                        waitlistMessage.className = 'waitlist-message success';
+                        waitlistForm.reset();
+                    } else {
+                        waitlistMessage.textContent = 'Something went wrong. Try again or email support@dailyritual.app';
+                        waitlistMessage.className = 'waitlist-message error';
+                    }
+                } catch {
+                    waitlistMessage.textContent = 'Something went wrong. Try again or email support@dailyritual.app';
+                    waitlistMessage.className = 'waitlist-message error';
+                }
+                waitlistSubmit.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>

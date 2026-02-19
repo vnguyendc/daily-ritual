@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Ritual — Proposal C: Neo-Athletic</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anybody:wght@300;400;500;600;700;800&family=Geist+Mono:wght@300;400;500&family=Familjen+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #08090e;
+            --bg-card: #0d0f16;
+            --bg-glass: rgba(13, 15, 22, 0.7);
+            --bg-hover: rgba(20, 24, 38, 0.8);
+            --navy: #0e1120;
+            --text: #e4e8f0;
+            --text-dim: #6b7394;
+            --text-muted: #3d4565;
+            --cyan: #00e5ff;
+            --cyan-dim: rgba(0, 229, 255, 0.08);
+            --cyan-med: rgba(0, 229, 255, 0.15);
+            --cyan-glow: rgba(0, 229, 255, 0.4);
+            --magenta: #ff2d78;
+            --magenta-dim: rgba(255, 45, 120, 0.08);
+            --amber: #ffb800;
+            --border: rgba(255, 255, 255, 0.05);
+            --border-hover: rgba(0, 229, 255, 0.2);
+            --font-display: 'Anybody', sans-serif;
+            --font-body: 'Familjen Grotesk', sans-serif;
+            --font-mono: 'Geist Mono', monospace;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-body);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Grid background */
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+            background-size: 60px 60px;
+            mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black, transparent);
+        }
+
+        /* Glow orbs */
+        .glow-orb {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(100px);
+        }
+
+        .glow-1 {
+            top: -10%;
+            left: 30%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(0, 229, 255, 0.06), transparent 70%);
+            animation: pulse1 8s ease-in-out infinite;
+        }
+
+        .glow-2 {
+            bottom: 20%;
+            right: -5%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255, 45, 120, 0.04), transparent 70%);
+            animation: pulse2 12s ease-in-out infinite;
+        }
+
+        @keyframes pulse1 {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+        @keyframes pulse2 {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.15); }
+        }
+
+        .content { position: relative; z-index: 1; }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            padding: 0.8rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: calc(100% - 3rem);
+            max-width: 1200px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px) saturate(1.2);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+        }
+
+        .nav-brand {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+            text-decoration: none;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-brand .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--cyan);
+            box-shadow: 0 0 12px var(--cyan-glow);
+            animation: dotPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes dotPulse {
+            0%, 100% { box-shadow: 0 0 8px var(--cyan-glow); }
+            50% { box-shadow: 0 0 20px var(--cyan-glow), 0 0 40px rgba(0, 229, 255, 0.15); }
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 0.5rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-dim);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text);
+            background: rgba(255,255,255,0.04);
+        }
+
+        .nav-cta {
+            padding: 0.5rem 1.25rem;
+            background: var(--cyan-dim);
+            color: var(--cyan) !important;
+            border: 1px solid rgba(0, 229, 255, 0.15);
+            border-radius: 10px !important;
+            font-weight: 500 !important;
+            transition: all 0.2s !important;
+        }
+
+        .nav-cta:hover {
+            background: var(--cyan-med) !important;
+            border-color: rgba(0, 229, 255, 0.3) !important;
+        }
+
+        /* Hero */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 8rem 2rem 6rem;
+            position: relative;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.25rem;
+            background: var(--cyan-dim);
+            border: 1px solid rgba(0, 229, 255, 0.12);
+            border-radius: 100px;
+            margin-bottom: 2.5rem;
+            opacity: 0;
+            animation: fadeUp 0.8s ease forwards 0.2s;
+        }
+
+        .hero-badge .pulse {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--cyan);
+            box-shadow: 0 0 8px var(--cyan-glow);
+            animation: dotPulse 2s ease-in-out infinite;
+        }
+
+        .hero-badge span {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 400;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--cyan);
+        }
+
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(3.5rem, 8vw, 7.5rem);
+            font-weight: 800;
+            line-height: 0.95;
+            letter-spacing: -0.03em;
+            color: var(--text);
+            max-width: 14ch;
+            margin-bottom: 2rem;
+            opacity: 0;
+            animation: fadeUp 0.8s ease forwards 0.4s;
+        }
+
+        .hero h1 .gradient-text {
+            background: linear-gradient(135deg, var(--cyan), var(--magenta));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-sub {
+            font-family: var(--font-body);
+            font-size: 1.15rem;
+            font-weight: 400;
+            line-height: 1.7;
+            color: var(--text-dim);
+            max-width: 46ch;
+            margin-bottom: 3rem;
+            opacity: 0;
+            animation: fadeUp 0.8s ease forwards 0.6s;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            opacity: 0;
+            animation: fadeUp 0.8s ease forwards 0.8s;
+        }
+
+        .btn-glow {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.9rem 2rem;
+            background: linear-gradient(135deg, var(--cyan), #00b8d4);
+            color: var(--bg);
+            font-family: var(--font-body);
+            font-size: 0.88rem;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(0, 229, 255, 0.2), inset 0 1px 0 rgba(255,255,255,0.15);
+        }
+
+        .btn-glow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 229, 255, 0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+
+        .btn-glow svg { width: 16px; height: 16px; transition: transform 0.3s; }
+        .btn-glow:hover svg { transform: translateX(2px); }
+
+        .btn-ghost {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.9rem 1.75rem;
+            background: transparent;
+            color: var(--text-dim);
+            font-family: var(--font-body);
+            font-size: 0.88rem;
+            font-weight: 500;
+            text-decoration: none;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .btn-ghost:hover {
+            border-color: rgba(255,255,255,0.15);
+            color: var(--text);
+            background: rgba(255,255,255,0.03);
+        }
+
+        /* Stats bar */
+        .stats-bar {
+            padding: 3rem 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: center;
+            gap: 4rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, var(--cyan), var(--text));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 400;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* Features */
+        .features {
+            padding: 6rem 2rem 8rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .section-label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .section-label::before {
+            content: '';
+            width: 20px;
+            height: 2px;
+            background: var(--cyan);
+        }
+
+        .section-label span {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--cyan);
+        }
+
+        .features h2 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            margin-bottom: 1rem;
+        }
+
+        .features > p {
+            font-size: 1rem;
+            color: var(--text-dim);
+            max-width: 50ch;
+            margin-bottom: 4rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .f-card {
+            padding: 2rem 1.75rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .f-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, var(--cyan-dim), transparent 50%);
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+        }
+
+        .f-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(0, 229, 255, 0.05);
+        }
+
+        .f-card:hover::after { opacity: 1; }
+
+        .f-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.25rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .f-icon.cyan { background: var(--cyan-dim); color: var(--cyan); }
+        .f-icon.magenta { background: var(--magenta-dim); color: var(--magenta); }
+        .f-icon.amber { background: rgba(255, 184, 0, 0.08); color: var(--amber); }
+
+        .f-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.6rem;
+            letter-spacing: -0.01em;
+            position: relative;
+            z-index: 1;
+        }
+
+        .f-card p {
+            font-size: 0.85rem;
+            font-weight: 400;
+            line-height: 1.65;
+            color: var(--text-dim);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Ritual Flow */
+        .ritual {
+            padding: 6rem 2rem 8rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .ritual h2 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            margin-bottom: 4rem;
+        }
+
+        .flow-track {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0;
+            position: relative;
+        }
+
+        .flow-track::before {
+            content: '';
+            position: absolute;
+            top: 28px;
+            left: 28px;
+            right: 28px;
+            height: 2px;
+            background: linear-gradient(to right, var(--cyan), var(--magenta), var(--amber), var(--cyan));
+            opacity: 0.3;
+            z-index: 0;
+        }
+
+        .flow-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 0 1rem;
+            position: relative;
+        }
+
+        .flow-node {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 1;
+            transition: all 0.3s;
+        }
+
+        .flow-node.n1 { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(0, 229, 255, 0.15); }
+        .flow-node.n2 { background: var(--magenta-dim); color: var(--magenta); border: 1px solid rgba(255, 45, 120, 0.15); }
+        .flow-node.n3 { background: rgba(255, 184, 0, 0.08); color: var(--amber); border: 1px solid rgba(255, 184, 0, 0.15); }
+        .flow-node.n4 {
+            background: linear-gradient(135deg, var(--cyan-dim), var(--magenta-dim));
+            color: var(--text);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .flow-step:hover .flow-node {
+            transform: scale(1.1);
+        }
+
+        .flow-time {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        .flow-step h4 {
+            font-family: var(--font-display);
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.6rem;
+            letter-spacing: -0.01em;
+        }
+
+        .flow-step p {
+            font-size: 0.8rem;
+            line-height: 1.6;
+            color: var(--text-dim);
+        }
+
+        /* Integrations */
+        .integrations {
+            padding: 4rem 2rem 5rem;
+            text-align: center;
+        }
+
+        .integrations h3 {
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            letter-spacing: 0.02em;
+        }
+
+        .int-chips {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .int-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.25rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            transition: all 0.3s;
+            cursor: default;
+        }
+
+        .int-chip:hover {
+            border-color: var(--border-hover);
+            background: var(--bg-hover);
+        }
+
+        .int-chip svg { width: 16px; height: 16px; color: var(--cyan); }
+
+        .int-chip span {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 400;
+            color: var(--text-dim);
+            letter-spacing: 0.03em;
+        }
+
+        /* Waitlist */
+        .waitlist {
+            padding: 8rem 2rem;
+            max-width: 580px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .waitlist h2 {
+            font-family: var(--font-display);
+            font-size: clamp(2.2rem, 4.5vw, 3.5rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            margin-bottom: 1rem;
+        }
+
+        .waitlist h2 .gradient-text {
+            background: linear-gradient(135deg, var(--cyan), var(--magenta));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .waitlist > p {
+            font-size: 1rem;
+            color: var(--text-dim);
+            margin-bottom: 2.5rem;
+        }
+
+        .waitlist-form {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.4rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+        }
+
+        .waitlist-form input {
+            flex: 1;
+            padding: 0.9rem 1.25rem;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .waitlist-form input::placeholder { color: var(--text-muted); }
+
+        .waitlist-form button {
+            padding: 0.9rem 1.75rem;
+            background: linear-gradient(135deg, var(--cyan), #00b8d4);
+            color: var(--bg);
+            font-family: var(--font-body);
+            font-size: 0.82rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+            box-shadow: 0 2px 12px rgba(0, 229, 255, 0.15);
+        }
+
+        .waitlist-form button:hover:not(:disabled) {
+            box-shadow: 0 4px 20px rgba(0, 229, 255, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .waitlist-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .waitlist-message {
+            margin-top: 1rem;
+            font-size: 0.88rem;
+            min-height: 1.4em;
+        }
+
+        .waitlist-message.success { color: var(--cyan); }
+        .waitlist-message.error { color: var(--magenta); }
+
+        /* Footer */
+        footer {
+            padding: 3rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer-left {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .footer-links a {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover { color: var(--cyan); }
+
+        /* Animations */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: all 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .features-grid { grid-template-columns: 1fr 1fr; }
+            .flow-track { grid-template-columns: 1fr 1fr; gap: 2rem; }
+            .flow-track::before { display: none; }
+            .stats-row { gap: 2rem; }
+        }
+
+        @media (max-width: 600px) {
+            nav { padding: 0.6rem 1rem; margin: 0; width: 100%; border-radius: 0; top: 0; }
+            .nav-links { display: none; }
+            .hero { padding: 7rem 1.5rem 4rem; }
+            .features { padding: 4rem 1.5rem 6rem; }
+            .features-grid { grid-template-columns: 1fr; }
+            .flow-track { grid-template-columns: 1fr; }
+            .ritual { padding: 4rem 1.5rem 6rem; }
+            .hero-actions { flex-direction: column; }
+            .waitlist-form { flex-direction: column; }
+            .stats-row { flex-direction: column; gap: 1.5rem; }
+            .int-chips { flex-direction: column; align-items: center; }
+            footer { flex-direction: column; gap: 1rem; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-bg"></div>
+    <div class="glow-orb glow-1"></div>
+    <div class="glow-orb glow-2"></div>
+
+    <div class="content">
+        <nav>
+            <a href="/" class="nav-brand">
+                <div class="dot"></div>
+                Daily Ritual
+            </a>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#ritual">How it works</a></li>
+                <li><a href="privacy.html">Privacy</a></li>
+                <li><a href="#waitlist" class="nav-cta">Get early access</a></li>
+            </ul>
+        </nav>
+
+        <section class="hero">
+            <div class="hero-badge">
+                <div class="pulse"></div>
+                <span>Performance journaling for athletes</span>
+            </div>
+            <h1>
+                Train your<br>
+                <span class="gradient-text">mind</span> like<br>
+                your body
+            </h1>
+            <p class="hero-sub">
+                Structured daily practice that turns mental training into a habit
+                as automatic as your physical training. Morning rituals, workout reflections,
+                evening insights — all connected.
+            </p>
+            <div class="hero-actions">
+                <a href="#waitlist" class="btn-glow">
+                    Get early access
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+                </a>
+                <a href="#features" class="btn-ghost">See features</a>
+            </div>
+        </section>
+
+        <div class="stats-bar reveal">
+            <div class="stats-row">
+                <div class="stat-item">
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">Daily rituals</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">5 min</div>
+                    <div class="stat-label">Per session</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">AI</div>
+                    <div class="stat-label">Insight engine</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">3+</div>
+                    <div class="stat-label">Integrations</div>
+                </div>
+            </div>
+        </div>
+
+        <section class="features" id="features">
+            <div class="section-label reveal"><span>Features</span></div>
+            <h2 class="reveal">Built for the athlete's rhythm</h2>
+            <p class="reveal">Not another generic journal. Every feature is designed around how athletes actually train, recover, and compete.</p>
+
+            <div class="features-grid">
+                <div class="f-card reveal">
+                    <div class="f-icon cyan">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/></svg>
+                    </div>
+                    <h3>Morning Ritual</h3>
+                    <p>Set your intention before the day begins. Goals, gratitude, affirmations, and a curated quote to anchor your mindset.</p>
+                </div>
+
+                <div class="f-card reveal">
+                    <div class="f-icon magenta">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                    </div>
+                    <h3>Workout Reflections</h3>
+                    <p>Capture what went well and what to improve while the session is fresh. Rate your energy, focus, and feeling.</p>
+                </div>
+
+                <div class="f-card reveal">
+                    <div class="f-icon amber">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                    </div>
+                    <h3>Evening Reflection</h3>
+                    <p>Close the day with structured reflection. Mood tracking, wins, and areas for growth that build over time.</p>
+                </div>
+
+                <div class="f-card reveal">
+                    <div class="f-icon cyan">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2zM22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+                    </div>
+                    <h3>AI Performance Insights</h3>
+                    <p>Surfaces patterns you can't see — mood-performance links and recovery blind spots revealed over time.</p>
+                </div>
+
+                <div class="f-card reveal">
+                    <div class="f-icon magenta">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    </div>
+                    <h3>Device Sync</h3>
+                    <p>Pulls recovery, strain, and workout data from Whoop, Strava, and Apple Health automatically.</p>
+                </div>
+
+                <div class="f-card reveal">
+                    <div class="f-icon amber">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+                    </div>
+                    <h3>Streaks & Consistency</h3>
+                    <p>Track daily practice streaks. Small deposits, compounding returns. Build momentum that sticks.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="ritual" id="ritual">
+            <div class="section-label reveal"><span>How it works</span></div>
+            <h2 class="reveal">Your daily practice</h2>
+
+            <div class="flow-track">
+                <div class="flow-step reveal">
+                    <div class="flow-node n1">I</div>
+                    <div class="flow-time">Morning</div>
+                    <h4>Set Your Intention</h4>
+                    <p>Goals, gratitudes, affirmation, and an athlete-curated quote. Five minutes that frame your day.</p>
+                </div>
+                <div class="flow-step reveal">
+                    <div class="flow-node n2">II</div>
+                    <div class="flow-time">Post-Workout</div>
+                    <h4>Reflect on the Session</h4>
+                    <p>Rate feeling, energy, focus. Note what clicked. The freshest insights come right after training.</p>
+                </div>
+                <div class="flow-step reveal">
+                    <div class="flow-node n3">III</div>
+                    <div class="flow-time">Evening</div>
+                    <h4>Close the Day</h4>
+                    <p>Overall mood and honest self-assessment. The loop closes, the data builds, patterns emerge.</p>
+                </div>
+                <div class="flow-step reveal">
+                    <div class="flow-node n4">IV</div>
+                    <div class="flow-time">Continuous</div>
+                    <h4>AI Connects the Dots</h4>
+                    <p>Reveals relationships between mental state and physical performance no single entry could show.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="integrations reveal">
+            <h3>Connects with your stack</h3>
+            <div class="int-chips">
+                <div class="int-chip">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    <span>Whoop</span>
+                </div>
+                <div class="int-chip">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    <span>Strava</span>
+                </div>
+                <div class="int-chip">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                    <span>Apple Health</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="waitlist" id="waitlist">
+            <h2 class="reveal">Get <span class="gradient-text">early access</span></h2>
+            <p class="reveal">Be the first to know when Daily Ritual launches. One email when we're ready.</p>
+            <form class="waitlist-form reveal" id="waitlist-form" action="https://formspree.io/f/xaqdqapz" method="POST">
+                <input type="email" name="email" placeholder="Enter your email" required autocomplete="email">
+                <button type="submit" id="waitlist-submit">Join waitlist</button>
+            </form>
+            <p class="waitlist-message" id="waitlist-message" aria-live="polite"></p>
+        </section>
+
+        <footer>
+            <div class="footer-left">&copy; 2025 Daily Ritual</div>
+            <div class="footer-links">
+                <a href="privacy.html">Privacy</a>
+                <a href="mailto:support@dailyritual.app">Support</a>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const reveals = document.querySelectorAll('.reveal');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry, i) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => entry.target.classList.add('visible'), i * 70);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+        reveals.forEach(el => observer.observe(el));
+
+        const waitlistForm = document.getElementById('waitlist-form');
+        const waitlistSubmit = document.getElementById('waitlist-submit');
+        const waitlistMessage = document.getElementById('waitlist-message');
+        if (waitlistForm) {
+            waitlistForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                waitlistSubmit.disabled = true;
+                waitlistMessage.textContent = '';
+                waitlistMessage.className = 'waitlist-message';
+                try {
+                    const res = await fetch(waitlistForm.action, {
+                        method: 'POST', body: new FormData(waitlistForm),
+                        headers: { Accept: 'application/json' }
+                    });
+                    const data = await res.json();
+                    if (data.ok) {
+                        waitlistMessage.textContent = "You're in. We'll notify you at launch.";
+                        waitlistMessage.className = 'waitlist-message success';
+                        waitlistForm.reset();
+                    } else {
+                        waitlistMessage.textContent = 'Something went wrong. Please try again.';
+                        waitlistMessage.className = 'waitlist-message error';
+                    }
+                } catch {
+                    waitlistMessage.textContent = 'Something went wrong. Please try again.';
+                    waitlistMessage.className = 'waitlist-message error';
+                }
+                waitlistSubmit.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>
