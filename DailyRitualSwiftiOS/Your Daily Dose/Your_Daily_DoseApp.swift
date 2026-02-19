@@ -51,16 +51,16 @@ struct Your_Daily_DoseApp: App {
                     dismissButton: .default(Text("OK"))
                 )
             }
+            .task {
+                notificationService.configure()
+                notificationService.registerCategories()
+                await notificationService.rescheduleFromStoredTimes()
+            }
         }
         .onChange(of: scenePhase) { newPhase in
             if newPhase == .active {
                 Task { await supabaseManager.replayPendingOpsWithBackoff() }
             }
-        }
-        .task {
-            notificationService.configure()
-            notificationService.registerCategories()
-            await notificationService.rescheduleFromStoredTimes()
         }
     }
 
