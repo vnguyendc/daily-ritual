@@ -15,6 +15,7 @@ struct TodayFloatingActionButton: View {
     let onNewEntry: () -> Void
     let onAddActivity: () -> Void
     var onWorkoutReflection: (() -> Void)?
+    var onLogMeal: (() -> Void)?
 
     var body: some View {
         Menu {
@@ -34,6 +35,17 @@ struct TodayFloatingActionButton: View {
                 #endif
             } label: {
                 Label("Add Activity", systemImage: "figure.run")
+            }
+
+            if let onLogMeal = onLogMeal {
+                Button {
+                    onLogMeal()
+                    #if canImport(UIKit)
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    #endif
+                } label: {
+                    Label("Log Meal", systemImage: "fork.knife")
+                }
             }
 
             if let onWorkoutReflection = onWorkoutReflection {

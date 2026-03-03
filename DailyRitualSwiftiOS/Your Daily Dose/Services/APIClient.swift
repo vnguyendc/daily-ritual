@@ -130,6 +130,30 @@ struct APIClient {
         let data = try await request(path: path, method: "DELETE")
         return try makeDecoder().decode(T.self, from: data)
     }
+
+    /// Multipart form upload for photos
+    func uploadMultipart<T: Decodable>(path: String, fileData: Data, fileName: String, mimeType: String, fields: [String: String]) async throws -> T {
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var body = Data()
+
+        // Add text fields
+        for (key, value) in fields {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n".data(using: .utf8)!)
+            body.append("\(value)\r\n".data(using: .utf8)!)
+        }
+
+        // Add file
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"photo\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: \(mimeType)\r\n\r\n".data(using: .utf8)!)
+        body.append(fileData)
+        body.append("\r\n".data(using: .utf8)!)
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+
+        let data = try await request(path: path, method: "POST", body: body, contentType: "multipart/form-data; boundary=\(boundary)")
+        return try makeDecoder().decode(T.self, from: data)
+    }
 }
 
 // Empty JSON envelope for responses that return only success/message

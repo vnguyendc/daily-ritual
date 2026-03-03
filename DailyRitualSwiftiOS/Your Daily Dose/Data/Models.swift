@@ -273,6 +273,8 @@ struct Insight: Codable, Identifiable, Sendable {
     let dataPeriodEnd: Date?
     let confidenceScore: Double?
     let isRead: Bool?
+    let summary: String?
+    let triggerContext: [String: AnyCodable]?
     let createdAt: Date?
 
     enum CodingKeys: String, CodingKey {
@@ -284,7 +286,67 @@ struct Insight: Codable, Identifiable, Sendable {
         case dataPeriodEnd = "data_period_end"
         case confidenceScore = "confidence_score"
         case isRead = "is_read"
+        case summary
+        case triggerContext = "trigger_context"
         case createdAt = "created_at"
+    }
+
+    /// Icon for display based on insight type
+    var typeIcon: String {
+        switch insightType {
+        case "post_workout": return "figure.run"
+        case "post_meal": return "fork.knife"
+        case "daily_nutrition": return "chart.bar"
+        case "weekly_comprehensive": return "calendar"
+        case "morning": return "sun.max"
+        case "evening": return "moon"
+        case "weekly": return "chart.line.uptrend.xyaxis"
+        case "competition_prep": return "trophy"
+        default: return "brain.head.profile"
+        }
+    }
+
+    /// Display name for the insight type
+    var typeDisplayName: String {
+        switch insightType {
+        case "post_workout": return "Post-Workout"
+        case "post_meal": return "Post-Meal"
+        case "daily_nutrition": return "Daily Nutrition"
+        case "weekly_comprehensive": return "Weekly Review"
+        case "morning": return "Morning"
+        case "evening": return "Evening"
+        case "weekly": return "Weekly"
+        case "competition_prep": return "Competition Prep"
+        case "pattern_analysis": return "Pattern Analysis"
+        default: return insightType.replacingOccurrences(of: "_", with: " ").capitalized
+        }
+    }
+}
+
+/// Wrapper for heterogeneous JSON values in trigger_context
+struct AnyCodable: Codable, Sendable {
+    let value: Any
+
+    init(_ value: Any) {
+        self.value = value
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let s = try? container.decode(String.self) { value = s }
+        else if let i = try? container.decode(Int.self) { value = i }
+        else if let d = try? container.decode(Double.self) { value = d }
+        else if let b = try? container.decode(Bool.self) { value = b }
+        else { value = "" }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        if let s = value as? String { try container.encode(s) }
+        else if let i = value as? Int { try container.encode(i) }
+        else if let d = value as? Double { try container.encode(d) }
+        else if let b = value as? Bool { try container.encode(b) }
+        else { try container.encode("") }
     }
 }
 
@@ -299,6 +361,99 @@ struct InsightStats: Codable, Sendable {
         case unreadCount = "unread_count"
         case insightsByType = "insights_by_type"
         case latestInsightDate = "latest_insight_date"
+    }
+}
+
+// MARK: - Meals
+
+struct Meal: Codable, Identifiable, Sendable {
+    let id: UUID
+    let userId: UUID
+    let date: Date
+    let mealType: String
+    let photoStoragePath: String?
+    let photoUrl: String?
+    let foodDescription: String?
+    let estimatedCalories: Int?
+    let estimatedProteinG: Double?
+    let estimatedCarbsG: Double?
+    let estimatedFatG: Double?
+    let estimatedFiberG: Double?
+    let aiConfidence: Double?
+    var userCalories: Int?
+    var userProteinG: Double?
+    var userCarbsG: Double?
+    var userFatG: Double?
+    var userNotes: String?
+    let createdAt: Date?
+    let updatedAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case date
+        case mealType = "meal_type"
+        case photoStoragePath = "photo_storage_path"
+        case photoUrl = "photo_url"
+        case foodDescription = "food_description"
+        case estimatedCalories = "estimated_calories"
+        case estimatedProteinG = "estimated_protein_g"
+        case estimatedCarbsG = "estimated_carbs_g"
+        case estimatedFatG = "estimated_fat_g"
+        case estimatedFiberG = "estimated_fiber_g"
+        case aiConfidence = "ai_confidence"
+        case userCalories = "user_calories"
+        case userProteinG = "user_protein_g"
+        case userCarbsG = "user_carbs_g"
+        case userFatG = "user_fat_g"
+        case userNotes = "user_notes"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    /// Calories: prefer user override over AI estimate
+    var calories: Int { userCalories ?? estimatedCalories ?? 0 }
+    /// Protein: prefer user override
+    var proteinG: Double { userProteinG ?? estimatedProteinG ?? 0 }
+    /// Carbs: prefer user override
+    var carbsG: Double { userCarbsG ?? estimatedCarbsG ?? 0 }
+    /// Fat: prefer user override
+    var fatG: Double { userFatG ?? estimatedFatG ?? 0 }
+
+    var mealTypeIcon: String {
+        switch mealType {
+        case "breakfast": return "sun.horizon"
+        case "lunch": return "sun.max"
+        case "dinner": return "moon"
+        case "snack": return "carrot"
+        default: return "fork.knife"
+        }
+    }
+
+    var mealTypeDisplayName: String {
+        mealType.capitalized
+    }
+}
+
+struct DailyNutritionSummary: Codable, Sendable {
+    let date: String
+    let mealCount: Int
+    let totalCalories: Int
+    let totalProteinG: Double
+    let totalCarbsG: Double
+    let totalFatG: Double
+    let totalFiberG: Double
+    let meals: [Meal]
+
+    enum CodingKeys: String, CodingKey {
+        case date
+        case mealCount = "meal_count"
+        case totalCalories = "total_calories"
+        case totalProteinG = "total_protein_g"
+        case totalCarbsG = "total_carbs_g"
+        case totalFatG = "total_fat_g"
+        case totalFiberG = "total_fiber_g"
+        case meals
     }
 }
 

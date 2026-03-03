@@ -36,26 +36,65 @@ export interface AppleHealthData {
 }
 
 export class AppleHealthService {
-  // Convert Apple Health workout types to our internal types
+  // Convert Apple Health workout types to our full 50+ internal TrainingActivityType values
   static mapWorkoutType(appleType: string): string {
     const typeMapping: Record<string, string> = {
-      'HKWorkoutActivityTypeRunning': 'cardio',
-      'HKWorkoutActivityTypeCycling': 'cardio',
-      'HKWorkoutActivityTypeSwimming': 'cardio',
-      'HKWorkoutActivityTypeFunctionalStrengthTraining': 'strength',
-      'HKWorkoutActivityTypeTraditionalStrengthTraining': 'strength',
-      'HKWorkoutActivityTypeYoga': 'recovery',
-      'HKWorkoutActivityTypeCrossTraining': 'cross_training',
-      'HKWorkoutActivityTypeSoccer': 'skills',
-      'HKWorkoutActivityTypeBasketball': 'skills',
-      'HKWorkoutActivityTypeTennis': 'skills',
-      'HKWorkoutActivityTypeGolf': 'skills',
-      'HKWorkoutActivityTypeHiking': 'cardio',
-      'HKWorkoutActivityTypeWalking': 'recovery',
+      // Strength & Conditioning
+      'HKWorkoutActivityTypeTraditionalStrengthTraining': 'strength_training',
+      'HKWorkoutActivityTypeFunctionalStrengthTraining': 'functional_fitness',
+      'HKWorkoutActivityTypeCrossTraining': 'crossfit',
+      'HKWorkoutActivityTypeCoreTraining': 'calisthenics',
+      'HKWorkoutActivityTypeHighIntensityIntervalTraining': 'crossfit',
+      // Cardio
+      'HKWorkoutActivityTypeRunning': 'running',
+      'HKWorkoutActivityTypeCycling': 'cycling',
+      'HKWorkoutActivityTypeSwimming': 'swimming',
+      'HKWorkoutActivityTypeRowing': 'rowing',
+      'HKWorkoutActivityTypeElliptical': 'elliptical',
+      'HKWorkoutActivityTypeStairClimbing': 'stair_climbing',
+      'HKWorkoutActivityTypeJumpRope': 'jump_rope',
+      // Combat Sports
+      'HKWorkoutActivityTypeBoxing': 'boxing',
+      'HKWorkoutActivityTypeKickboxing': 'kickboxing',
+      'HKWorkoutActivityTypeMartialArts': 'mma',
+      'HKWorkoutActivityTypeWrestling': 'wrestling',
+      // Team Sports
+      'HKWorkoutActivityTypeBasketball': 'basketball',
+      'HKWorkoutActivityTypeSoccer': 'soccer',
+      'HKWorkoutActivityTypeAmericanFootball': 'football',
+      'HKWorkoutActivityTypeVolleyball': 'volleyball',
+      'HKWorkoutActivityTypeBaseball': 'baseball',
+      'HKWorkoutActivityTypeHockey': 'hockey',
+      'HKWorkoutActivityTypeRugby': 'rugby',
+      'HKWorkoutActivityTypeLacrosse': 'lacrosse',
+      // Racquet Sports
+      'HKWorkoutActivityTypeTennis': 'tennis',
+      'HKWorkoutActivityTypeSquash': 'squash',
+      'HKWorkoutActivityTypeRacquetball': 'racquetball',
+      'HKWorkoutActivityTypeBadminton': 'badminton',
+      'HKWorkoutActivityTypePickleball': 'pickleball',
+      // Individual Sports
+      'HKWorkoutActivityTypeGolf': 'golf',
+      'HKWorkoutActivityTypeDownhillSkiing': 'skiing',
+      'HKWorkoutActivityTypeCrossCountrySkiing': 'skiing',
+      'HKWorkoutActivityTypeSnowboarding': 'snowboarding',
+      'HKWorkoutActivityTypeSurfingSports': 'surfing',
+      'HKWorkoutActivityTypeSkatingSports': 'skateboarding',
+      'HKWorkoutActivityTypeClimbing': 'rock_climbing',
+      'HKWorkoutActivityTypeHiking': 'hiking',
+      // Mind-Body
+      'HKWorkoutActivityTypeYoga': 'yoga',
+      'HKWorkoutActivityTypePilates': 'pilates',
+      'HKWorkoutActivityTypeTaiChi': 'tai_chi',
+      'HKWorkoutActivityTypeMindAndBody': 'meditation',
+      'HKWorkoutActivityTypeFlexibility': 'stretching',
+      // Recovery & Walking
+      'HKWorkoutActivityTypeWalking': 'walking',
+      'HKWorkoutActivityTypeCooldown': 'active_recovery',
       'HKWorkoutActivityTypePreparationAndRecovery': 'recovery'
     }
 
-    return typeMapping[appleType] || 'cardio'
+    return typeMapping[appleType] || 'other'
   }
 
   // Convert Apple Health workout to our workout reflection format

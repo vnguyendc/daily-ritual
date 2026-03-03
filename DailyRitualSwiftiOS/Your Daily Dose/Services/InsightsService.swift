@@ -4,6 +4,7 @@ protocol InsightsServiceProtocol {
     func list(type: String?, limit: Int, unreadOnly: Bool) async throws -> [Insight]
     func stats() async throws -> InsightStats?
     func markRead(_ id: UUID) async throws
+    func fetchLatestInsight(type: String) async throws -> Insight?
 }
 
 struct InsightsService: InsightsServiceProtocol {
@@ -19,6 +20,10 @@ struct InsightsService: InsightsServiceProtocol {
 
     func markRead(_ id: UUID) async throws {
         try await api.markInsightRead(id)
+    }
+
+    func fetchLatestInsight(type: String) async throws -> Insight? {
+        try await api.fetchLatestInsight(type: type)
     }
 }
 

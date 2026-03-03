@@ -13,14 +13,26 @@ final class InsightsViewModel: ObservableObject {
     @Published var stats: InsightStats?
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var selectedTypeFilter: String?
 
     private let insightsService: InsightsServiceProtocol = InsightsService()
+
+    static let allTypeFilters: [(label: String, value: String?, icon: String)] = [
+        ("All", nil, "brain.head.profile"),
+        ("Post-Workout", "post_workout", "figure.run"),
+        ("Post-Meal", "post_meal", "fork.knife"),
+        ("Daily Nutrition", "daily_nutrition", "chart.bar"),
+        ("Weekly Review", "weekly_comprehensive", "calendar"),
+        ("Morning", "morning", "sun.max"),
+        ("Evening", "evening", "moon"),
+        ("Weekly", "weekly", "chart.line.uptrend.xyaxis"),
+    ]
 
     func load(unreadOnly: Bool = false) async {
         isLoading = true
         defer { isLoading = false }
         do {
-            async let listTask = insightsService.list(type: nil, limit: 10, unreadOnly: unreadOnly)
+            async let listTask = insightsService.list(type: selectedTypeFilter, limit: 20, unreadOnly: unreadOnly)
             async let statsTask = insightsService.stats()
             let (list, s) = try await (listTask, statsTask)
             insights = list
@@ -33,23 +45,22 @@ final class InsightsViewModel: ObservableObject {
     func markRead(_ id: UUID) async {
         do {
             try await insightsService.markRead(id)
-            // Update local state optimistically
             if let idx = insights.firstIndex(where: { $0.id == id }) {
-                var updated = insights[idx]
-                updated = Insight(
-                    id: updated.id,
-                    userId: updated.userId,
-                    insightType: updated.insightType,
-                    content: updated.content,
-                    dataPeriodStart: updated.dataPeriodStart,
-                    dataPeriodEnd: updated.dataPeriodEnd,
-                    confidenceScore: updated.confidenceScore,
+                let old = insights[idx]
+                insights[idx] = Insight(
+                    id: old.id,
+                    userId: old.userId,
+                    insightType: old.insightType,
+                    content: old.content,
+                    dataPeriodStart: old.dataPeriodStart,
+                    dataPeriodEnd: old.dataPeriodEnd,
+                    confidenceScore: old.confidenceScore,
                     isRead: true,
-                    createdAt: updated.createdAt
+                    summary: old.summary,
+                    triggerContext: old.triggerContext,
+                    createdAt: old.createdAt
                 )
-                insights[idx] = updated
             }
-            // Refresh stats
             stats = try await insightsService.stats()
         } catch {
             errorMessage = error.localizedDescription
@@ -62,6 +73,20 @@ struct InsightsListView: View {
     @State private var showUnreadOnly = false
 
     private var timeContext: DesignSystem.TimeContext { .evening }
+
+    /// Group insights by date (day)
+    private var groupedInsights: [(date: String, insights: [Insight])] {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+
+        let grouped = Dictionary(grouping: viewModel.insights) { insight -> String in
+            guard let date = insight.createdAt else { return "Unknown" }
+            return formatter.string(from: date)
+        }
+        return grouped.sorted { $0.key > $1.key }
+            .map { (date: $0.key, insights: $0.value) }
+    }
 
     var body: some View {
         NavigationStack {
@@ -91,6 +116,49 @@ struct InsightsListView: View {
                     }
                 }
 
+                // Filter chips
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        ForEach(InsightsViewModel.allTypeFilters, id: \.label) { filter in
+                            Button {
+                                viewModel.selectedTypeFilter = filter.value
+                                Task { await viewModel.load(unreadOnly: showUnreadOnly) }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: filter.icon)
+                                        .font(.caption)
+                                    Text(filter.label)
+                                        .font(DesignSystem.Typography.metadata)
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    viewModel.selectedTypeFilter == filter.value
+                                        ? timeContext.primaryColor
+                                        : DesignSystem.Colors.cardBackground
+                                )
+                                .foregroundColor(
+                                    viewModel.selectedTypeFilter == filter.value
+                                        ? .white
+                                        : DesignSystem.Colors.primaryText
+                                )
+                                .clipShape(Capsule())
+                                .overlay(
+                                    Capsule()
+                                        .strokeBorder(
+                                            viewModel.selectedTypeFilter == filter.value
+                                                ? Color.clear
+                                                : DesignSystem.Colors.divider,
+                                            lineWidth: 1
+                                        )
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 4)
+                }
+
                 // Show inline loading indicator when refreshing with existing data
                 if viewModel.isLoading && !viewModel.insights.isEmpty {
                     InlineLoadingIndicator(message: "Refreshing insights")
@@ -109,21 +177,19 @@ struct InsightsListView: View {
 
                 // List of insights
                 if viewModel.insights.isEmpty && viewModel.isLoading {
-                    // Show loading card when initially loading
                     LoadingCard(message: "Loading your insights...", progress: nil, cancelAction: nil, useMaterialBackground: false)
                         .padding(.top, DesignSystem.Spacing.xxxl)
                 } else if viewModel.insights.isEmpty && !viewModel.isLoading {
-                    // Empty state
                     VStack(spacing: DesignSystem.Spacing.lg) {
                         Image(systemName: "brain.head.profile")
                             .font(.system(size: 60))
                             .foregroundColor(timeContext.primaryColor.opacity(0.6))
-                        
+
                         VStack(spacing: DesignSystem.Spacing.sm) {
                             Text("No Insights Yet")
                                 .font(DesignSystem.Typography.headlineMedium)
                                 .foregroundColor(DesignSystem.Colors.primaryText)
-                            
+
                             Text("Complete your morning and evening rituals to generate insights.")
                                 .font(DesignSystem.Typography.bodyMedium)
                                 .foregroundColor(DesignSystem.Colors.secondaryText)
@@ -134,12 +200,14 @@ struct InsightsListView: View {
                     .padding(.vertical, DesignSystem.Spacing.xxl)
                 } else {
                     ScrollView {
-                        VStack(spacing: DesignSystem.Spacing.md) {
+                        LazyVStack(spacing: DesignSystem.Spacing.md) {
                             ForEach(viewModel.insights) { insight in
                                 PremiumCard(timeContext: timeContext) {
                                     VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                                         HStack {
-                                            Text(insight.insightType.capitalized)
+                                            Image(systemName: insight.typeIcon)
+                                                .foregroundColor(timeContext.primaryColor)
+                                            Text(insight.typeDisplayName)
                                                 .font(DesignSystem.Typography.headlineSmall)
                                                 .foregroundColor(DesignSystem.Colors.secondaryText)
                                             Spacer()
@@ -153,14 +221,28 @@ struct InsightsListView: View {
                                                     .clipShape(Capsule())
                                             }
                                         }
+                                        if let summary = insight.summary {
+                                            Text(summary)
+                                                .font(DesignSystem.Typography.bodyMedium)
+                                                .foregroundColor(DesignSystem.Colors.secondaryText)
+                                                .lineLimit(1)
+                                        }
                                         Text(insight.content)
                                             .font(DesignSystem.Typography.bodyLargeSafe)
                                             .foregroundColor(DesignSystem.Colors.primaryText)
                                             .fixedSize(horizontal: false, vertical: true)
-                                        if let conf = insight.confidenceScore {
-                                            Text(String(format: "Confidence: %.0f%%", conf * 100))
-                                                .font(DesignSystem.Typography.metadata)
-                                                .foregroundColor(DesignSystem.Colors.tertiaryText)
+                                        HStack {
+                                            if let date = insight.createdAt {
+                                                Text(date, style: .relative)
+                                                    .font(DesignSystem.Typography.metadata)
+                                                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+                                            }
+                                            Spacer()
+                                            if let conf = insight.confidenceScore {
+                                                Text(String(format: "%.0f%%", conf * 100))
+                                                    .font(DesignSystem.Typography.metadata)
+                                                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+                                            }
                                         }
                                         if insight.isRead != true {
                                             Button("Mark as read") {
@@ -199,5 +281,3 @@ struct InsightsListView: View {
 #Preview {
     InsightsListView()
 }
-
-

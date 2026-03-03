@@ -292,14 +292,22 @@ struct ProfileView: View {
 
                 Divider().overlay(DesignSystem.Colors.border)
 
-                // Apple Health — Coming Soon
-                integrationRow(
-                    icon: "heart.fill",
-                    name: "Apple Health",
-                    status: "Coming Soon",
-                    statusColor: DesignSystem.Colors.secondaryText,
-                    showChevron: false
-                )
+                // Apple Health
+                Button {
+                    if HealthKitService.shared.isAuthorized {
+                        HealthKitService.shared.disconnect()
+                    } else {
+                        Task { await HealthKitService.shared.requestAuthorization() }
+                    }
+                } label: {
+                    integrationRow(
+                        icon: "heart.fill",
+                        name: "Apple Health",
+                        status: HealthKitService.shared.isAuthorized ? "Connected" : "Connect",
+                        statusColor: HealthKitService.shared.isAuthorized ? DesignSystem.Colors.powerGreen : timeContext.primaryColor,
+                        showChevron: true
+                    )
+                }
             }
         }
     }

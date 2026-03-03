@@ -417,33 +417,39 @@ export interface Database {
         Row: {
           id: string
           user_id: string
-          insight_type: 'morning' | 'evening' | 'weekly' | 'competition_prep' | 'pattern_analysis'
+          insight_type: 'morning' | 'evening' | 'weekly' | 'competition_prep' | 'pattern_analysis' | 'post_workout' | 'post_meal' | 'daily_nutrition' | 'weekly_comprehensive'
           content: string
           data_period_start: string | null
           data_period_end: string | null
           confidence_score: number | null
           is_read: boolean
+          trigger_context: Json | null
+          summary: string | null
           created_at: string
         }
         Insert: {
           id?: string
           user_id: string
-          insight_type: 'morning' | 'evening' | 'weekly' | 'competition_prep' | 'pattern_analysis'
+          insight_type: 'morning' | 'evening' | 'weekly' | 'competition_prep' | 'pattern_analysis' | 'post_workout' | 'post_meal' | 'daily_nutrition' | 'weekly_comprehensive'
           content: string
           data_period_start?: string | null
           data_period_end?: string | null
           confidence_score?: number | null
           is_read?: boolean
+          trigger_context?: Json | null
+          summary?: string | null
         }
         Update: {
           id?: string
           user_id?: string
-          insight_type?: 'morning' | 'evening' | 'weekly' | 'competition_prep' | 'pattern_analysis'
+          insight_type?: 'morning' | 'evening' | 'weekly' | 'competition_prep' | 'pattern_analysis' | 'post_workout' | 'post_meal' | 'daily_nutrition' | 'weekly_comprehensive'
           content?: string
           data_period_start?: string | null
           data_period_end?: string | null
           confidence_score?: number | null
           is_read?: boolean
+          trigger_context?: Json | null
+          summary?: string | null
         }
         Relationships: []
       }
@@ -561,6 +567,71 @@ export interface Database {
           raw_sleep_json?: Json | null
           raw_cycle_json?: Json | null
           fetched_at?: string
+        }
+        Relationships: []
+      }
+      meals: {
+        Row: {
+          id: string
+          user_id: string
+          date: string
+          meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'
+          photo_storage_path: string | null
+          photo_url: string | null
+          food_description: string | null
+          estimated_calories: number | null
+          estimated_protein_g: number | null
+          estimated_carbs_g: number | null
+          estimated_fat_g: number | null
+          estimated_fiber_g: number | null
+          ai_confidence: number | null
+          user_calories: number | null
+          user_protein_g: number | null
+          user_carbs_g: number | null
+          user_fat_g: number | null
+          user_notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          date: string
+          meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'
+          photo_storage_path?: string | null
+          photo_url?: string | null
+          food_description?: string | null
+          estimated_calories?: number | null
+          estimated_protein_g?: number | null
+          estimated_carbs_g?: number | null
+          estimated_fat_g?: number | null
+          estimated_fiber_g?: number | null
+          ai_confidence?: number | null
+          user_calories?: number | null
+          user_protein_g?: number | null
+          user_carbs_g?: number | null
+          user_fat_g?: number | null
+          user_notes?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          date?: string
+          meal_type?: 'breakfast' | 'lunch' | 'dinner' | 'snack'
+          photo_storage_path?: string | null
+          photo_url?: string | null
+          food_description?: string | null
+          estimated_calories?: number | null
+          estimated_protein_g?: number | null
+          estimated_carbs_g?: number | null
+          estimated_fat_g?: number | null
+          estimated_fiber_g?: number | null
+          ai_confidence?: number | null
+          user_calories?: number | null
+          user_protein_g?: number | null
+          user_carbs_g?: number | null
+          user_fat_g?: number | null
+          user_notes?: string | null
         }
         Relationships: []
       }

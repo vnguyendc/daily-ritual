@@ -15,6 +15,7 @@ struct WorkoutReflectionView: View {
     @State private var currentStep = 0
     @State private var isSaving = false
     @State private var showingCompletion = false
+    @State private var postWorkoutInsight: Insight?
 
     // Step 1: Feeling / energy / focus
     @State private var trainingFeeling: Int = 3
@@ -25,16 +26,22 @@ struct WorkoutReflectionView: View {
     @State private var whatWentWell: String = ""
     @State private var whatToImprove: String = ""
 
-    // Pre-populated from linked training plan
+    // Pre-populated from linked training plan or HealthKit
     @State private var workoutType: String?
     @State private var workoutIntensity: String?
     @State private var durationMinutes: Int?
+    @State private var caloriesBurned: Int?
+    @State private var averageHr: Int?
+    @State private var maxHr: Int?
+    @State private var appleWorkoutId: String?
 
     var linkedPlan: TrainingPlan?
+    var healthKitData: PartialWorkoutData?
 
     private let timeContext: DesignSystem.TimeContext = .neutral
     private let totalSteps = 4
     private let service: WorkoutReflectionsServiceProtocol = WorkoutReflectionsService()
+    private let insightsService: InsightsServiceProtocol = InsightsService()
 
     var body: some View {
         NavigationStack {
@@ -142,19 +149,50 @@ struct WorkoutReflectionView: View {
                 }
             }
             .sheet(isPresented: $showingCompletion) {
-                CleanCompletionView(
-                    title: "Workout Reflection Complete!",
-                    subtitle: "Great job reflecting on your training",
-                    emoji: "💪",
-                    timeContext: timeContext,
-                    onDismiss: { dismiss() }
-                )
+                VStack(spacing: 0) {
+                    CleanCompletionView(
+                        title: "Workout Reflection Complete!",
+                        subtitle: "Great job reflecting on your training",
+                        emoji: "💪",
+                        timeContext: timeContext,
+                        onDismiss: { dismiss() }
+                    )
+                    if let insight = postWorkoutInsight {
+                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "sparkles")
+                                    .foregroundColor(.yellow)
+                                Text("AI Insight")
+                                    .font(DesignSystem.Typography.headlineSmall)
+                                    .foregroundColor(DesignSystem.Colors.primaryText)
+                            }
+                            Text(insight.content)
+                                .font(DesignSystem.Typography.bodyMedium)
+                                .foregroundColor(DesignSystem.Colors.secondaryText)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .padding(DesignSystem.Spacing.md)
+                        .background(DesignSystem.Colors.cardBackground)
+                        .cornerRadius(DesignSystem.CornerRadius.card)
+                        .padding(.horizontal, DesignSystem.Spacing.md)
+                        .padding(.bottom, DesignSystem.Spacing.lg)
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    }
+                }
             }
             .onAppear {
                 if let plan = linkedPlan {
                     workoutType = plan.trainingType
                     workoutIntensity = plan.intensity
                     durationMinutes = plan.durationMinutes
+                }
+                if let hk = healthKitData {
+                    workoutType = hk.workoutType
+                    durationMinutes = hk.durationMinutes
+                    caloriesBurned = hk.caloriesBurned
+                    averageHr = hk.averageHr
+                    maxHr = hk.maxHr
+                    appleWorkoutId = hk.appleWorkoutId
                 }
             }
         }
@@ -220,6 +258,13 @@ struct WorkoutReflectionView: View {
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
                 #endif
                 showingCompletion = true
+            }
+            // Fetch post-workout insight after a brief delay (edge function needs time to generate)
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            if let insight = try? await insightsService.fetchLatestInsight(type: "post_workout") {
+                await MainActor.run {
+                    withAnimation { postWorkoutInsight = insight }
+                }
             }
         } catch {
             print("Error saving workout reflection: \(error)")

@@ -36,7 +36,8 @@ struct Your_Daily_DoseApp: App {
                 auth: AuthService.shared,
                 dailyEntries: DailyEntriesService(),
                 trainingPlans: TrainingPlansService(),
-                insights: InsightsService()
+                insights: InsightsService(),
+                meals: MealsService()
             ))
             .preferredColorScheme(.dark)
             .edgesIgnoringSafeArea(.all)

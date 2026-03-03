@@ -8,8 +8,12 @@ import { JournalController } from '../controllers/journalEntries.js'
 import { IntegrationsController } from '../controllers/integrations.js'
 import { WebhooksController } from '../controllers/webhooks.js'
 import { StreaksController } from '../controllers/streaks.js'
+import { MealsController } from '../controllers/meals.js'
 import { authenticateToken } from '../middleware/auth.js'
 import { DashboardController } from '../controllers/dashboard.js'
+import multer from 'multer'
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } })
 
 const router = Router()
 
@@ -28,7 +32,7 @@ router.get('/health', (req, res) => {
 router.get('/integrations/whoop/callback', IntegrationsController.whoopCallback)
 
 // Authenticated routes
-router.use(['/profile', '/daily-entries', '/training-plans', '/workout-reflections', '/insights', '/journal', '/integrations', '/streaks'], authenticateToken)
+router.use(['/profile', '/daily-entries', '/training-plans', '/workout-reflections', '/insights', '/journal', '/integrations', '/streaks', '/meals'], authenticateToken)
 
 // Profile routes
 router.get('/profile', DashboardController.getUserProfile)
@@ -57,6 +61,7 @@ router.delete('/training-plans/:id', TrainingPlansController.remove)
 
 // Insights routes
 router.get('/insights', InsightsController.getInsights)
+router.get('/insights/latest', InsightsController.getLatestInsights)
 router.get('/insights/stats', InsightsController.getInsightsStats)
 router.post('/insights/:id/read', InsightsController.markAsRead)
 
@@ -91,6 +96,14 @@ router.post('/integrations/whoop/connect', IntegrationsController.connectWhoop)
 router.delete('/integrations/whoop/disconnect', IntegrationsController.disconnectWhoop)
 router.post('/integrations/whoop/sync', IntegrationsController.syncWhoop)
 router.get('/integrations/whoop/data', IntegrationsController.getWhoopData)
+
+// Meals routes
+router.get('/meals/daily-summary', MealsController.getDailySummary)
+router.get('/meals', MealsController.getMeals)
+router.get('/meals/:id', MealsController.getMeal)
+router.post('/meals', upload.single('photo'), MealsController.createMeal)
+router.put('/meals/:id', MealsController.updateMeal)
+router.delete('/meals/:id', MealsController.deleteMeal)
 
 // Streak routes
 router.get('/streaks/current', StreaksController.getCurrentStreaks)

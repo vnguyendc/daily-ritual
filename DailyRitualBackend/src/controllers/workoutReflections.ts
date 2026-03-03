@@ -3,6 +3,7 @@ import { Request, Response } from 'express'
 import { z } from 'zod'
 import { supabaseServiceClient, getUserFromToken } from '../services/supabase.js'
 import type { WorkoutReflectionRequest, APIResponse } from '../types/api.js'
+import { SupabaseEdgeFunctions } from '../services/integrations/supabaseEdgeFunctions.js'
 
 // Validation schema
 const workoutReflectionSchema = z.object({
@@ -80,6 +81,15 @@ export class WorkoutReflectionsController {
         p_streak_type: 'workout_reflection',
         p_completed_date: today
       })
+
+      // Fire-and-forget: generate post-workout insight
+      SupabaseEdgeFunctions.generateInsight({
+        supabaseUrl: process.env.SUPABASE_URL || '',
+        authToken: token,
+        insight_type: 'post_workout',
+        context_data: { workout_reflection_id: reflection.id },
+        data_period_end: today
+      }).catch(() => {})
 
       const response: APIResponse = {
         success: true,

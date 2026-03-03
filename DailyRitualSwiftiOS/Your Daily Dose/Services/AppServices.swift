@@ -5,14 +5,16 @@ struct AppServices {
     let dailyEntries: DailyEntriesServiceProtocol
     let trainingPlans: TrainingPlansServiceProtocol
     let insights: InsightsServiceProtocol
+    let meals: MealsServiceProtocol
 }
 
 private struct AppServicesKey: EnvironmentKey {
-    static let defaultValue = AppServices(
+    @MainActor static let defaultValue = AppServices(
         auth: AuthService.shared,
         dailyEntries: DailyEntriesService(),
         trainingPlans: TrainingPlansService(),
-        insights: InsightsService()
+        insights: InsightsService(),
+        meals: MealsService()
     )
 }
 

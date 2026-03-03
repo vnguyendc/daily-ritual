@@ -70,8 +70,10 @@ struct DayDetailSheet: View {
     @State private var editingPlan: TrainingPlan?
     @State private var planToDelete: TrainingPlan?
     @State private var showDeleteConfirmation = false
-    
+    @State private var dayMeals: [Meal] = []
+
     private let plansService: TrainingPlansServiceProtocol = TrainingPlansService()
+    private let mealsService: MealsServiceProtocol = MealsService()
     private var timeContext: DesignSystem.TimeContext { DesignSystem.TimeContext.current() }
     private let calendar = Calendar.current
     
@@ -96,6 +98,24 @@ struct DayDetailSheet: View {
                             emptyState
                         } else {
                             plansList
+                        }
+
+                        // Meals section
+                        if !dayMeals.isEmpty {
+                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                                HStack {
+                                    Image(systemName: "fork.knife")
+                                        .foregroundColor(timeContext.primaryColor)
+                                    Text("Meals")
+                                        .font(DesignSystem.Typography.headlineSmall)
+                                        .foregroundColor(DesignSystem.Colors.primaryText)
+                                }
+                                .padding(.top, DesignSystem.Spacing.md)
+
+                                ForEach(dayMeals) { meal in
+                                    MealCard(meal: meal, timeContext: timeContext)
+                                }
+                            }
                         }
                     }
                     .padding(DesignSystem.Spacing.md)
@@ -311,13 +331,19 @@ struct DayDetailSheet: View {
     private func load() async {
         isLoading = true
         defer { isLoading = false }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let dateStr = formatter.string(from: date)
         do {
-            let loadedPlans = try await plansService.list(for: date)
+            async let plansTask = plansService.list(for: date)
+            async let mealsTask = mealsService.getMeals(date: dateStr)
+            let (loadedPlans, loadedMeals) = try await (plansTask, mealsTask)
             await MainActor.run {
                 plans = loadedPlans
+                dayMeals = loadedMeals
             }
         } catch {
-            print("❌ Failed to load training sessions:", error)
+            print("Failed to load training sessions:", error)
         }
     }
     

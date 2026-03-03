@@ -15,6 +15,12 @@
 		<string>CrimsonPro-VariableFont_wght.ttf</string>
 		<string>CrimsonPro-Italic-VariableFont_wght.ttf</string>
 	</array>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Daily Ritual reads your workouts, heart rate, steps, and sleep data to provide personalized insights and pre-fill workout reflections.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Daily Ritual uses your camera to take photos of meals for nutrition tracking.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Daily Ritual accesses your photo library to select meal photos for nutrition tracking.</string>
 	<!-- URL scheme for OAuth redirect -->
 	<key>CFBundleURLTypes</key>
 	<array>

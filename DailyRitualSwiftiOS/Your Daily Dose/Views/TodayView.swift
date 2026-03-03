@@ -35,13 +35,19 @@ struct TodayView: View {
     
     // Workout reflection
     @State private var workoutReflectionPlan: TrainingPlan?
+    @State private var healthKitWorkoutData: PartialWorkoutData?
 
     // Journal entries
     @State private var journalEntries: [JournalEntry] = []
     @State private var selectedJournalEntry: JournalEntry?
-    
+
+    // Meals
+    @State private var showingMealLog = false
+    @State private var nutritionSummary: DailyNutritionSummary?
+
     private let plansService: TrainingPlansServiceProtocol = TrainingPlansService()
     private let journalService: JournalEntriesServiceProtocol = JournalEntriesService()
+    private let mealsService: MealsServiceProtocol = MealsService()
     
     private var timeContext: DesignSystem.TimeContext {
         DesignSystem.TimeContext.current()
@@ -65,6 +71,31 @@ struct TodayView: View {
                             timeContext: timeContext,
                             showingHistory: $showingStreakHistory
                         )
+
+                        // Apple Health Card (when connected)
+                        if HealthKitService.shared.isAuthorized {
+                            HealthSummaryCard(
+                                healthService: HealthKitService.shared,
+                                timeContext: timeContext
+                            )
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+
+                            // HealthKit workouts with "Reflect" buttons
+                            if !HealthKitService.shared.todayWorkouts.isEmpty {
+                                ForEach(HealthKitService.shared.todayWorkouts) { workout in
+                                    HealthKitWorkoutCard(
+                                        workout: workout,
+                                        timeContext: timeContext,
+                                        hasReflection: false,
+                                        onReflect: { data in
+                                            workoutReflectionPlan = nil
+                                            healthKitWorkoutData = data
+                                            showingWorkoutReflection = true
+                                        }
+                                    )
+                                }
+                            }
+                        }
 
                         // Whoop Recovery Card (only when connected with data)
                         if WhoopService.shared.isConnected,
@@ -97,7 +128,8 @@ struct TodayView: View {
                         timeContext: timeContext,
                         onNewEntry: { showingQuickEntry = true },
                         onAddActivity: { showingAddActivity = true },
-                        onWorkoutReflection: { showingWorkoutReflection = true }
+                        onWorkoutReflection: { showingWorkoutReflection = true },
+                        onLogMeal: { showingMealLog = true }
                     )
                 }
             }
@@ -109,10 +141,14 @@ struct TodayView: View {
             .task {
                 await viewModel.load(date: selectedDate)
                 await loadJournalEntries()
+                await loadNutrition(for: selectedDate)
                 completedGoals = loadCompletedGoals(for: selectedDate)
                 await StreaksService.shared.fetchStreaks()
                 await WhoopService.shared.checkConnectionStatus()
                 await WhoopService.shared.fetchDailyData()
+                if HealthKitService.shared.isAuthorized {
+                    await HealthKitService.shared.fetchTodayData()
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
                 handlePotentialDayChange()
@@ -132,9 +168,12 @@ struct TodayView: View {
                     .edgesIgnoringSafeArea(.all)
             }
             .sheet(isPresented: $showingWorkoutReflection, onDismiss: refreshData) {
-                WorkoutReflectionView(linkedPlan: workoutReflectionPlan)
+                WorkoutReflectionView(linkedPlan: workoutReflectionPlan, healthKitData: healthKitWorkoutData)
                     .edgesIgnoringSafeArea(.all)
-                    .onDisappear { workoutReflectionPlan = nil }
+                    .onDisappear {
+                        workoutReflectionPlan = nil
+                        healthKitWorkoutData = nil
+                    }
             }
             .sheet(isPresented: $showingTrainingPlans, onDismiss: refreshData) {
                 TrainingPlanView()
@@ -169,6 +208,11 @@ struct TodayView: View {
                 if let data = WhoopService.shared.dailyData {
                     SleepDetailView(data: data)
                 }
+            }
+            .sheet(isPresented: $showingMealLog, onDismiss: {
+                Task { await loadNutrition(for: selectedDate) }
+            }) {
+                MealLogView(date: selectedDate)
             }
         }
     }
@@ -244,6 +288,15 @@ extension TodayView {
                 }
             )
             
+            // Nutrition summary (visible when meals have been logged)
+            if let summary = nutritionSummary, summary.mealCount > 0 {
+                NutritionSummaryCard(
+                    summary: summary,
+                    timeContext: timeContext,
+                    onTap: { showingMealLog = true }
+                )
+            }
+
             // Quick entries
             QuickEntriesCardView(
                 entries: todayJournalEntries,
@@ -393,6 +446,17 @@ extension TodayView {
     
     private var todayJournalEntries: [JournalEntry] {
         journalEntries
+    }
+
+    private func loadNutrition(for date: Date) async {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let dateStr = formatter.string(from: date)
+        do {
+            nutritionSummary = try await mealsService.getDailyNutrition(date: dateStr)
+        } catch {
+            print("Failed to load nutrition:", error)
+        }
     }
 }
 

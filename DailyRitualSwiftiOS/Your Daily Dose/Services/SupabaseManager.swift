@@ -1412,6 +1412,12 @@ class SupabaseManager: NSObject, ObservableObject {
         let _: APIResponse<EmptyJSON> = try await api.postRaw("insights/\(id.uuidString)/read", json: nil)
     }
 
+    func fetchLatestInsight(type: String) async throws -> Insight? {
+        let query = [URLQueryItem(name: "type", value: type)]
+        let apiResponse: APIResponse<Insight> = try await api.get("insights/latest", query: query)
+        return apiResponse.data
+    }
+
     // MARK: - Journal Entries API
     
     func listJournalEntries(page: Int = 1, limit: Int = 20) async throws -> (entries: [JournalEntry], hasNext: Bool) {

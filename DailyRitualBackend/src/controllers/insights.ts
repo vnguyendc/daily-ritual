@@ -184,6 +184,61 @@ export class InsightsController {
     }
   }
 
+  // Get the most recent insight per type (for inline display after actions)
+  static async getLatestInsights(req: Request, res: Response) {
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '')
+      const useMock = process.env.USE_MOCK === 'true'
+      const devUserId = process.env.DEV_USER_ID
+
+      let user: any
+      if (!token) {
+        if (useMock) {
+          user = { id: 'mock-user-id' }
+        } else if (devUserId) {
+          user = { id: devUserId }
+        } else {
+          return res.status(401).json({ error: 'Authorization token required' })
+        }
+      } else {
+        user = await getUserFromToken(token)
+      }
+
+      const type = req.query.type as string
+
+      if (useMock) {
+        return res.json({ success: true, data: null })
+      }
+
+      let query = (supabaseServiceClient as any)
+        .from('ai_insights')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      if (type) {
+        query = query.eq('insight_type', type)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      res.json({
+        success: true,
+        data: data?.[0] || null
+      })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      console.error('Error getting latest insight:', error)
+      res.status(500).json({
+        success: false,
+        error: { error: 'Internal server error', message }
+      })
+    }
+  }
+
   // Get insights statistics
   static async getInsightsStats(req: Request, res: Response) {
     try {

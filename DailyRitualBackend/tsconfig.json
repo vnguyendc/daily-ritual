@@ -29,7 +29,9 @@
     "src/index.ts",
     "src/routes/index.ts",
     "src/controllers/dailyEntries.ts",
+    "src/controllers/meals.ts",
     "src/services/supabase.ts",
+    "src/services/mealAnalysis.ts",
     "src/middleware/auth.ts",
     "src/types/**/*.ts"
   ],
