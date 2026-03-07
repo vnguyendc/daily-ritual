@@ -118,14 +118,16 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   })
 })
 
-// Start server - bind to all interfaces for device testing
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Daily Ritual API server running on port ${PORT}`)
-  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`)
-  console.log(`🔗 Health check: http://localhost:${PORT}/api/v1/health`)
-  console.log(`📱 Device access: http://172.19.69.110:${PORT}/api/v1/health`)
-  console.log(`📚 API docs: http://localhost:${PORT}/`)
-})
+// Start server - bind to all interfaces for device testing (skip in test)
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Daily Ritual API server running on port ${PORT}`)
+    console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`)
+    console.log(`🔗 Health check: http://localhost:${PORT}/api/v1/health`)
+    console.log(`📱 Device access: http://172.19.69.110:${PORT}/api/v1/health`)
+    console.log(`📚 API docs: http://localhost:${PORT}/`)
+  })
+}
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

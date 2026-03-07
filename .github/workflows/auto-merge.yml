@@ -1,0 +1,27 @@
+name: Auto-merge
+
+on:
+  pull_request:
+    types: [labeled]
+  check_suite:
+    types: [completed]
+
+jobs:
+  auto-merge:
+    if: contains(github.event.pull_request.labels.*.name, 'auto-merge') || github.event_name == 'check_suite'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Enable auto-merge for auto-merge PRs
+        run: |
+          # Find open PRs with auto-merge label
+          PRS=$(gh pr list --repo "${{ github.repository }}" --label "auto-merge" --state open --json number --jq '.[].number')
+          for PR in $PRS; do
+            echo "Enabling auto-merge for PR #$PR"
+            gh pr merge "$PR" --repo "${{ github.repository }}" --auto --squash || true
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

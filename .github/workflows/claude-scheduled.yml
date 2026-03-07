@@ -1,0 +1,48 @@
+name: Claude Scheduled Work
+
+on:
+  schedule:
+    - cron: '0 9 * * 1-5'  # Weekdays 9 AM UTC
+  workflow_dispatch:
+
+jobs:
+  work-on-issues:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get next claude-ready issue
+        id: issue
+        run: |
+          ISSUE=$(gh issue list --label "claude-ready" --state open --limit 1 --json number,title --jq '.[0]')
+          if [ "$ISSUE" = "" ] || [ "$ISSUE" = "null" ]; then
+            echo "No claude-ready issues found"
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "number=$(echo $ISSUE | jq -r '.number')" >> "$GITHUB_OUTPUT"
+            echo "title=$(echo $ISSUE | jq -r '.title')" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Work on issue
+        if: steps.issue.outputs.found == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          max_turns: 30
+          prompt: |
+            Work on GitHub issue #${{ steps.issue.outputs.number }}: ${{ steps.issue.outputs.title }}
+
+            Read the issue description carefully. Implement the requested changes, write tests,
+            and create a PR. Follow the conventions in CLAUDE.md.
+
+            If the issue is labeled 'auto-merge', also label the PR 'auto-merge'.
