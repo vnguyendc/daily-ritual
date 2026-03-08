@@ -12,6 +12,9 @@ struct NutritionSummaryCard: View {
     let timeContext: DesignSystem.TimeContext
     var onTap: (() -> Void)?
 
+    @State private var ringProgress: CGFloat = 0
+    private let calorieTarget: CGFloat = 2200
+
     var body: some View {
         Button {
             onTap?()
@@ -56,10 +59,47 @@ struct NutritionSummaryCard: View {
                             color: .yellow
                         )
                     }
+
+                    // Calorie context line with color coding
+                    let consumed = summary.totalCalories
+                    let target = Int(calorieTarget)
+                    let ratio = CGFloat(consumed) / calorieTarget
+                    HStack {
+                        Text("\(formattedNumber(consumed)) / \(formattedNumber(target)) kcal")
+                            .font(DesignSystem.Typography.bodySmall)
+                            .foregroundColor(calorieRemainingColor(ratio: ratio))
+                        Spacer()
+                        if consumed <= target {
+                            Text("\(formattedNumber(target - consumed)) remaining")
+                                .font(DesignSystem.Typography.metadata)
+                                .foregroundColor(calorieRemainingColor(ratio: ratio))
+                        } else {
+                            Text("\(formattedNumber(consumed - target)) over")
+                                .font(DesignSystem.Typography.metadata)
+                                .foregroundColor(.red)
+                        }
+                    }
                 }
             }
         }
         .buttonStyle(.plain)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.8)) {
+                ringProgress = 1.0
+            }
+        }
+    }
+
+    private func calorieRemainingColor(ratio: CGFloat) -> Color {
+        if ratio >= 1.0 { return .red }
+        if ratio >= 0.9 { return .orange }
+        return .green
+    }
+
+    private func formattedNumber(_ value: Int) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        return formatter.string(from: NSNumber(value: value)) ?? "\(value)"
     }
 
     private func macroRing(label: String, value: Int, unit: String, color: Color) -> some View {
@@ -67,14 +107,14 @@ struct NutritionSummaryCard: View {
             ZStack {
                 Circle()
                     .stroke(color.opacity(0.2), lineWidth: 4)
-                    .frame(width: 44, height: 44)
+                    .frame(width: 56, height: 56)
                 Circle()
-                    .trim(from: 0, to: min(1.0, CGFloat(value) / max(1, targetFor(label))))
+                    .trim(from: 0, to: min(1.0, CGFloat(value) / max(1, targetFor(label))) * ringProgress)
                     .stroke(color, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                     .rotationEffect(.degrees(-90))
-                    .frame(width: 44, height: 44)
+                    .frame(width: 56, height: 56)
                 Text("\(value)")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
                     .foregroundColor(DesignSystem.Colors.primaryText)
             }
             Text(label)
@@ -86,7 +126,7 @@ struct NutritionSummaryCard: View {
 
     private func targetFor(_ label: String) -> CGFloat {
         switch label {
-        case "Calories": return 2200
+        case "Calories": return calorieTarget
         case "Protein": return 150
         case "Carbs": return 250
         case "Fat": return 70

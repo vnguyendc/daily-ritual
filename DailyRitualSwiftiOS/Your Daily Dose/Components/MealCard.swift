@@ -2,7 +2,7 @@
 //  MealCard.swift
 //  Your Daily Dose
 //
-//  Individual meal card with thumbnail, food description, calories.
+//  Individual meal card with thumbnail, food description, calories, time, and swipe-to-delete.
 //
 
 import SwiftUI
@@ -10,62 +10,129 @@ import SwiftUI
 struct MealCard: View {
     let meal: Meal
     let timeContext: DesignSystem.TimeContext
+    var onDelete: (() -> Void)?
+
+    @State private var offset: CGFloat = 0
+    @State private var showActions = false
 
     var body: some View {
-        HStack(spacing: DesignSystem.Spacing.md) {
-            // Thumbnail or icon
-            if let urlString = meal.photoUrl, let url = URL(string: urlString) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 56, height: 56)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                    default:
-                        mealIcon
+        ZStack(alignment: .trailing) {
+            // Delete action (revealed on swipe)
+            Button {
+                onDelete?()
+            } label: {
+                Image(systemName: "trash")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 70)
+                    .frame(maxHeight: .infinity)
+                    .background(DesignSystem.Colors.alertRed)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card))
+            .opacity(onDelete != nil ? 1 : 0)
+
+            // Main card content
+            HStack(spacing: DesignSystem.Spacing.md) {
+                // Thumbnail as 64pt rounded square
+                if let urlString = meal.photoUrl, let url = URL(string: urlString) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 64, height: 64)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        default:
+                            mealIcon
+                        }
+                    }
+                } else {
+                    mealIcon
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(meal.mealTypeDisplayName)
+                            .font(DesignSystem.Typography.headlineSmall)
+                            .foregroundColor(DesignSystem.Colors.primaryText)
+                        Spacer()
+                        Text("\(meal.calories) kcal")
+                            .font(DesignSystem.Typography.bodyMedium)
+                            .foregroundColor(timeContext.primaryColor)
+                    }
+
+                    if let desc = meal.foodDescription {
+                        Text(desc)
+                            .font(DesignSystem.Typography.bodyMedium)
+                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                            .lineLimit(2)
+                    }
+
+                    HStack {
+                        HStack(spacing: DesignSystem.Spacing.md) {
+                            macroLabel("P", value: meal.proteinG, color: .red)
+                            macroLabel("C", value: meal.carbsG, color: .blue)
+                            macroLabel("F", value: meal.fatG, color: .yellow)
+                        }
+                        Spacer()
+                        // Time of meal
+                        Text(mealTimeString)
+                            .font(DesignSystem.Typography.metadata)
+                            .foregroundColor(DesignSystem.Colors.tertiaryText)
                     }
                 }
-            } else {
-                mealIcon
             }
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(meal.mealTypeDisplayName)
-                        .font(DesignSystem.Typography.headlineSmall)
-                        .foregroundColor(DesignSystem.Colors.primaryText)
-                    Spacer()
-                    Text("\(meal.calories) kcal")
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .foregroundColor(timeContext.primaryColor)
-                }
-
-                if let desc = meal.foodDescription {
-                    Text(desc)
-                        .font(DesignSystem.Typography.bodyMedium)
-                        .foregroundColor(DesignSystem.Colors.secondaryText)
-                        .lineLimit(2)
-                }
-
-                HStack(spacing: DesignSystem.Spacing.md) {
-                    macroLabel("P", value: meal.proteinG, color: .red)
-                    macroLabel("C", value: meal.carbsG, color: .blue)
-                    macroLabel("F", value: meal.fatG, color: .yellow)
+            .padding(DesignSystem.Spacing.sm)
+            .background(DesignSystem.Colors.cardBackground)
+            .cornerRadius(DesignSystem.CornerRadius.card)
+            .offset(x: offset)
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        guard onDelete != nil else { return }
+                        if value.translation.width < 0 {
+                            offset = max(value.translation.width, -70)
+                        } else if showActions {
+                            offset = min(0, -70 + value.translation.width)
+                        }
+                    }
+                    .onEnded { value in
+                        guard onDelete != nil else { return }
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            if value.translation.width < -35 {
+                                offset = -70
+                                showActions = true
+                            } else {
+                                offset = 0
+                                showActions = false
+                            }
+                        }
+                    }
+            )
+            .onTapGesture {
+                if showActions {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        offset = 0
+                        showActions = false
+                    }
                 }
             }
         }
-        .padding(DesignSystem.Spacing.sm)
-        .background(DesignSystem.Colors.cardBackground)
-        .cornerRadius(DesignSystem.CornerRadius.card)
+    }
+
+    private var mealTimeString: String {
+        let date = meal.createdAt ?? meal.date
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return formatter.string(from: date)
     }
 
     private var mealIcon: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 10)
                 .fill(timeContext.primaryColor.opacity(0.1))
-                .frame(width: 56, height: 56)
+                .frame(width: 64, height: 64)
             Image(systemName: meal.mealTypeIcon)
                 .font(.title3)
                 .foregroundColor(timeContext.primaryColor)

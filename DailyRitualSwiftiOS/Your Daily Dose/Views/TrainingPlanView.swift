@@ -113,7 +113,12 @@ struct DayDetailSheet: View {
                                 .padding(.top, DesignSystem.Spacing.md)
 
                                 ForEach(dayMeals) { meal in
-                                    MealCard(meal: meal, timeContext: timeContext)
+                                    MealCard(meal: meal, timeContext: timeContext, onDelete: {
+                                        Task {
+                                            try? await mealsService.deleteMeal(id: meal.id)
+                                            await load()
+                                        }
+                                    })
                                 }
                             }
                         }
