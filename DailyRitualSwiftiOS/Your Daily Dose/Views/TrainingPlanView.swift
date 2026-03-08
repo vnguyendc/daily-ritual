@@ -141,7 +141,7 @@ struct DayDetailSheet: View {
                         hapticLight()
                     } label: {
                         Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 22))
+                            .font(DesignSystem.Typography.displaySmall)
                             .foregroundColor(timeContext.primaryColor)
                     }
                 }
@@ -385,7 +385,7 @@ struct DayPlanCard: View {
                 
                 Button(action: onEdit) {
                     Image(systemName: "pencil")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(DesignSystem.Typography.headlineMedium)
                         .foregroundColor(.white)
                         .frame(width: 70, height: .infinity)
                         .background(DesignSystem.Colors.eliteGold)
@@ -393,7 +393,7 @@ struct DayPlanCard: View {
                 
                 Button(action: onDelete) {
                     Image(systemName: "trash")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(DesignSystem.Typography.headlineMedium)
                         .foregroundColor(.white)
                         .frame(width: 70, height: .infinity)
                         .background(DesignSystem.Colors.alertRed)
@@ -412,7 +412,7 @@ struct DayPlanCard: View {
                             .frame(width: 50, height: 50)
                         
                         Image(systemName: plan.activityType.icon)
-                            .font(.system(size: 22))
+                            .font(DesignSystem.Typography.displaySmall)
                             .foregroundColor(timeContext.primaryColor)
                     }
                     

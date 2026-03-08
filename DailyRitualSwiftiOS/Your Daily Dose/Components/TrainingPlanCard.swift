@@ -27,7 +27,7 @@ struct TrainingPlanCard: View {
                         .frame(width: 44, height: 44)
 
                     Image(systemName: plan.activityType.icon)
-                        .font(.system(size: 20))
+                        .font(DesignSystem.Typography.headlineLarge)
                         .foregroundColor(timeContext.primaryColor)
                 }
 
@@ -59,7 +59,7 @@ struct TrainingPlanCard: View {
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "checkmark.circle")
-                                .font(.system(size: 12))
+                                .font(DesignSystem.Typography.caption)
                             Text("Reflect")
                                 .font(DesignSystem.Typography.caption)
                         }
@@ -79,7 +79,7 @@ struct TrainingPlanCard: View {
 
                 // Chevron
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(DesignSystem.Typography.caption.weight(.semibold))
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
             }
             .padding(DesignSystem.Spacing.md)
@@ -114,10 +114,10 @@ struct MiniTrainingPlanCard: View {
                         .frame(width: 40, height: 40)
                     
                     Image(systemName: plan.activityType.icon)
-                        .font(.system(size: 18))
+                        .font(DesignSystem.Typography.headlineMedium)
                         .foregroundColor(timeContext.primaryColor)
                 }
-                
+
                 // Activity name
                 Text(plan.activityType.displayName)
                     .font(DesignSystem.Typography.caption)
@@ -195,7 +195,7 @@ struct TrainingPlansSummary: View {
             HStack {
                 HStack(spacing: DesignSystem.Spacing.sm) {
                     Image(systemName: "figure.run")
-                        .font(.system(size: 16))
+                        .font(DesignSystem.Typography.headlineSmall)
                         .foregroundColor(timeContext.primaryColor)
                     
                     Text("Today's Training")

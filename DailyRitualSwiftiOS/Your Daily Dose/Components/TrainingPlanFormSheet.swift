@@ -247,11 +247,11 @@ struct TrainingPlanFormSheet: View {
                     .fill(color)
                     .frame(width: 10, height: 10)
                 Text(level.displayName)
-                    .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
+                    .font(DesignSystem.Typography.bodySmall.weight(isSelected ? .semibold : .medium))
             }
             .foregroundColor(isSelected ? DesignSystem.Colors.primaryText : DesignSystem.Colors.secondaryText)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
+            .padding(.vertical, DesignSystem.Spacing.compactSpacing)
             .background(
                 RoundedRectangle(cornerRadius: 10)
                     .fill(isSelected ? color.opacity(0.15) : DesignSystem.Colors.cardBackground)
@@ -350,7 +350,7 @@ struct TrainingPlanFormSheet: View {
             VStack(spacing: 0) {
                 HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
                     Image(systemName: "note.text")
-                        .font(.system(size: 16))
+                        .font(DesignSystem.Typography.headlineSmall)
                         .foregroundColor(DesignSystem.Colors.tertiaryText)
                         .frame(width: 24)
                         .padding(.top, 2)
@@ -488,7 +488,7 @@ struct FormInputRow: View {
         Button(action: action) {
             HStack(spacing: DesignSystem.Spacing.md) {
                 Image(systemName: icon)
-                    .font(.system(size: 16))
+                    .font(DesignSystem.Typography.headlineSmall)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
                     .frame(width: 24)
                 
@@ -506,7 +506,7 @@ struct FormInputRow: View {
                 
                 if showChevron {
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(DesignSystem.Typography.caption)
                         .foregroundColor(DesignSystem.Colors.tertiaryText)
                 }
             }

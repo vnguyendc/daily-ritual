@@ -148,7 +148,7 @@ struct SportCard: View {
                             onDelete()
                         } label: {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 18))
+                                .font(DesignSystem.Typography.headlineMedium)
                                 .foregroundColor(DesignSystem.Colors.alertRed)
                         }
                         .offset(x: 4, y: -4)
@@ -177,7 +177,7 @@ struct SportCard: View {
                 Group {
                     if isSelected {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 20))
+                            .font(DesignSystem.Typography.headlineLarge)
                             .foregroundColor(DesignSystem.Colors.invertedText)
                             .background(
                                 Circle()

@@ -82,7 +82,7 @@ private struct StreakStat: View {
     var body: some View {
         HStack(spacing: 4) {
             Image(systemName: icon)
-                .font(.system(size: 12))
+                .font(DesignSystem.Typography.caption)
                 .foregroundColor(color)
 
             Text("\(value)")
@@ -99,7 +99,7 @@ private struct GracePeriodBadge: View {
     var body: some View {
         HStack(spacing: 4) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 10))
+                .font(DesignSystem.Typography.metadata)
             Text("\(hoursRemaining)h left")
                 .font(DesignSystem.Typography.caption)
                 .fontWeight(.medium)

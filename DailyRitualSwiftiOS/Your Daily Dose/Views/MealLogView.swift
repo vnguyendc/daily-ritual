@@ -246,7 +246,7 @@ struct MealLogView: View {
                 // Success header
                 HStack(spacing: DesignSystem.Spacing.sm) {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.title)
+                        .font(DesignSystem.Typography.displayMedium)
                         .foregroundColor(.green)
                     Text("Meal Logged!")
                         .font(DesignSystem.Typography.headlineMedium)

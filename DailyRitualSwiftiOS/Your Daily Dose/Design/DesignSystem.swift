@@ -80,39 +80,28 @@ struct DesignSystem {
         
         // MARK: - Custom Dark/Light Mode Definitions
         // For cases where we need explicit control beyond system colors
-        
-        // Deep Obsidian Dark Mode Background
+        //
+        // NOTE: These three colors approximate their canonical counterparts but use
+        // slightly different dark-mode values for specific contexts (e.g. OLED panels).
+        // Prefer the canonical colors (`background`, `secondaryBackground`, `cardBackground`)
+        // for general use; reach for these only when the subtle shade difference matters.
+
+        // Deep Obsidian — darker than `background` in dark mode (#0a0a09 vs #0c0c0b)
         static let deepObsidian = Color(
             light: Color(red: 0.96, green: 0.95, blue: 0.93),              // #F5F2EE - Warm off-white (light mode)
             dark: Color(red: 0.04, green: 0.04, blue: 0.035)               // #0a0a09 - Warm deep (dark mode)
         )
 
-        // Carbon Black Secondary Surfaces
+        // Carbon Black — slightly lighter than `secondaryBackground` in dark mode (#1a1a17 vs #141412)
         static let carbonBlack = Color(
             light: Color(red: 0.98, green: 0.97, blue: 0.96),              // #FAF8F5 - Warm white (light mode)
             dark: Color(red: 0.10, green: 0.10, blue: 0.09)                // #1a1a17 - Warm carbon (dark mode)
         )
 
-        // Graphite Elevated Surfaces
+        // Graphite — notably lighter than `cardBackground` in dark mode (#2D2D29 vs #121210)
         static let graphite = Color(
             light: Color(red: 0.94, green: 0.93, blue: 0.90),              // #F0EDE6 - Warm light gray (light mode)
             dark: Color(red: 0.18, green: 0.18, blue: 0.16)                // #2D2D29 - Warm graphite (dark mode)
-        )
-        
-        // Performance Text Colors with High Contrast
-        static let performancePrimaryText = Color(
-            light: Color(red: 0.10, green: 0.11, blue: 0.12),              // #1A1B1F (light mode)
-            dark: Color.white                                                // #FFFFFF (dark mode)
-        )
-        
-        static let performanceSecondaryText = Color(
-            light: Color(red: 0.29, green: 0.31, blue: 0.34),              // #495057 (light mode)
-            dark: Color(red: 0.72, green: 0.74, blue: 0.78)                // #B8BCC8 (dark mode)
-        )
-        
-        static let performanceTertiaryText = Color(
-            light: Color(red: 0.42, green: 0.46, blue: 0.49),              // #6C757D (light mode)
-            dark: Color(red: 0.42, green: 0.45, blue: 0.50)                // #6B7280 (dark mode)
         )
         
         // MARK: - Legacy Support (for backward compatibility)
@@ -298,6 +287,7 @@ struct DesignSystem {
         static let button: CGFloat = 4
         static let input: CGFloat = 4
         static let badge: CGFloat = 4       // Minimal rounding
+        static let sheet: CGFloat = 12      // Modal sheets and prominent action buttons
     }
     
     // MARK: - Shadow System - Minimal (Brutalist: structure through borders, not depth)
@@ -996,9 +986,9 @@ extension DesignSystem.Colors {
     /// Returns theme-appropriate text color with high contrast
     static func textColor(for level: TextLevel) -> Color {
         switch level {
-        case .primary: return performancePrimaryText
-        case .secondary: return performanceSecondaryText
-        case .tertiary: return performanceTertiaryText
+        case .primary: return primaryText
+        case .secondary: return secondaryText
+        case .tertiary: return tertiaryText
         }
     }
 }

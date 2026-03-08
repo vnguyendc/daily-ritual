@@ -98,7 +98,7 @@ struct RecoveryCircle: View {
                 .stroke(zone.color, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             Text("\(Int(score))%")
-                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .font(DesignSystem.Typography.headlineLarge)
                 .foregroundColor(zone.color)
         }
         .onAppear {
@@ -119,13 +119,13 @@ struct MetricBadge: View {
     var body: some View {
         VStack(spacing: 2) {
             Image(systemName: icon)
-                .font(.caption)
+                .font(DesignSystem.Typography.caption)
                 .foregroundColor(DesignSystem.Colors.secondaryText)
             Text(value)
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .font(DesignSystem.Typography.bodySmall.weight(.semibold))
                 .foregroundColor(DesignSystem.Colors.primaryText)
             Text(label)
-                .font(.system(size: 10))
+                .font(DesignSystem.Typography.metadata)
                 .foregroundColor(DesignSystem.Colors.tertiaryText)
         }
     }

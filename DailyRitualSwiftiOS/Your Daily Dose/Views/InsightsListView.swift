@@ -126,11 +126,11 @@ struct InsightsListView: View {
                             } label: {
                                 HStack(spacing: 4) {
                                     Image(systemName: filter.icon)
-                                        .font(.caption)
+                                        .font(DesignSystem.Typography.caption)
                                     Text(filter.label)
                                         .font(DesignSystem.Typography.metadata)
                                 }
-                                .padding(.horizontal, 12)
+                                .padding(.horizontal, DesignSystem.Spacing.compactSpacing)
                                 .padding(.vertical, 6)
                                 .background(
                                     viewModel.selectedTypeFilter == filter.value

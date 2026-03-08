@@ -22,7 +22,7 @@ struct MealCard: View {
                             .resizable()
                             .scaledToFill()
                             .frame(width: 56, height: 56)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.extraLarge))
                     default:
                         mealIcon
                     }
@@ -63,7 +63,7 @@ struct MealCard: View {
 
     private var mealIcon: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.extraLarge)
                 .fill(timeContext.primaryColor.opacity(0.1))
                 .frame(width: 56, height: 56)
             Image(systemName: meal.mealTypeIcon)
@@ -75,7 +75,7 @@ struct MealCard: View {
     private func macroLabel(_ prefix: String, value: Double, color: Color) -> some View {
         HStack(spacing: 2) {
             Text(prefix)
-                .font(.system(size: 10, weight: .bold))
+                .font(DesignSystem.Typography.metadata.weight(.bold))
                 .foregroundColor(color)
             Text(String(format: "%.0fg", value))
                 .font(DesignSystem.Typography.metadata)

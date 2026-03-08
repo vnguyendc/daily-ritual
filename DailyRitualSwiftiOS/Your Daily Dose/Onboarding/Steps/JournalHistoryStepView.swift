@@ -99,7 +99,7 @@ struct JournalHistoryOptionCard: View {
                         .frame(width: 50, height: 50)
                     
                     Image(systemName: option.icon)
-                        .font(.system(size: 22))
+                        .font(DesignSystem.Typography.displaySmall)
                         .foregroundColor(isSelected ? DesignSystem.Colors.invertedText : DesignSystem.Colors.eliteGold)
                 }
                 
@@ -150,7 +150,7 @@ struct BenefitRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
             Image(systemName: icon)
-                .font(.system(size: 20))
+                .font(DesignSystem.Typography.headlineLarge)
                 .foregroundColor(DesignSystem.Colors.eliteGold)
                 .frame(width: 28)
             

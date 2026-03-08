@@ -137,17 +137,17 @@ struct QuickEntryView: View {
         } label: {
             HStack {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 14))
+                    .font(DesignSystem.Typography.bodySmall)
                     .foregroundColor(timeContext.primaryColor)
-                
+
                 Text(text)
                     .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(DesignSystem.Colors.primaryText)
-                
+
                 Spacer()
-                
+
                 Image(systemName: "arrow.right")
-                    .font(.system(size: 12))
+                    .font(DesignSystem.Typography.caption)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
             }
             .padding(DesignSystem.Spacing.md)

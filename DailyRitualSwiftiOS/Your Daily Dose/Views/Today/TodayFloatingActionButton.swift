@@ -66,7 +66,7 @@ struct TodayFloatingActionButton: View {
                     .shadow(color: DesignSystem.Colors.background.opacity(0.3), radius: 8, x: 0, y: 4)
                 Image(systemName: "plus")
                     .foregroundColor(DesignSystem.Colors.invertedText)
-                    .font(.system(size: 22, weight: .bold))
+                    .font(DesignSystem.Typography.displaySmall)
             }
         }
         .accessibilityLabel("Quick Action")

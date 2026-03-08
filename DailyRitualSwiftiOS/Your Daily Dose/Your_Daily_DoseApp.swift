@@ -331,16 +331,15 @@ struct LegacyOnboardingView: View {
             
             VStack(spacing: 20) {
                 Text("Daily Ritual")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
+                    .font(DesignSystem.Typography.displayLarge)
                     .foregroundColor(.primary)
-                
+
                 Text("Mindful Self-Mastery")
-                    .font(.title2)
+                    .font(DesignSystem.Typography.displaySmall)
                     .foregroundColor(.secondary)
-                
+
                 Text("Transform your day with a simple, mindful practice")
-                    .font(.body)
+                    .font(DesignSystem.Typography.bodyLarge)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
@@ -351,23 +350,23 @@ struct LegacyOnboardingView: View {
                     Image(systemName: "sun.max.fill")
                         .foregroundColor(.orange)
                     Text("Morning: Intentions, Affirmations, Gratitude")
-                        .font(.callout)
+                        .font(DesignSystem.Typography.bodyMedium)
                 }
                 
                 HStack {
                     Image(systemName: "moon.fill")
                         .foregroundColor(.purple)
                     Text("Evening: Reflection, Celebration, Growth")
-                        .font(.callout)
+                        .font(DesignSystem.Typography.bodyMedium)
                 }
             }
             .padding()
             .background(Color(UIColor.systemGray6))
-            .cornerRadius(12)
+            .cornerRadius(DesignSystem.CornerRadius.sheet)
             .padding(.horizontal)
-            
+
             Spacer()
-            
+
             Button(action: {
                 showProfileSheet = true
             }) {
@@ -382,7 +381,7 @@ struct LegacyOnboardingView: View {
                 .padding()
                 .background(.blue)
                 .foregroundColor(.white)
-                .cornerRadius(12)
+                .cornerRadius(DesignSystem.CornerRadius.sheet)
             }
             .disabled(false)
             .padding(.horizontal)

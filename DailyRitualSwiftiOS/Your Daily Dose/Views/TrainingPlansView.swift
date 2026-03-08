@@ -54,7 +54,7 @@ struct TrainingPlansView: View {
                     if viewMode == .day {
                         Button(action: { showAddSheet = true }) {
                             Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 20))
+                                .font(DesignSystem.Typography.headlineLarge)
                                 .foregroundColor(timeContext.primaryColor)
                         }
                     }
@@ -125,7 +125,7 @@ struct TrainingPlansView: View {
                 } label: {
                     HStack(spacing: DesignSystem.Spacing.xs) {
                         Image(systemName: mode.icon)
-                            .font(.system(size: 14))
+                            .font(DesignSystem.Typography.bodySmall)
                         Text(mode.rawValue)
                             .font(DesignSystem.Typography.buttonSmall)
                     }
@@ -273,10 +273,10 @@ struct TrainingPlanRow: View {
                     .frame(width: 50, height: 50)
                 
                 Image(systemName: plan.activityType.icon)
-                    .font(.system(size: 22))
+                    .font(DesignSystem.Typography.displaySmall)
                     .foregroundColor(timeContext.primaryColor)
             }
-            
+
             // Plan details
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
@@ -319,7 +319,7 @@ struct TrainingPlanRow: View {
             
             // Chevron
             Image(systemName: "chevron.right")
-                .font(.system(size: 14, weight: .semibold))
+                .font(DesignSystem.Typography.bodySmall.weight(.semibold))
                 .foregroundColor(DesignSystem.Colors.tertiaryText)
         }
         .padding(DesignSystem.Spacing.md)
