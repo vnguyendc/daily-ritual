@@ -153,7 +153,7 @@ struct InsightsListView: View {
                                 }
                                 .clipShape(Capsule())
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(ScaleButtonStyle())
                         }
                     }
                     .padding(.horizontal, 4)
