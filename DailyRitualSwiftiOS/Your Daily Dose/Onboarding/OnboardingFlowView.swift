@@ -27,6 +27,10 @@ struct OnboardingFlowView: View {
                 }
             )
 
+            // Hero illustration area
+            OnboardingHeroView(step: coordinator.state.currentStep)
+                .animation(.spring(response: 0.45, dampingFraction: 0.82), value: coordinator.state.currentStep)
+
             // Step Content
             TabView(selection: Binding(
                 get: { coordinator.state.currentStep },
@@ -38,7 +42,7 @@ struct OnboardingFlowView: View {
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
-            .animation(DesignSystem.Animation.standard, value: coordinator.state.currentStep)
+            .animation(.spring(response: 0.45, dampingFraction: 0.82), value: coordinator.state.currentStep)
 
             // Footer with action button
             OnboardingFooter(
@@ -120,10 +124,21 @@ struct OnboardingHeader: View {
 
                 Spacer()
 
-                // Step indicator
-                Text("\(coordinator.currentStepIndex + 1) of \(coordinator.totalSteps)")
-                    .font(DesignSystem.Typography.caption)
-                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+                // Step indicator dots
+                HStack(spacing: 6) {
+                    ForEach(0..<coordinator.totalSteps, id: \.self) { index in
+                        let isActive = index == coordinator.currentStepIndex
+                        let isCompleted = index < coordinator.currentStepIndex
+                        Capsule()
+                            .fill(
+                                isCompleted ? DesignSystem.Colors.eliteGold :
+                                isActive ? DesignSystem.Colors.eliteGold.opacity(0.85) :
+                                DesignSystem.Colors.border
+                            )
+                            .frame(width: isActive ? 20 : 8, height: 8)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: coordinator.currentStepIndex)
+                    }
+                }
 
                 Spacer()
 
@@ -243,6 +258,75 @@ struct OnboardingFooter: View {
             DesignSystem.Colors.background
                 .shadow(color: DesignSystem.Colors.primaryText.opacity(0.05), radius: 10, x: 0, y: -5)
         )
+    }
+}
+
+// MARK: - Onboarding Hero View
+struct OnboardingHeroView: View {
+    let step: OnboardingStep
+
+    private var heroIcon: String {
+        switch step {
+        case .personalInfo: return "person.fill"
+        case .sports: return "figure.run"
+        case .journalHistory: return "book.fill"
+        case .reflectionReason: return "heart.fill"
+        case .goal: return "trophy.fill"
+        case .reminderTimes: return "bell.badge.fill"
+        case .tutorial: return "lightbulb.fill"
+        case .completion: return "checkmark.circle.fill"
+        }
+    }
+
+    private var gradientColors: [Color] {
+        switch step {
+        case .personalInfo:
+            return [DesignSystem.Colors.championBlue.opacity(0.25), DesignSystem.Colors.championBlue.opacity(0.08)]
+        case .sports:
+            return [DesignSystem.Colors.powerGreen.opacity(0.25), DesignSystem.Colors.powerGreen.opacity(0.08)]
+        case .journalHistory:
+            return [DesignSystem.Colors.eliteGold.opacity(0.25), DesignSystem.Colors.eliteGold.opacity(0.08)]
+        case .reflectionReason:
+            return [DesignSystem.Colors.alertRed.opacity(0.22), DesignSystem.Colors.alertRed.opacity(0.07)]
+        case .goal:
+            return [DesignSystem.Colors.eliteGold.opacity(0.28), DesignSystem.Colors.championBlue.opacity(0.10)]
+        case .reminderTimes:
+            return [DesignSystem.Colors.championBlue.opacity(0.25), DesignSystem.Colors.powerGreen.opacity(0.08)]
+        case .tutorial:
+            return [DesignSystem.Colors.powerGreen.opacity(0.22), DesignSystem.Colors.eliteGold.opacity(0.08)]
+        case .completion:
+            return [DesignSystem.Colors.eliteGold.opacity(0.35), DesignSystem.Colors.powerGreen.opacity(0.15)]
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                .fill(
+                    LinearGradient(
+                        colors: gradientColors,
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            Image(systemName: heroIcon)
+                .font(.system(size: 60, weight: .semibold))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [DesignSystem.Colors.primaryText, DesignSystem.Colors.primaryText.opacity(0.55)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .id(step)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.8).combined(with: .opacity),
+                    removal: .scale(scale: 1.1).combined(with: .opacity)
+                ))
+        }
+        .frame(height: 130)
+        .padding(.horizontal, DesignSystem.Spacing.lg)
     }
 }
 
