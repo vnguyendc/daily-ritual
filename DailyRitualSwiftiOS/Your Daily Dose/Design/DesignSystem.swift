@@ -524,6 +524,28 @@ struct PremiumProgressRing: View {
     }
 }
 
+// MARK: - Button Styles
+
+/// Scale + opacity press feedback for action buttons (CTAs, FAB, filter chips)
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .opacity(configuration.isPressed ? 0.85 : 1.0)
+            .animation(.spring(response: 0.2, dampingFraction: 0.7), value: configuration.isPressed)
+    }
+}
+
+/// Scale + brightness press feedback for tappable cards
+struct CardButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .brightness(configuration.isPressed ? -0.03 : 0)
+            .animation(.spring(response: 0.15, dampingFraction: 0.8), value: configuration.isPressed)
+    }
+}
+
 /// Premium primary button with time-based theming
 struct PremiumPrimaryButton: View {
     let title: String
@@ -590,6 +612,7 @@ struct PremiumPrimaryButton: View {
                 y: isDisabled ? 0 : DesignSystem.Shadow.card.y
             )
         }
+        .buttonStyle(ScaleButtonStyle())
         .disabled(isDisabled || isLoading)
         .animation(DesignSystem.Animation.quick, value: isDisabled)
         .animation(DesignSystem.Animation.quick, value: isLoading)
