@@ -152,7 +152,7 @@ struct ActivityTypePicker: View {
             } label: {
                 HStack(spacing: DesignSystem.Spacing.md) {
                     Image(systemName: category.icon)
-                        .font(.system(size: 20))
+                        .font(DesignSystem.Typography.headlineLarge)
                         .foregroundColor(timeContext.primaryColor)
                         .frame(width: 32)
                     
@@ -173,7 +173,7 @@ struct ActivityTypePicker: View {
                         )
                     
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(DesignSystem.Typography.bodyMedium)
                         .foregroundColor(DesignSystem.Colors.tertiaryText)
                 }
                 .padding(DesignSystem.Spacing.md)
@@ -211,7 +211,7 @@ struct ActivityTypePicker: View {
         } label: {
             HStack(spacing: DesignSystem.Spacing.md) {
                 Image(systemName: activity.icon)
-                    .font(.system(size: 18))
+                    .font(DesignSystem.Typography.headlineMedium)
                     .foregroundColor(selectedType == activity ? timeContext.primaryColor : DesignSystem.Colors.secondaryText)
                     .frame(width: 32)
                 
@@ -231,7 +231,7 @@ struct ActivityTypePicker: View {
                 
                 if selectedType == activity {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 20))
+                        .font(DesignSystem.Typography.headlineLarge)
                         .foregroundColor(timeContext.primaryColor)
                 }
             }

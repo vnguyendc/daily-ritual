@@ -26,7 +26,7 @@ struct HealthKitWorkoutCard: View {
                     .fill(timeContext.primaryColor.opacity(0.12))
                     .frame(width: 44, height: 44)
                 Image(systemName: activityType.icon)
-                    .font(.system(size: 18))
+                    .font(DesignSystem.Typography.headlineMedium)
                     .foregroundColor(timeContext.primaryColor)
             }
 
@@ -56,7 +56,7 @@ struct HealthKitWorkoutCard: View {
             if hasReflection {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundColor(.green)
-                    .font(.title3)
+                    .font(DesignSystem.Typography.headlineLarge)
             } else {
                 Button {
                     let data = HealthKitService.shared.convertToReflectionData(workout)

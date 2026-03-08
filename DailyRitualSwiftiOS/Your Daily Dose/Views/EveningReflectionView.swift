@@ -79,7 +79,7 @@ struct EveningReflectionView: View {
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: currentStep > 0 ? "chevron.left" : "xmark")
-                                .font(.system(size: 14, weight: .medium))
+                                .font(DesignSystem.Typography.bodyMedium)
                             if currentStep > 0 {
                                 Text("Back")
                                     .font(DesignSystem.Typography.bodyMedium)
@@ -352,17 +352,17 @@ struct CleanWentWellStepView: View {
         } label: {
             HStack {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 12))
+                    .font(DesignSystem.Typography.caption)
                     .foregroundColor(timeContext.primaryColor)
-                
+
                 Text(text)
                     .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(DesignSystem.Colors.primaryText)
-                
+
                 Spacer()
-                
+
                 Image(systemName: "plus")
-                    .font(.system(size: 12))
+                    .font(DesignSystem.Typography.caption)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
             }
             .padding(DesignSystem.Spacing.sm)
@@ -440,17 +440,17 @@ struct CleanToImproveStepView: View {
         } label: {
             HStack {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 12))
+                    .font(DesignSystem.Typography.caption)
                     .foregroundColor(timeContext.primaryColor)
-                
+
                 Text(text)
                     .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(DesignSystem.Colors.primaryText)
-                
+
                 Spacer()
-                
+
                 Image(systemName: "plus")
-                    .font(.system(size: 12))
+                    .font(DesignSystem.Typography.caption)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
             }
             .padding(DesignSystem.Spacing.sm)
@@ -511,7 +511,7 @@ struct CleanMoodStepView: View {
                         #endif
                     } label: {
                         Text(moodEmojis[value - 1])
-                            .font(.system(size: 28))
+                            .font(DesignSystem.Typography.displayMedium)
                             .frame(width: 52, height: 52)
                             .background(
                                 Circle()

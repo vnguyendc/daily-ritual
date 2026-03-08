@@ -130,7 +130,7 @@ struct CategoryChip: View {
         Button(action: action) {
             HStack(spacing: DesignSystem.Spacing.xs) {
                 Image(systemName: category.icon)
-                    .font(.system(size: 14))
+                    .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(isSelected ? DesignSystem.Colors.invertedText : DesignSystem.Colors.eliteGold)
 
                 Text(category.displayTitle)
@@ -160,7 +160,7 @@ struct GoalExampleRow: View {
     var body: some View {
         HStack(spacing: DesignSystem.Spacing.md) {
             Image(systemName: icon)
-                .font(.system(size: 16))
+                .font(DesignSystem.Typography.headlineSmall)
                 .foregroundColor(DesignSystem.Colors.eliteGold)
                 .frame(width: 24)
             

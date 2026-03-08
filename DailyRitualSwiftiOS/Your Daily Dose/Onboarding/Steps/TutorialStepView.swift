@@ -150,7 +150,7 @@ struct TutorialPageView: View {
                     ForEach(page.features, id: \.self) { feature in
                         HStack(alignment: .top, spacing: DesignSystem.Spacing.md) {
                             Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 18))
+                                .font(DesignSystem.Typography.headlineMedium)
                                 .foregroundColor(page.iconColor)
                             
                             Text(feature)

@@ -69,7 +69,7 @@ private struct QuickEntryRowView: View {
             HStack(spacing: DesignSystem.Spacing.md) {
                 Image(systemName: "doc.text")
                     .foregroundColor(timeContext.primaryColor)
-                    .font(.system(size: 16))
+                    .font(DesignSystem.Typography.headlineSmall)
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(entry.displayTitle)
@@ -85,7 +85,7 @@ private struct QuickEntryRowView: View {
                 Spacer()
                 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(DesignSystem.Typography.caption)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
             }
             .padding(.vertical, DesignSystem.Spacing.sm)

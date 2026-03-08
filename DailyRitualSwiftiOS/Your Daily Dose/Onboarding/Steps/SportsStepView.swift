@@ -86,7 +86,7 @@ struct SportsStepView: View {
                     } label: {
                         VStack(spacing: DesignSystem.Spacing.sm) {
                             Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 28))
+                                .font(DesignSystem.Typography.displayMedium)
                                 .foregroundColor(DesignSystem.Colors.championBlue)
 
                             Text("Add Other")
@@ -139,7 +139,7 @@ struct SportCard: View {
             VStack(spacing: DesignSystem.Spacing.sm) {
                 ZStack(alignment: .topTrailing) {
                     Image(systemName: sport.icon)
-                        .font(.system(size: 28))
+                        .font(DesignSystem.Typography.displayMedium)
                         .foregroundColor(isSelected ? DesignSystem.Colors.invertedText : DesignSystem.Colors.eliteGold)
                         .frame(maxWidth: .infinity)
                     
@@ -148,7 +148,7 @@ struct SportCard: View {
                             onDelete()
                         } label: {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 18))
+                                .font(DesignSystem.Typography.headlineMedium)
                                 .foregroundColor(DesignSystem.Colors.alertRed)
                         }
                         .offset(x: 4, y: -4)
@@ -177,7 +177,7 @@ struct SportCard: View {
                 Group {
                     if isSelected {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 20))
+                            .font(DesignSystem.Typography.headlineLarge)
                             .foregroundColor(DesignSystem.Colors.invertedText)
                             .background(
                                 Circle()

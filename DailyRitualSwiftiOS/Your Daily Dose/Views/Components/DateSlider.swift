@@ -220,7 +220,7 @@ struct DateButton: View {
                 // Show month for first day of month
                 if isFirstDayOfMonth {
                     Text(monthAbbreviation)
-                        .font(.system(size: 9, weight: .medium))
+                        .font(DesignSystem.Typography.metadata)
                         .foregroundColor(timeContext.primaryColor)
                         .lineLimit(1)
                 } else {
@@ -332,13 +332,13 @@ struct WeekHeaderView: View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
             HStack {
                 Text(weekNumber)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(DesignSystem.Typography.metadata)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
-                
+
                 Spacer()
-                
+
                 Text(weekRange)
-                    .font(.system(size: 11, weight: .regular))
+                    .font(DesignSystem.Typography.metadata)
                     .foregroundColor(DesignSystem.Colors.secondaryText)
             }
         }
@@ -353,7 +353,7 @@ struct WeekHeaderView: View {
         var body: some View {
             VStack(spacing: 20) {
                 Text("Selected: \(selectedDate, format: .dateTime.month().day().year())")
-                    .font(.headline)
+                    .font(DesignSystem.Typography.headlineMedium)
                 
                 DateSlider(selectedDate: $selectedDate)
                     .background(Color.gray.opacity(0.1))

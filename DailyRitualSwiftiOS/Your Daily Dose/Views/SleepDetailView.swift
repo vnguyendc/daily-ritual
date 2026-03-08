@@ -62,7 +62,7 @@ struct SleepDetailView: View {
                     if let stages = data.sleepStages {
                         VStack {
                             Text(stages.formattedTotalSleep)
-                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .font(DesignSystem.Typography.displayMedium)
                                 .foregroundColor(DesignSystem.Colors.primaryText)
                             Text("Total Sleep")
                                 .font(DesignSystem.Typography.caption)
@@ -72,7 +72,7 @@ struct SleepDetailView: View {
                     if let efficiency = data.sleepEfficiency {
                         VStack {
                             Text("\(Int(efficiency))%")
-                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .font(DesignSystem.Typography.displayMedium)
                                 .foregroundColor(DesignSystem.Colors.primaryText)
                             Text("Efficiency")
                                 .font(DesignSystem.Typography.caption)
@@ -82,7 +82,7 @@ struct SleepDetailView: View {
                     if let perf = data.sleepPerformance {
                         VStack {
                             Text("\(Int(perf))%")
-                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .font(DesignSystem.Typography.displayMedium)
                                 .foregroundColor(DesignSystem.Colors.primaryText)
                             Text("Performance")
                                 .font(DesignSystem.Typography.caption)
@@ -165,13 +165,13 @@ struct SleepDetailView: View {
     private func metricTile(icon: String, value: String, label: String) -> some View {
         VStack(spacing: 4) {
             Image(systemName: icon)
-                .font(.title3)
+                .font(DesignSystem.Typography.headlineLarge)
                 .foregroundColor(timeContext.primaryColor)
             Text(value)
-                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .font(DesignSystem.Typography.headlineSmall)
                 .foregroundColor(DesignSystem.Colors.primaryText)
             Text(label)
-                .font(.system(size: 11))
+                .font(DesignSystem.Typography.metadata)
                 .foregroundColor(DesignSystem.Colors.tertiaryText)
         }
         .frame(maxWidth: .infinity)

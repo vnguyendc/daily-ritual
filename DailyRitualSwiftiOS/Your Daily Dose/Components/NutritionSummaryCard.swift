@@ -74,7 +74,7 @@ struct NutritionSummaryCard: View {
                     .rotationEffect(.degrees(-90))
                     .frame(width: 44, height: 44)
                 Text("\(value)")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .font(DesignSystem.Typography.metadata)
                     .foregroundColor(DesignSystem.Colors.primaryText)
             }
             Text(label)

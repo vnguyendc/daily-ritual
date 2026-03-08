@@ -62,7 +62,7 @@ struct HealthSummaryCard: View {
     private func healthMetric(icon: String, value: String, label: String, color: Color) -> some View {
         VStack(spacing: 4) {
             Image(systemName: icon)
-                .font(.system(size: 18))
+                .font(DesignSystem.Typography.headlineMedium)
                 .foregroundColor(color)
             Text(value)
                 .font(DesignSystem.Typography.headlineSmall)

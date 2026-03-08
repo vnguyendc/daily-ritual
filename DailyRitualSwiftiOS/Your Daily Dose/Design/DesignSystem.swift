@@ -80,39 +80,29 @@ struct DesignSystem {
         
         // MARK: - Custom Dark/Light Mode Definitions
         // For cases where we need explicit control beyond system colors
-        
+
         // Deep Obsidian Dark Mode Background
+        // Use over `background` when you need a slightly warmer/deeper dark base (dark: #0a0a09 vs #0c0c0b).
+        // Prefer `background` for all standard screens; reserve `deepObsidian` for full-bleed hero surfaces.
         static let deepObsidian = Color(
             light: Color(red: 0.96, green: 0.95, blue: 0.93),              // #F5F2EE - Warm off-white (light mode)
             dark: Color(red: 0.04, green: 0.04, blue: 0.035)               // #0a0a09 - Warm deep (dark mode)
         )
 
         // Carbon Black Secondary Surfaces
+        // Use over `secondaryBackground` when you need a richer warm-carbon tone (dark: #1a1a17 vs #141412).
+        // Prefer `secondaryBackground` for list rows and sheet backgrounds; use `carbonBlack` for overlay panels.
         static let carbonBlack = Color(
             light: Color(red: 0.98, green: 0.97, blue: 0.96),              // #FAF8F5 - Warm white (light mode)
             dark: Color(red: 0.10, green: 0.10, blue: 0.09)                // #1a1a17 - Warm carbon (dark mode)
         )
 
         // Graphite Elevated Surfaces
+        // Use over `cardBackground` when you need a visibly elevated surface (dark: #2D2D29 vs #121210).
+        // Prefer `cardBackground` for standard cards; use `graphite` for modal sheets and popovers.
         static let graphite = Color(
             light: Color(red: 0.94, green: 0.93, blue: 0.90),              // #F0EDE6 - Warm light gray (light mode)
             dark: Color(red: 0.18, green: 0.18, blue: 0.16)                // #2D2D29 - Warm graphite (dark mode)
-        )
-        
-        // Performance Text Colors with High Contrast
-        static let performancePrimaryText = Color(
-            light: Color(red: 0.10, green: 0.11, blue: 0.12),              // #1A1B1F (light mode)
-            dark: Color.white                                                // #FFFFFF (dark mode)
-        )
-        
-        static let performanceSecondaryText = Color(
-            light: Color(red: 0.29, green: 0.31, blue: 0.34),              // #495057 (light mode)
-            dark: Color(red: 0.72, green: 0.74, blue: 0.78)                // #B8BCC8 (dark mode)
-        )
-        
-        static let performanceTertiaryText = Color(
-            light: Color(red: 0.42, green: 0.46, blue: 0.49),              // #6C757D (light mode)
-            dark: Color(red: 0.42, green: 0.45, blue: 0.50)                // #6B7280 (dark mode)
         )
         
         // MARK: - Legacy Support (for backward compatibility)
@@ -292,6 +282,7 @@ struct DesignSystem {
         static let medium: CGFloat = 4      // Primary radius for cards
         static let large: CGFloat = 6       // For prominent elements
         static let extraLarge: CGFloat = 8  // For hero elements
+        static let sheet: CGFloat = 12      // For modal sheets and prominent action buttons
 
         // Semantic radii
         static let card: CGFloat = 4
@@ -996,9 +987,9 @@ extension DesignSystem.Colors {
     /// Returns theme-appropriate text color with high contrast
     static func textColor(for level: TextLevel) -> Color {
         switch level {
-        case .primary: return performancePrimaryText
-        case .secondary: return performanceSecondaryText
-        case .tertiary: return performanceTertiaryText
+        case .primary: return primaryText
+        case .secondary: return secondaryText
+        case .tertiary: return tertiaryText
         }
     }
 }

@@ -103,7 +103,7 @@ struct WorkoutReflectionView: View {
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: currentStep > 0 ? "chevron.left" : "xmark")
-                                .font(.system(size: 14, weight: .medium))
+                                .font(DesignSystem.Typography.bodyMedium)
                             if currentStep > 0 {
                                 Text("Back")
                                     .font(DesignSystem.Typography.bodyMedium)
@@ -370,7 +370,7 @@ struct WorkoutFeelingStepView: View {
                     #endif
                 } label: {
                     Text(feelingEmojis[i - 1])
-                        .font(.system(size: 28))
+                        .font(DesignSystem.Typography.displayMedium)
                         .frame(width: 52, height: 52)
                         .background(
                             Circle()
@@ -398,7 +398,7 @@ struct WorkoutFeelingStepView: View {
                     #endif
                 } label: {
                     Image(systemName: icon)
-                        .font(.system(size: 20))
+                        .font(DesignSystem.Typography.headlineLarge)
                         .foregroundColor(i <= value.wrappedValue ? timeContext.primaryColor : DesignSystem.Colors.tertiaryText.opacity(0.4))
                         .frame(width: 44, height: 44)
                         .background(
@@ -471,7 +471,7 @@ struct WorkoutWentWellStepView: View {
         } label: {
             HStack {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 12))
+                    .font(DesignSystem.Typography.caption)
                     .foregroundColor(timeContext.primaryColor)
 
                 Text(text)
@@ -481,7 +481,7 @@ struct WorkoutWentWellStepView: View {
                 Spacer()
 
                 Image(systemName: "plus")
-                    .font(.system(size: 12))
+                    .font(DesignSystem.Typography.caption)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
             }
             .padding(DesignSystem.Spacing.sm)
@@ -553,7 +553,7 @@ struct WorkoutToImproveStepView: View {
         } label: {
             HStack {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 12))
+                    .font(DesignSystem.Typography.caption)
                     .foregroundColor(timeContext.primaryColor)
 
                 Text(text)
@@ -563,7 +563,7 @@ struct WorkoutToImproveStepView: View {
                 Spacer()
 
                 Image(systemName: "plus")
-                    .font(.system(size: 12))
+                    .font(DesignSystem.Typography.caption)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
             }
             .padding(DesignSystem.Spacing.sm)

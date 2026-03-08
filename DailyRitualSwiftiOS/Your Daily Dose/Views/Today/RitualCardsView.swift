@@ -135,7 +135,7 @@ struct CompletedRitualCard: View {
             HStack(spacing: DesignSystem.Spacing.md) {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundColor(DesignSystem.Colors.success)
-                    .font(.system(size: 18))
+                    .font(DesignSystem.Typography.headlineMedium)
                 
                 Text(type.title)
                     .font(DesignSystem.Typography.bodySmall)
@@ -148,7 +148,7 @@ struct CompletedRitualCard: View {
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
                 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(DesignSystem.Typography.metadata)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
             }
             .padding(.horizontal, DesignSystem.Spacing.md)
