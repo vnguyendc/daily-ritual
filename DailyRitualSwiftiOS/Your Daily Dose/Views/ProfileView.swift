@@ -714,33 +714,42 @@ struct ProfileView: View {
     private var profileStatsSection: some View {
         ProfileSection(title: "Your Stats", icon: "chart.bar.fill") {
             HStack(spacing: 0) {
-                statItem(
-                    icon: "flame.fill",
-                    value: streaksService.dailyStreak,
-                    label: "Day Streak",
-                    subtitle: streaksService.longestDailyStreak > streaksService.dailyStreak
-                        ? "Best: \(streaksService.longestDailyStreak)" : nil,
-                    color: DesignSystem.Colors.eliteGold,
-                    isLoading: streaksService.isLoading
-                )
+                if streaksService.isLoading {
+                    SkeletonStatItem(icon: "flame.fill", color: DesignSystem.Colors.eliteGold)
+                } else {
+                    statItem(
+                        icon: "flame.fill",
+                        value: streaksService.dailyStreak,
+                        label: "Day Streak",
+                        subtitle: streaksService.longestDailyStreak > streaksService.dailyStreak
+                            ? "Best: \(streaksService.longestDailyStreak)" : nil,
+                        color: DesignSystem.Colors.eliteGold
+                    )
+                }
 
-                statItem(
-                    icon: "dumbbell.fill",
-                    value: totalTrainingSessions,
-                    label: "Sessions",
-                    subtitle: nil,
-                    color: DesignSystem.Colors.powerGreen,
-                    isLoading: isLoadingStats && totalTrainingSessions == nil
-                )
+                if isLoadingStats && totalTrainingSessions == nil {
+                    SkeletonStatItem(icon: "dumbbell.fill", color: DesignSystem.Colors.powerGreen)
+                } else {
+                    statItem(
+                        icon: "dumbbell.fill",
+                        value: totalTrainingSessions,
+                        label: "Sessions",
+                        subtitle: nil,
+                        color: DesignSystem.Colors.powerGreen
+                    )
+                }
 
-                statItem(
-                    icon: "book.fill",
-                    value: totalReflectionsCount,
-                    label: "Reflections",
-                    subtitle: nil,
-                    color: DesignSystem.Colors.championBlue,
-                    isLoading: isLoadingStats && totalMorningReflections == nil
-                )
+                if isLoadingStats && totalMorningReflections == nil {
+                    SkeletonStatItem(icon: "book.fill", color: DesignSystem.Colors.championBlue)
+                } else {
+                    statItem(
+                        icon: "book.fill",
+                        value: totalReflectionsCount,
+                        label: "Reflections",
+                        subtitle: nil,
+                        color: DesignSystem.Colors.championBlue
+                    )
+                }
             }
             .padding(.vertical, DesignSystem.Spacing.lg)
             .background(
@@ -756,21 +765,15 @@ struct ProfileView: View {
         return morning + evening
     }
 
-    private func statItem(icon: String, value: Int?, label: String, subtitle: String?, color: Color, isLoading: Bool) -> some View {
+    private func statItem(icon: String, value: Int?, label: String, subtitle: String?, color: Color) -> some View {
         VStack(spacing: 6) {
             Image(systemName: icon)
                 .font(.system(size: 20))
                 .foregroundColor(color)
 
-            if isLoading {
-                ProgressView()
-                    .scaleEffect(0.7)
-                    .frame(height: 28)
-            } else {
-                Text("\(value ?? 0)")
-                    .font(DesignSystem.Typography.displaySmallSafe)
-                    .foregroundColor(DesignSystem.Colors.primaryText)
-            }
+            Text("\(value ?? 0)")
+                .font(DesignSystem.Typography.displaySmallSafe)
+                .foregroundColor(DesignSystem.Colors.primaryText)
 
             Text(label)
                 .font(DesignSystem.Typography.caption)
