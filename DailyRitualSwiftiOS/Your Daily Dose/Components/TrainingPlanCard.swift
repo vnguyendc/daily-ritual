@@ -8,6 +8,23 @@
 
 import SwiftUI
 
+// MARK: - Category Color Extension
+extension TrainingActivityType {
+    var categoryColor: Color {
+        switch category {
+        case .strength: return .orange
+        case .cardio: return .blue
+        case .recovery: return .green
+        case .mindBody: return .teal
+        case .combatSports: return .red
+        case .teamSports: return .indigo
+        case .racquetSports: return .yellow
+        case .individualSports: return .mint
+        case .other: return .gray
+        }
+    }
+}
+
 /// Compact training plan card for Today view
 struct TrainingPlanCard: View {
     let plan: TrainingPlan
@@ -20,15 +37,15 @@ struct TrainingPlanCard: View {
             onTap?()
         } label: {
             HStack(spacing: DesignSystem.Spacing.md) {
-                // Activity icon
+                // Activity icon with category color
                 ZStack {
                     Circle()
-                        .fill(timeContext.primaryColor.opacity(0.15))
+                        .fill(plan.activityType.categoryColor.opacity(0.15))
                         .frame(width: 44, height: 44)
 
                     Image(systemName: plan.activityType.icon)
                         .font(.system(size: 20))
-                        .foregroundColor(timeContext.primaryColor)
+                        .foregroundColor(plan.activityType.categoryColor)
                 }
 
                 // Plan details
@@ -101,21 +118,21 @@ struct MiniTrainingPlanCard: View {
     let plan: TrainingPlan
     let timeContext: DesignSystem.TimeContext
     var onTap: (() -> Void)?
-    
+
     var body: some View {
         Button {
             onTap?()
         } label: {
             VStack(spacing: DesignSystem.Spacing.sm) {
-                // Activity icon
+                // Activity icon with category color
                 ZStack {
                     Circle()
-                        .fill(timeContext.primaryColor.opacity(0.15))
+                        .fill(plan.activityType.categoryColor.opacity(0.15))
                         .frame(width: 40, height: 40)
-                    
+
                     Image(systemName: plan.activityType.icon)
                         .font(.system(size: 18))
-                        .foregroundColor(timeContext.primaryColor)
+                        .foregroundColor(plan.activityType.categoryColor)
                 }
                 
                 // Activity name
