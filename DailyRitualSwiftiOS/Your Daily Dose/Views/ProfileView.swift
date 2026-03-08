@@ -757,32 +757,32 @@ struct ProfileView: View {
     }
 
     private func statItem(icon: String, value: Int?, label: String, subtitle: String?, color: Color, isLoading: Bool) -> some View {
-        VStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(color)
-
+        Group {
             if isLoading {
-                ProgressView()
-                    .scaleEffect(0.7)
-                    .frame(height: 28)
+                SkeletonStatItem()
             } else {
-                Text("\(value ?? 0)")
-                    .font(DesignSystem.Typography.displaySmallSafe)
-                    .foregroundColor(DesignSystem.Colors.primaryText)
-            }
+                VStack(spacing: 6) {
+                    Image(systemName: icon)
+                        .font(.system(size: 20))
+                        .foregroundColor(color)
 
-            Text(label)
-                .font(DesignSystem.Typography.caption)
-                .foregroundColor(DesignSystem.Colors.secondaryText)
+                    Text("\(value ?? 0)")
+                        .font(DesignSystem.Typography.displaySmallSafe)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
 
-            if let subtitle = subtitle {
-                Text(subtitle)
-                    .font(DesignSystem.Typography.caption)
-                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+                    Text(label)
+                        .font(DesignSystem.Typography.caption)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+
+                    if let subtitle = subtitle {
+                        Text(subtitle)
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(DesignSystem.Colors.tertiaryText)
+                    }
+                }
+                .frame(maxWidth: .infinity)
             }
         }
-        .frame(maxWidth: .infinity)
     }
 
     private func loadProfileStats() async {
