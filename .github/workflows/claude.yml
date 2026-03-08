@@ -40,3 +40,6 @@ jobs:
 
           additional_permissions: |
             actions: read
+            contents: write
+            pull-requests: write
+            issues: write
