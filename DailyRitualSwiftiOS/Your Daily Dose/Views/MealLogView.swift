@@ -13,12 +13,27 @@ struct MealLogView: View {
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var selectedImageData: Data?
     @State private var selectedImage: Image?
-    @State private var mealType: String = "lunch"
+    @State private var mealType: String
     @State private var isAnalyzing = false
     @State private var savedMeal: Meal?
     @State private var errorMessage: String?
     @State private var showCamera = false
     @State private var cameraImage: UIImage?
+    @State private var hasShownInitialCamera = false
+
+    // Counting animation state
+    @State private var displayCalories: Int = 0
+    @State private var displayProtein: Double = 0
+    @State private var displayCarbs: Double = 0
+    @State private var displayFat: Double = 0
+
+    // Edit values state
+    @State private var isEditExpanded = false
+    @State private var editCalories: String = ""
+    @State private var editProtein: String = ""
+    @State private var editCarbs: String = ""
+    @State private var editFat: String = ""
+    @State private var isSavingEdits = false
 
     private let mealsService: MealsServiceProtocol = MealsService()
     private let timeContext: DesignSystem.TimeContext = .neutral
@@ -28,6 +43,18 @@ struct MealLogView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         self.dateString = formatter.string(from: date)
+        // Auto-detect meal type based on time of day
+        _mealType = State(initialValue: MealLogView.autoDetectMealType())
+    }
+
+    private static func autoDetectMealType() -> String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 0..<11: return "breakfast"
+        case 11..<15: return "lunch"
+        case 15..<21: return "dinner"
+        default: return "snack"
+        }
     }
 
     private let mealTypes: [(label: String, value: String, icon: String)] = [
@@ -65,6 +92,12 @@ struct MealLogView: View {
             .sheet(isPresented: $showCamera) {
                 CameraPickerView(image: $cameraImage)
             }
+            .onAppear {
+                if !hasShownInitialCamera {
+                    hasShownInitialCamera = true
+                    showCamera = true
+                }
+            }
             .onChange(of: selectedPhotoItem) { newItem in
                 Task {
                     if let data = try? await newItem?.loadTransferable(type: Data.self) {
@@ -72,6 +105,7 @@ struct MealLogView: View {
                         if let uiImage = UIImage(data: data) {
                             selectedImage = Image(uiImage: uiImage)
                         }
+                        await analyzeMeal()
                     }
                 }
             }
@@ -79,6 +113,7 @@ struct MealLogView: View {
                 if let uiImage = newImage {
                     selectedImageData = uiImage.jpegData(compressionQuality: 0.8)
                     selectedImage = Image(uiImage: uiImage)
+                    Task { await analyzeMeal() }
                 }
             }
         }
@@ -121,16 +156,16 @@ struct MealLogView: View {
                         .foregroundColor(DesignSystem.Colors.secondaryText)
 
                     HStack(spacing: DesignSystem.Spacing.md) {
-                        PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                            Label("Photo Library", systemImage: "photo.on.rectangle")
-                                .font(DesignSystem.Typography.buttonMedium)
-                        }
-                        .buttonStyle(.bordered)
-
                         Button {
                             showCamera = true
                         } label: {
                             Label("Camera", systemImage: "camera")
+                                .font(DesignSystem.Typography.buttonMedium)
+                        }
+                        .buttonStyle(.borderedProminent)
+
+                        PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                            Label("Photo Library", systemImage: "photo.on.rectangle")
                                 .font(DesignSystem.Typography.buttonMedium)
                         }
                         .buttonStyle(.bordered)
@@ -187,19 +222,6 @@ struct MealLogView: View {
                 }
             }
 
-            // Analyze button
-            if selectedImageData != nil {
-                Button {
-                    Task { await analyzeMeal() }
-                } label: {
-                    Label("Analyze Meal", systemImage: "sparkles")
-                        .font(DesignSystem.Typography.buttonMedium)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, DesignSystem.Spacing.md)
-                }
-                .buttonStyle(.borderedProminent)
-            }
-
             if let error = errorMessage {
                 Text(error)
                     .font(DesignSystem.Typography.bodyMedium)
@@ -253,25 +275,45 @@ struct MealLogView: View {
                         .foregroundColor(DesignSystem.Colors.primaryText)
                 }
 
-                // Photo
+                // Photo with confidence ring
                 if let image = selectedImage {
-                    image
-                        .resizable()
-                        .scaledToFill()
-                        .frame(maxHeight: 200)
-                        .clipped()
-                        .cornerRadius(DesignSystem.CornerRadius.card)
+                    ZStack {
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .frame(maxHeight: 200)
+                            .clipped()
+                            .cornerRadius(DesignSystem.CornerRadius.card)
+
+                        if let confidence = meal.aiConfidence {
+                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                                .strokeBorder(confidenceColor(confidence), lineWidth: 3)
+                                .frame(maxHeight: 200)
+                        }
+                    }
+                    .frame(maxHeight: 200)
                 }
 
-                // Food description
-                if let desc = meal.foodDescription {
-                    Text(desc)
-                        .font(DesignSystem.Typography.bodyLargeSafe)
-                        .foregroundColor(DesignSystem.Colors.primaryText)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                // Food item tags
+                if let desc = meal.foodDescription, !desc.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: DesignSystem.Spacing.sm) {
+                            ForEach(foodItems(from: desc), id: \.self) { item in
+                                Text(item)
+                                    .font(DesignSystem.Typography.metadata)
+                                    .foregroundColor(DesignSystem.Colors.primaryText)
+                                    .padding(.horizontal, DesignSystem.Spacing.sm)
+                                    .padding(.vertical, 4)
+                                    .background(timeContext.primaryColor.opacity(0.12))
+                                    .cornerRadius(12)
+                            }
+                        }
+                        .padding(.horizontal, 2)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
-                // Macro breakdown
+                // Macro breakdown with counting animation
                 PremiumCard(timeContext: timeContext) {
                     VStack(spacing: DesignSystem.Spacing.md) {
                         HStack {
@@ -280,20 +322,36 @@ struct MealLogView: View {
                                 .foregroundColor(DesignSystem.Colors.primaryText)
                             Spacer()
                             if let conf = meal.aiConfidence {
-                                Text(String(format: "%.0f%% confidence", conf * 100))
-                                    .font(DesignSystem.Typography.metadata)
-                                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+                                HStack(spacing: 4) {
+                                    Circle()
+                                        .fill(confidenceColor(conf))
+                                        .frame(width: 6, height: 6)
+                                    Text(String(format: "%.0f%% confidence", conf * 100))
+                                        .font(DesignSystem.Typography.metadata)
+                                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                                }
                             }
                         }
 
                         HStack(spacing: DesignSystem.Spacing.lg) {
-                            macroItem(label: "Calories", value: "\(meal.calories)", unit: "kcal", color: .orange)
-                            macroItem(label: "Protein", value: String(format: "%.0f", meal.proteinG), unit: "g", color: .red)
-                            macroItem(label: "Carbs", value: String(format: "%.0f", meal.carbsG), unit: "g", color: .blue)
-                            macroItem(label: "Fat", value: String(format: "%.0f", meal.fatG), unit: "g", color: .yellow)
+                            macroItem(label: "Calories", value: "\(displayCalories)", unit: "kcal", color: .orange)
+                            macroItem(label: "Protein", value: String(format: "%.0f", displayProtein), unit: "g", color: .red)
+                            macroItem(label: "Carbs", value: String(format: "%.0f", displayCarbs), unit: "g", color: .blue)
+                            macroItem(label: "Fat", value: String(format: "%.0f", displayFat), unit: "g", color: .yellow)
+                        }
+                        .onAppear {
+                            startCountingAnimation(
+                                calories: meal.calories,
+                                protein: meal.proteinG,
+                                carbs: meal.carbsG,
+                                fat: meal.fatG
+                            )
                         }
                     }
                 }
+
+                // Edit values section (collapsed by default)
+                editValuesSection(meal: meal)
 
                 Button {
                     dismiss()
@@ -305,6 +363,85 @@ struct MealLogView: View {
                 }
                 .buttonStyle(.borderedProminent)
             }
+        }
+    }
+
+    // MARK: - Edit Values Section
+
+    private func editValuesSection(meal: Meal) -> some View {
+        VStack(spacing: DesignSystem.Spacing.sm) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isEditExpanded.toggle()
+                }
+                if isEditExpanded {
+                    editCalories = "\(meal.calories)"
+                    editProtein = String(format: "%.0f", meal.proteinG)
+                    editCarbs = String(format: "%.0f", meal.carbsG)
+                    editFat = String(format: "%.0f", meal.fatG)
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "pencil")
+                        .font(.caption)
+                    Text("Edit values")
+                        .font(DesignSystem.Typography.bodyMedium)
+                    Spacer()
+                    Image(systemName: isEditExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption)
+                }
+                .foregroundColor(DesignSystem.Colors.secondaryText)
+                .padding(.horizontal, DesignSystem.Spacing.md)
+                .padding(.vertical, DesignSystem.Spacing.sm)
+                .background(DesignSystem.Colors.cardBackground)
+                .cornerRadius(DesignSystem.CornerRadius.card)
+            }
+            .buttonStyle(.plain)
+
+            if isEditExpanded {
+                PremiumCard(timeContext: timeContext) {
+                    VStack(spacing: DesignSystem.Spacing.md) {
+                        editField(label: "Calories (kcal)", value: $editCalories, color: .orange)
+                        editField(label: "Protein (g)", value: $editProtein, color: .red)
+                        editField(label: "Carbs (g)", value: $editCarbs, color: .blue)
+                        editField(label: "Fat (g)", value: $editFat, color: .yellow)
+
+                        Button {
+                            Task { await saveEdits(meal: meal) }
+                        } label: {
+                            Group {
+                                if isSavingEdits {
+                                    ProgressView()
+                                        .tint(.white)
+                                } else {
+                                    Text("Save Changes")
+                                        .font(DesignSystem.Typography.buttonMedium)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, DesignSystem.Spacing.sm)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(isSavingEdits)
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+
+    private func editField(label: String, value: Binding<String>, color: Color) -> some View {
+        HStack {
+            Text(label)
+                .font(DesignSystem.Typography.bodyMedium)
+                .foregroundColor(DesignSystem.Colors.secondaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            TextField("0", text: value)
+                .keyboardType(.numberPad)
+                .multilineTextAlignment(.trailing)
+                .font(DesignSystem.Typography.headlineSmall)
+                .foregroundColor(color)
+                .frame(width: 80)
         }
     }
 
@@ -323,7 +460,63 @@ struct MealLogView: View {
         .frame(maxWidth: .infinity)
     }
 
+    private func confidenceColor(_ confidence: Double) -> Color {
+        if confidence >= 0.75 { return .green }
+        if confidence >= 0.5 { return .yellow }
+        return .orange
+    }
+
+    private func foodItems(from description: String) -> [String] {
+        description
+            .components(separatedBy: CharacterSet(charactersIn: ",;"))
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
+
     // MARK: - Actions
+
+    private func startCountingAnimation(calories: Int, protein: Double, carbs: Double, fat: Double) {
+        let steps = 30
+        let intervalNs = UInt64(1_000_000_000 / steps)
+        Task {
+            for step in 1...steps {
+                try? await Task.sleep(nanoseconds: intervalNs)
+                let progress = Double(step) / Double(steps)
+                await MainActor.run {
+                    displayCalories = Int(Double(calories) * progress)
+                    displayProtein = protein * progress
+                    displayCarbs = carbs * progress
+                    displayFat = fat * progress
+                }
+            }
+        }
+    }
+
+    private func saveEdits(meal: Meal) async {
+        isSavingEdits = true
+        var updates: [String: Any] = [:]
+        if let cal = Int(editCalories) { updates["user_calories"] = cal }
+        if let pro = Double(editProtein) { updates["user_protein_g"] = pro }
+        if let car = Double(editCarbs) { updates["user_carbs_g"] = car }
+        if let fat = Double(editFat) { updates["user_fat_g"] = fat }
+
+        do {
+            let updated = try await mealsService.updateMeal(id: meal.id, updates: updates)
+            await MainActor.run {
+                savedMeal = updated
+                displayCalories = updated.calories
+                displayProtein = updated.proteinG
+                displayCarbs = updated.carbsG
+                displayFat = updated.fatG
+                isEditExpanded = false
+                isSavingEdits = false
+            }
+        } catch {
+            await MainActor.run {
+                isSavingEdits = false
+            }
+        }
+    }
 
     private func analyzeMeal() async {
         guard let imageData = selectedImageData else { return }

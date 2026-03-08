@@ -12,6 +12,8 @@ struct NutritionSummaryCard: View {
     let timeContext: DesignSystem.TimeContext
     var onTap: (() -> Void)?
 
+    @State private var ringProgress: Double = 0
+
     var body: some View {
         Button {
             onTap?()
@@ -28,6 +30,19 @@ struct NutritionSummaryCard: View {
                         Text("\(summary.mealCount) meal\(summary.mealCount == 1 ? "" : "s")")
                             .font(DesignSystem.Typography.metadata)
                             .foregroundColor(DesignSystem.Colors.tertiaryText)
+                    }
+
+                    // Calorie context line
+                    let calorieTarget = Int(targetFor("Calories"))
+                    let remaining = calorieTarget - summary.totalCalories
+                    HStack(spacing: 4) {
+                        Text("\(summary.totalCalories.formatted()) / \(calorieTarget.formatted()) kcal")
+                            .font(DesignSystem.Typography.bodyMedium)
+                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                        Spacer()
+                        Text(remainingLabel(remaining: remaining))
+                            .font(DesignSystem.Typography.bodyMedium)
+                            .foregroundColor(remainingColor(remaining: remaining))
                     }
 
                     HStack(spacing: DesignSystem.Spacing.lg) {
@@ -60,21 +75,28 @@ struct NutritionSummaryCard: View {
             }
         }
         .buttonStyle(.plain)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.8)) {
+                ringProgress = 1.0
+            }
+        }
     }
 
     private func macroRing(label: String, value: Int, unit: String, color: Color) -> some View {
-        VStack(spacing: 4) {
+        let fillRatio = min(1.0, CGFloat(value) / max(1, targetFor(label))) * ringProgress
+        return VStack(spacing: 4) {
             ZStack {
                 Circle()
-                    .stroke(color.opacity(0.2), lineWidth: 4)
-                    .frame(width: 44, height: 44)
+                    .stroke(color.opacity(0.2), lineWidth: 5)
+                    .frame(width: 56, height: 56)
                 Circle()
-                    .trim(from: 0, to: min(1.0, CGFloat(value) / max(1, targetFor(label))))
-                    .stroke(color, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .trim(from: 0, to: CGFloat(fillRatio))
+                    .stroke(color, style: StrokeStyle(lineWidth: 5, lineCap: .round))
                     .rotationEffect(.degrees(-90))
-                    .frame(width: 44, height: 44)
+                    .frame(width: 56, height: 56)
+                    .animation(.easeOut(duration: 0.8), value: ringProgress)
                 Text("\(value)")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
                     .foregroundColor(DesignSystem.Colors.primaryText)
             }
             Text(label)
@@ -92,5 +114,22 @@ struct NutritionSummaryCard: View {
         case "Fat": return 70
         default: return 100
         }
+    }
+
+    private func remainingLabel(remaining: Int) -> String {
+        if remaining >= 0 {
+            return "\(remaining) remaining"
+        } else {
+            return "\(abs(remaining)) over"
+        }
+    }
+
+    private func remainingColor(remaining: Int) -> Color {
+        let target = Int(targetFor("Calories"))
+        let consumed = target - remaining
+        let ratio = Double(consumed) / Double(target)
+        if ratio <= 0.9 { return .green }
+        if ratio <= 1.0 { return .orange }
+        return .red
     }
 }

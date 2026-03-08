@@ -15,14 +15,14 @@ struct TrainingPlanView: View {
     @State private var selectedDate: Date = Calendar.current.startOfDay(for: Date())
     @State private var showDayDetail = false
     @State private var dayDetailDate: Date = Date()
-    
+
     private var timeContext: DesignSystem.TimeContext { DesignSystem.TimeContext.current() }
-    
+
     var body: some View {
         NavigationStack {
             ZStack {
                 DesignSystem.Colors.background.ignoresSafeArea()
-                
+
                 TrainingWeekView(selectedDate: $selectedDate) { date in
                     dayDetailDate = date
                     showDayDetail = true
@@ -50,7 +50,7 @@ struct TrainingPlanView: View {
             }
         }
     }
-    
+
     // MARK: - Haptics
     private func hapticLight() {
         #if canImport(UIKit)
@@ -63,7 +63,7 @@ struct TrainingPlanView: View {
 struct DayDetailSheet: View {
     let date: Date
     @Environment(\.dismiss) private var dismiss
-    
+
     @State private var plans: [TrainingPlan] = []
     @State private var isLoading = false
     @State private var showingAddForm = false
@@ -76,21 +76,21 @@ struct DayDetailSheet: View {
     private let mealsService: MealsServiceProtocol = MealsService()
     private var timeContext: DesignSystem.TimeContext { DesignSystem.TimeContext.current() }
     private let calendar = Calendar.current
-    
+
     private var isToday: Bool {
         calendar.isDateInToday(date)
     }
-    
+
     var body: some View {
         NavigationStack {
             ZStack {
                 DesignSystem.Colors.background.ignoresSafeArea()
-                
+
                 ScrollView {
                     VStack(spacing: DesignSystem.Spacing.lg) {
                         // Date header
                         dateHeader
-                        
+
                         // Content
                         if isLoading && plans.isEmpty {
                             loadingState
@@ -113,7 +113,12 @@ struct DayDetailSheet: View {
                                 .padding(.top, DesignSystem.Spacing.md)
 
                                 ForEach(dayMeals) { meal in
-                                    MealCard(meal: meal, timeContext: timeContext)
+                                    MealCard(meal: meal, timeContext: timeContext) {
+                                        Task {
+                                            try? await mealsService.deleteMeal(id: meal.id)
+                                            await load()
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -134,7 +139,7 @@ struct DayDetailSheet: View {
                     }
                     .foregroundColor(timeContext.primaryColor)
                 }
-                
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         showingAddForm = true
@@ -184,7 +189,7 @@ struct DayDetailSheet: View {
             }
         }
     }
-    
+
     // MARK: - Date Header
     private var dateHeader: some View {
         HStack {
@@ -192,16 +197,16 @@ struct DayDetailSheet: View {
                 Text(formattedDate)
                     .font(DesignSystem.Typography.headlineMedium)
                     .foregroundColor(DesignSystem.Colors.primaryText)
-                
+
                 if !plans.isEmpty {
                     Text("\(plans.count) training session\(plans.count == 1 ? "" : "s")")
                         .font(DesignSystem.Typography.bodySmall)
                         .foregroundColor(DesignSystem.Colors.secondaryText)
                 }
             }
-            
+
             Spacer()
-            
+
             if isToday {
                 Text("Today")
                     .font(DesignSystem.Typography.buttonSmall)
@@ -220,7 +225,7 @@ struct DayDetailSheet: View {
                 .fill(DesignSystem.Colors.cardBackground)
         )
     }
-    
+
     // MARK: - Loading State
     private var loadingState: some View {
         VStack(spacing: DesignSystem.Spacing.md) {
@@ -234,25 +239,25 @@ struct DayDetailSheet: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, DesignSystem.Spacing.xxl)
     }
-    
+
     // MARK: - Empty State
     private var emptyState: some View {
         VStack(spacing: DesignSystem.Spacing.lg) {
             Image(systemName: "moon.zzz.fill")
                 .font(.system(size: 64))
                 .foregroundColor(DesignSystem.Colors.tertiaryText.opacity(0.5))
-            
+
             VStack(spacing: DesignSystem.Spacing.xs) {
                 Text("Rest Day")
                     .font(DesignSystem.Typography.headlineMedium)
                     .foregroundColor(DesignSystem.Colors.primaryText)
-                
+
                 Text("No sessions scheduled for this day")
                     .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(DesignSystem.Colors.secondaryText)
                     .multilineTextAlignment(.center)
             }
-            
+
             Button {
                 showingAddForm = true
                 hapticLight()
@@ -273,7 +278,7 @@ struct DayDetailSheet: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, DesignSystem.Spacing.xxl)
     }
-    
+
     // MARK: - Plans List
     private var plansList: some View {
         VStack(spacing: DesignSystem.Spacing.sm) {
@@ -292,7 +297,7 @@ struct DayDetailSheet: View {
                     }
                 )
             }
-            
+
             // Add another button
             Button {
                 showingAddForm = true
@@ -314,20 +319,20 @@ struct DayDetailSheet: View {
             .padding(.top, DesignSystem.Spacing.sm)
         }
     }
-    
+
     // MARK: - Helpers
     private var dayName: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEEE"
         return formatter.string(from: date)
     }
-    
+
     private var formattedDate: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEEE, MMMM d"
         return formatter.string(from: date)
     }
-    
+
     private func load() async {
         isLoading = true
         defer { isLoading = false }
@@ -346,20 +351,20 @@ struct DayDetailSheet: View {
             print("Failed to load training sessions:", error)
         }
     }
-    
+
     // MARK: - Haptics
     private func hapticLight() {
         #if canImport(UIKit)
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         #endif
     }
-    
+
     private func hapticSuccess() {
         #if canImport(UIKit)
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         #endif
     }
-    
+
     private func hapticWarning() {
         #if canImport(UIKit)
         UINotificationFeedbackGenerator().notificationOccurred(.warning)
@@ -373,16 +378,16 @@ struct DayPlanCard: View {
     let timeContext: DesignSystem.TimeContext
     var onEdit: () -> Void
     var onDelete: () -> Void
-    
+
     @State private var offset: CGFloat = 0
     @State private var showActions = false
-    
+
     var body: some View {
         ZStack(alignment: .trailing) {
             // Action buttons (revealed on swipe)
             HStack(spacing: 0) {
                 Spacer()
-                
+
                 Button(action: onEdit) {
                     Image(systemName: "pencil")
                         .font(.system(size: 18, weight: .semibold))
@@ -390,7 +395,7 @@ struct DayPlanCard: View {
                         .frame(width: 70, height: .infinity)
                         .background(DesignSystem.Colors.eliteGold)
                 }
-                
+
                 Button(action: onDelete) {
                     Image(systemName: "trash")
                         .font(.system(size: 18, weight: .semibold))
@@ -401,7 +406,7 @@ struct DayPlanCard: View {
             }
             .frame(height: 90)
             .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card))
-            
+
             // Main card content
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                 HStack(spacing: DesignSystem.Spacing.md) {
@@ -410,25 +415,25 @@ struct DayPlanCard: View {
                         Circle()
                             .fill(timeContext.primaryColor.opacity(0.15))
                             .frame(width: 50, height: 50)
-                        
+
                         Image(systemName: plan.activityType.icon)
                             .font(.system(size: 22))
                             .foregroundColor(timeContext.primaryColor)
                     }
-                    
+
                     // Details
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
                             Text(plan.activityType.displayName)
                                 .font(DesignSystem.Typography.headlineSmall)
                                 .foregroundColor(DesignSystem.Colors.primaryText)
-                            
+
                             Spacer()
-                            
+
                             // Intensity badge
                             IntensityBadge(intensity: plan.intensityLevel)
                         }
-                        
+
                         HStack(spacing: DesignSystem.Spacing.md) {
                             if let time = plan.formattedStartTime {
                                 HStack(spacing: 4) {
@@ -447,7 +452,7 @@ struct DayPlanCard: View {
                         .foregroundColor(DesignSystem.Colors.secondaryText)
                     }
                 }
-                
+
                 // Notes if present
                 if let notes = plan.notes, !notes.isEmpty {
                     Text(notes)
@@ -505,7 +510,7 @@ struct DayPlanCard: View {
 // MARK: - Intensity Badge
 struct IntensityBadge: View {
     let intensity: TrainingIntensity
-    
+
     private var color: Color {
         switch intensity {
         case .light: return DesignSystem.Colors.powerGreen
@@ -514,7 +519,7 @@ struct IntensityBadge: View {
         case .veryHard: return DesignSystem.Colors.alertRed
         }
     }
-    
+
     var body: some View {
         Text(intensity.displayName)
             .font(DesignSystem.Typography.caption)
