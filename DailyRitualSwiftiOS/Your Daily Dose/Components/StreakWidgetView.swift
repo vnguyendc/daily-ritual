@@ -68,6 +68,21 @@ struct StreakWidgetView: View {
             }
         }
         .onTapGesture { showingHistory = true }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(streakAccessibilityLabel)
+        .accessibilityHint("Tap to view streak history")
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private var streakAccessibilityLabel: String {
+        var label = "Current streak, \(streaksService.dailyStreak) days"
+        if streaksService.morningStreak > 0 || streaksService.eveningStreak > 0 {
+            label += ". Morning streak \(streaksService.morningStreak), evening streak \(streaksService.eveningStreak)"
+        }
+        if streaksService.longestDailyStreak > streaksService.dailyStreak {
+            label += ". Best: \(streaksService.longestDailyStreak) days"
+        }
+        return label
     }
 }
 
@@ -103,6 +118,8 @@ private struct GracePeriodBadge: View {
             Text("\(hoursRemaining)h left")
                 .font(DesignSystem.Typography.caption)
                 .fontWeight(.medium)
+                .minimumScaleFactor(0.8)
+                .lineLimit(1)
         }
         .foregroundColor(.orange)
         .padding(.horizontal, DesignSystem.Spacing.sm)
@@ -111,5 +128,6 @@ private struct GracePeriodBadge: View {
             Capsule()
                 .fill(Color.orange.opacity(0.15))
         )
+        .accessibilityLabel("Grace period, \(hoursRemaining) hours remaining")
     }
 }

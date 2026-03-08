@@ -11,7 +11,8 @@ import SwiftUI
 struct IncompleteMorningCard: View {
     let completedSteps: Int
     let onTap: () -> Void
-    
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
+
     var body: some View {
         Button(action: onTap) {
             PremiumCard(timeContext: .morning) {
@@ -20,31 +21,31 @@ struct IncompleteMorningCard: View {
                         Image(systemName: "sun.max.fill")
                             .foregroundColor(DesignSystem.Colors.morningAccent)
                             .font(DesignSystem.Typography.headlineLargeSafe)
-                        
+
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                             Text("Morning Ritual")
                                 .font(DesignSystem.Typography.journalTitleSafe)
                                 .foregroundColor(DesignSystem.Colors.primaryText)
-                            
+
                             Text("Start your day with intention")
                                 .font(DesignSystem.Typography.bodyMedium)
                                 .foregroundColor(DesignSystem.Colors.secondaryText)
                         }
-                        
+
                         Spacer()
-                        
+
                         Image(systemName: "arrow.right.circle.fill")
                             .foregroundColor(DesignSystem.Colors.morningAccent)
                             .font(DesignSystem.Typography.headlineMedium)
                     }
-                    
+
                     HStack {
                         Text("\(completedSteps)/4 steps completed")
                             .font(DesignSystem.Typography.metadata)
                             .foregroundColor(DesignSystem.Colors.tertiaryText)
-                        
+
                         Spacer()
-                        
+
                         PremiumProgressRing(
                             progress: Double(completedSteps) / 4.0,
                             size: 32,
@@ -56,7 +57,10 @@ struct IncompleteMorningCard: View {
             }
         }
         .buttonStyle(.plain)
-        .animation(DesignSystem.Animation.gentle, value: completedSteps)
+        .animation(reduceMotion ? nil : DesignSystem.Animation.gentle, value: completedSteps)
+        .accessibilityLabel("Morning Ritual, \(completedSteps) of 4 steps completed")
+        .accessibilityHint("Tap to open morning ritual")
+        .accessibilityAddTraits(.isButton)
     }
 }
 
@@ -64,7 +68,8 @@ struct IncompleteMorningCard: View {
 struct IncompleteEveningCard: View {
     let completedSteps: Int
     let onTap: () -> Void
-    
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
+
     var body: some View {
         Button(action: onTap) {
             PremiumCard(timeContext: .evening) {
@@ -73,31 +78,31 @@ struct IncompleteEveningCard: View {
                         Image(systemName: "moon.fill")
                             .foregroundColor(DesignSystem.Colors.eveningAccent)
                             .font(DesignSystem.Typography.headlineLargeSafe)
-                        
+
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                             Text("Evening Reflection")
                                 .font(DesignSystem.Typography.journalTitleSafe)
                                 .foregroundColor(DesignSystem.Colors.primaryText)
-                            
+
                             Text("Reflect on your day")
                                 .font(DesignSystem.Typography.bodyMedium)
                                 .foregroundColor(DesignSystem.Colors.secondaryText)
                         }
-                        
+
                         Spacer()
-                        
+
                         Image(systemName: "arrow.right.circle.fill")
                             .foregroundColor(DesignSystem.Colors.eveningAccent)
                             .font(DesignSystem.Typography.headlineMedium)
                     }
-                    
+
                     HStack {
                         Text("\(completedSteps)/3 steps completed")
                             .font(DesignSystem.Typography.metadata)
                             .foregroundColor(DesignSystem.Colors.tertiaryText)
-                        
+
                         Spacer()
-                        
+
                         PremiumProgressRing(
                             progress: Double(completedSteps) / 3.0,
                             size: 32,
@@ -109,7 +114,10 @@ struct IncompleteEveningCard: View {
             }
         }
         .buttonStyle(.plain)
-        .animation(DesignSystem.Animation.gentle, value: completedSteps)
+        .animation(reduceMotion ? nil : DesignSystem.Animation.gentle, value: completedSteps)
+        .accessibilityLabel("Evening Reflection, \(completedSteps) of 3 steps completed")
+        .accessibilityHint("Tap to open evening reflection")
+        .accessibilityAddTraits(.isButton)
     }
 }
 
@@ -159,6 +167,8 @@ struct CompletedRitualCard: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(type.title), tap to edit")
+        .accessibilityAddTraits(.isButton)
     }
 }
 
@@ -185,6 +195,8 @@ struct CelebrationCard: View {
                 }
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Day complete! You've completed your full daily practice.")
     }
 }
 

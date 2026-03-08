@@ -13,7 +13,8 @@ import UIKit
 
 struct WeekDayStrip: View {
     @Binding var selectedDate: Date
-    
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
+
     private let calendar = Calendar.current
     private var timeContext: DesignSystem.TimeContext { DesignSystem.TimeContext.current() }
     
@@ -52,7 +53,8 @@ struct WeekDayStrip: View {
     private var weekHeader: some View {
         HStack {
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                let animation: Animation? = reduceMotion ? nil : .easeInOut(duration: 0.2)
+                withAnimation(animation) {
                     if let newDate = calendar.date(byAdding: .weekOfYear, value: -1, to: selectedDate) {
                         selectedDate = newDate
                         hapticLight()
@@ -64,6 +66,7 @@ struct WeekDayStrip: View {
                     .foregroundColor(timeContext.primaryColor)
                     .frame(width: 32, height: 32)
             }
+            .accessibilityLabel("Previous week")
             
             Spacer()
             
@@ -82,7 +85,8 @@ struct WeekDayStrip: View {
             Spacer()
             
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                let animation: Animation? = reduceMotion ? nil : .easeInOut(duration: 0.2)
+                withAnimation(animation) {
                     if let newDate = calendar.date(byAdding: .weekOfYear, value: 1, to: selectedDate) {
                         // Don't allow navigating to future weeks
                         let today = calendar.startOfDay(for: Date())
@@ -99,6 +103,7 @@ struct WeekDayStrip: View {
                     .frame(width: 32, height: 32)
             }
             .disabled(!canGoForward)
+            .accessibilityLabel("Next week")
         }
     }
     
@@ -107,10 +112,11 @@ struct WeekDayStrip: View {
         let isSelected = calendar.isDate(day, inSameDayAs: selectedDate)
         let isToday = calendar.isDateInToday(day)
         let isFuture = day > Date()
-        
+
         return Button {
             guard !isFuture else { return }
-            withAnimation(.easeInOut(duration: 0.15)) {
+            let animation: Animation? = reduceMotion ? nil : .easeInOut(duration: 0.15)
+            withAnimation(animation) {
                 selectedDate = day
                 hapticLight()
             }
@@ -119,7 +125,7 @@ struct WeekDayStrip: View {
                 Text(dayOfWeekLetter(day))
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
-                
+
                 ZStack {
                     if isSelected {
                         Circle()
@@ -130,7 +136,7 @@ struct WeekDayStrip: View {
                             .stroke(timeContext.primaryColor, lineWidth: 1.5)
                             .frame(width: 36, height: 36)
                     }
-                    
+
                     Text(dayNumber(day))
                         .font(.system(size: 16, weight: isSelected ? .bold : .medium))
                         .foregroundColor(
@@ -145,6 +151,17 @@ struct WeekDayStrip: View {
         .frame(maxWidth: .infinity)
         .disabled(isFuture)
         .buttonStyle(.plain)
+        .accessibilityLabel(dayAccessibilityLabel(for: day, isSelected: isSelected, isToday: isToday))
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
+    private func dayAccessibilityLabel(for day: Date, isSelected: Bool, isToday: Bool) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, MMMM d"
+        var label = formatter.string(from: day)
+        if isToday { label += ", today" }
+        if isSelected { label += ", selected" }
+        return label
     }
     
     // MARK: - Helpers
