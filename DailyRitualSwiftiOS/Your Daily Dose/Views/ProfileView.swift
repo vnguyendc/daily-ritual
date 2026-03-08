@@ -767,7 +767,7 @@ struct ProfileView: View {
                     .scaleEffect(0.7)
                     .frame(height: 28)
             } else {
-                Text("\(value ?? 0)")
+                AnimatedCounter(target: value ?? 0)
                     .font(DesignSystem.Typography.displaySmallSafe)
                     .foregroundColor(DesignSystem.Colors.primaryText)
             }
@@ -901,6 +901,28 @@ struct ProfileView: View {
         #if canImport(UIKit)
         UINotificationFeedbackGenerator().notificationOccurred(.error)
         #endif
+    }
+}
+
+// MARK: - Animated Counter
+struct AnimatedCounter: View {
+    let target: Int
+    @State private var displayed: Int = 0
+
+    var body: some View {
+        Text("\(displayed)")
+            .onAppear {
+                let duration: Double = min(1.0, Double(target) * 0.02 + 0.3)
+                let steps = min(target, 30)
+                guard steps > 0 else { return }
+                let stepDelay = duration / Double(steps)
+                let increment = max(1, target / steps)
+                for i in 1...steps {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + stepDelay * Double(i)) {
+                        displayed = min(target, increment * i)
+                    }
+                }
+            }
     }
 }
 
