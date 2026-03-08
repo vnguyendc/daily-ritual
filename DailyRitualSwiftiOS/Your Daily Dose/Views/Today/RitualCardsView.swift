@@ -7,44 +7,68 @@
 
 import SwiftUI
 
-// MARK: - Morning Ritual Card (Incomplete)
+// MARK: - Section Divider
+struct SectionDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(DesignSystem.Colors.border)
+            .frame(height: 1)
+    }
+}
+
+// MARK: - Morning Ritual Card (Incomplete) - Hero Treatment
 struct IncompleteMorningCard: View {
     let completedSteps: Int
     let onTap: () -> Void
-    
+
+    @State private var isPulsing = false
+
     var body: some View {
         Button(action: onTap) {
-            PremiumCard(timeContext: .morning) {
+            PremiumCard(timeContext: .morning, padding: DesignSystem.Spacing.lg) {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                     HStack {
-                        Image(systemName: "sun.max.fill")
-                            .foregroundColor(DesignSystem.Colors.morningAccent)
-                            .font(DesignSystem.Typography.headlineLargeSafe)
-                        
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: "sun.max.fill")
+                                .foregroundColor(DesignSystem.Colors.morningAccent)
+                                .font(.system(size: 36, weight: .semibold))
+
+                            Circle()
+                                .fill(DesignSystem.Colors.morningAccent)
+                                .frame(width: 10, height: 10)
+                                .scaleEffect(isPulsing ? 1.4 : 1.0)
+                                .opacity(isPulsing ? 0.5 : 1.0)
+                                .animation(
+                                    .easeInOut(duration: 0.8).repeatForever(autoreverses: true),
+                                    value: isPulsing
+                                )
+                                .offset(x: 2, y: -2)
+                        }
+
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                             Text("Morning Ritual")
                                 .font(DesignSystem.Typography.journalTitleSafe)
                                 .foregroundColor(DesignSystem.Colors.primaryText)
-                            
+
                             Text("Start your day with intention")
                                 .font(DesignSystem.Typography.bodyMedium)
                                 .foregroundColor(DesignSystem.Colors.secondaryText)
                         }
-                        
+
                         Spacer()
-                        
+
                         Image(systemName: "arrow.right.circle.fill")
                             .foregroundColor(DesignSystem.Colors.morningAccent)
                             .font(DesignSystem.Typography.headlineMedium)
                     }
-                    
+
                     HStack {
                         Text("\(completedSteps)/4 steps completed")
                             .font(DesignSystem.Typography.metadata)
                             .foregroundColor(DesignSystem.Colors.tertiaryText)
-                        
+
                         Spacer()
-                        
+
                         PremiumProgressRing(
                             progress: Double(completedSteps) / 4.0,
                             size: 32,
@@ -56,48 +80,79 @@ struct IncompleteMorningCard: View {
             }
         }
         .buttonStyle(.plain)
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            DesignSystem.Colors.morningAccent.opacity(0.8),
+                            DesignSystem.Colors.morningAccent.opacity(0.2)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.5
+                )
+        )
+        .shadow(color: DesignSystem.Colors.morningAccent.opacity(0.2), radius: 8, x: 0, y: 4)
         .animation(DesignSystem.Animation.gentle, value: completedSteps)
+        .onAppear { isPulsing = true }
     }
 }
 
-// MARK: - Evening Ritual Card (Incomplete)
+// MARK: - Evening Ritual Card (Incomplete) - Hero Treatment
 struct IncompleteEveningCard: View {
     let completedSteps: Int
     let onTap: () -> Void
-    
+
+    @State private var isPulsing = false
+
     var body: some View {
         Button(action: onTap) {
-            PremiumCard(timeContext: .evening) {
+            PremiumCard(timeContext: .evening, padding: DesignSystem.Spacing.lg) {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
                     HStack {
-                        Image(systemName: "moon.fill")
-                            .foregroundColor(DesignSystem.Colors.eveningAccent)
-                            .font(DesignSystem.Typography.headlineLargeSafe)
-                        
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: "moon.fill")
+                                .foregroundColor(DesignSystem.Colors.eveningAccent)
+                                .font(.system(size: 36, weight: .semibold))
+
+                            Circle()
+                                .fill(DesignSystem.Colors.eveningAccent)
+                                .frame(width: 10, height: 10)
+                                .scaleEffect(isPulsing ? 1.4 : 1.0)
+                                .opacity(isPulsing ? 0.5 : 1.0)
+                                .animation(
+                                    .easeInOut(duration: 0.8).repeatForever(autoreverses: true),
+                                    value: isPulsing
+                                )
+                                .offset(x: 2, y: -2)
+                        }
+
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                             Text("Evening Reflection")
                                 .font(DesignSystem.Typography.journalTitleSafe)
                                 .foregroundColor(DesignSystem.Colors.primaryText)
-                            
+
                             Text("Reflect on your day")
                                 .font(DesignSystem.Typography.bodyMedium)
                                 .foregroundColor(DesignSystem.Colors.secondaryText)
                         }
-                        
+
                         Spacer()
-                        
+
                         Image(systemName: "arrow.right.circle.fill")
                             .foregroundColor(DesignSystem.Colors.eveningAccent)
                             .font(DesignSystem.Typography.headlineMedium)
                     }
-                    
+
                     HStack {
                         Text("\(completedSteps)/3 steps completed")
                             .font(DesignSystem.Typography.metadata)
                             .foregroundColor(DesignSystem.Colors.tertiaryText)
-                        
+
                         Spacer()
-                        
+
                         PremiumProgressRing(
                             progress: Double(completedSteps) / 3.0,
                             size: 32,
@@ -109,7 +164,23 @@ struct IncompleteEveningCard: View {
             }
         }
         .buttonStyle(.plain)
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            DesignSystem.Colors.eveningAccent.opacity(0.8),
+                            DesignSystem.Colors.eveningAccent.opacity(0.2)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.5
+                )
+        )
+        .shadow(color: DesignSystem.Colors.eveningAccent.opacity(0.2), radius: 8, x: 0, y: 4)
         .animation(DesignSystem.Animation.gentle, value: completedSteps)
+        .onAppear { isPulsing = true }
     }
 }
 
@@ -118,7 +189,7 @@ struct CompletedRitualCard: View {
     enum RitualType {
         case morning
         case evening
-        
+
         var title: String {
             switch self {
             case .morning: return "Morning Complete"
@@ -126,37 +197,66 @@ struct CompletedRitualCard: View {
             }
         }
     }
-    
+
     let type: RitualType
+    let completedAt: Date?
     let onTap: () -> Void
-    
+
+    init(type: RitualType, completedAt: Date? = nil, onTap: @escaping () -> Void) {
+        self.type = type
+        self.completedAt = completedAt
+        self.onTap = onTap
+    }
+
+    private func formattedCompletionTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return formatter.string(from: date)
+    }
+
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: DesignSystem.Spacing.md) {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(DesignSystem.Colors.success)
-                    .font(.system(size: 18))
-                
-                Text(type.title)
-                    .font(DesignSystem.Typography.bodySmall)
-                    .foregroundColor(DesignSystem.Colors.secondaryText)
-                
-                Spacer()
-                
-                Text("Edit")
-                    .font(DesignSystem.Typography.caption)
-                    .foregroundColor(DesignSystem.Colors.tertiaryText)
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+            HStack(spacing: 0) {
+                // Green left border accent
+                Rectangle()
+                    .fill(DesignSystem.Colors.success)
+                    .frame(width: 3)
+
+                HStack(spacing: DesignSystem.Spacing.md) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(DesignSystem.Colors.success)
+                        .font(.system(size: 18))
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(type.title)
+                            .font(DesignSystem.Typography.bodySmall)
+                            .foregroundColor(DesignSystem.Colors.secondaryText)
+
+                        if let completedAt = completedAt {
+                            Text("Completed at \(formattedCompletionTime(completedAt))")
+                                .font(DesignSystem.Typography.caption)
+                                .foregroundColor(DesignSystem.Colors.tertiaryText)
+                        }
+                    }
+
+                    Spacer()
+
+                    Text("Edit")
+                        .font(DesignSystem.Typography.caption)
+                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                }
+                .padding(.horizontal, DesignSystem.Spacing.md)
+                .padding(.vertical, DesignSystem.Spacing.sm)
             }
-            .padding(.horizontal, DesignSystem.Spacing.md)
-            .padding(.vertical, DesignSystem.Spacing.sm)
             .background(
                 RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
                     .fill(DesignSystem.Colors.cardBackground.opacity(0.5))
             )
+            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small))
         }
         .buttonStyle(.plain)
     }
@@ -165,18 +265,18 @@ struct CompletedRitualCard: View {
 // MARK: - Day Complete Celebration Card
 struct CelebrationCard: View {
     let timeContext: DesignSystem.TimeContext
-    
+
     var body: some View {
         PremiumCard(timeContext: timeContext, padding: DesignSystem.Spacing.xl) {
             VStack(spacing: DesignSystem.Spacing.lg) {
                 Text("🎉")
                     .font(.system(size: 60))
-                
+
                 VStack(spacing: DesignSystem.Spacing.sm) {
                     Text("Day Complete!")
                         .font(DesignSystem.Typography.displaySmallSafe)
                         .foregroundColor(timeContext.primaryColor)
-                    
+
                     Text("You've completed your full daily practice")
                         .font(DesignSystem.Typography.bodyLargeSafe)
                         .foregroundColor(DesignSystem.Colors.secondaryText)
@@ -203,7 +303,7 @@ struct CelebrationCard: View {
 
 #Preview("Completed Cards") {
     VStack(spacing: 16) {
-        CompletedRitualCard(type: .morning, onTap: {})
+        CompletedRitualCard(type: .morning, completedAt: Date(), onTap: {})
         CompletedRitualCard(type: .evening, onTap: {})
     }
     .padding()
@@ -215,5 +315,3 @@ struct CelebrationCard: View {
         .padding()
         .background(DesignSystem.Colors.background)
 }
-
-

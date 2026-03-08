@@ -14,7 +14,7 @@ import UIKit
 struct TodayView: View {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var viewModel = TodayViewModel()
-    
+
     // Sheet presentation state
     @State private var showingMorningRitual = false
     @State private var showingEveningReflection = false
@@ -25,14 +25,14 @@ struct TodayView: View {
     @State private var showingAddActivity = false
     @State private var showingStreakHistory = false
     @State private var showingSleepDetail = false
-    
+
     // Selection state
     @State private var selectedDate: Date = Date()
     @State private var currentDay: Date = Calendar.current.startOfDay(for: Date())
     @State private var completedGoals: Set<Int> = []
     @State private var selectedTrainingPlan: TrainingPlan?
     @State private var trainingPlanToEdit: TrainingPlan?
-    
+
     // Workout reflection
     @State private var workoutReflectionPlan: TrainingPlan?
     @State private var healthKitWorkoutData: PartialWorkoutData?
@@ -48,11 +48,11 @@ struct TodayView: View {
     private let plansService: TrainingPlansServiceProtocol = TrainingPlansService()
     private let journalService: JournalEntriesServiceProtocol = JournalEntriesService()
     private let mealsService: MealsServiceProtocol = MealsService()
-    
+
     private var timeContext: DesignSystem.TimeContext {
         DesignSystem.TimeContext.current()
     }
-    
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -60,57 +60,16 @@ struct TodayView: View {
                     VStack(spacing: DesignSystem.Spacing.sectionSpacing) {
                         TodayHeaderView(
                             selectedDate: selectedDate,
+                            timeContext: timeContext,
+                            userName: SupabaseManager.shared.currentUser?.name,
                             onProfileTap: { showingProfile = true }
                         )
-                        
+
                         weekDayStripView
-
-                        // Streak widget
-                        StreakWidgetView(
-                            streaksService: StreaksService.shared,
-                            timeContext: timeContext,
-                            showingHistory: $showingStreakHistory
-                        )
-
-                        // Apple Health Card (when connected)
-                        if HealthKitService.shared.isAuthorized {
-                            HealthSummaryCard(
-                                healthService: HealthKitService.shared,
-                                timeContext: timeContext
-                            )
-                            .transition(.opacity.combined(with: .move(edge: .top)))
-
-                            // HealthKit workouts with "Reflect" buttons
-                            if !HealthKitService.shared.todayWorkouts.isEmpty {
-                                ForEach(HealthKitService.shared.todayWorkouts) { workout in
-                                    HealthKitWorkoutCard(
-                                        workout: workout,
-                                        timeContext: timeContext,
-                                        hasReflection: false,
-                                        onReflect: { data in
-                                            workoutReflectionPlan = nil
-                                            healthKitWorkoutData = data
-                                            showingWorkoutReflection = true
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        // Whoop Recovery Card (only when connected with data)
-                        if WhoopService.shared.isConnected,
-                           let whoopData = WhoopService.shared.dailyData {
-                            WhoopRecoveryCard(
-                                data: whoopData,
-                                timeContext: timeContext,
-                                onTap: { showingSleepDetail = true }
-                            )
-                            .transition(.opacity.combined(with: .move(edge: .top)))
-                        }
 
                         loadingView
                         mainContentView
-                        
+
                         Spacer(minLength: DesignSystem.Spacing.xxxl)
                     }
                     .padding(.top, DesignSystem.Spacing.xxl)
@@ -230,7 +189,7 @@ extension TodayView {
                 }
             }
     }
-    
+
     @ViewBuilder
     private var loadingView: some View {
         if viewModel.isLoading {
@@ -246,78 +205,180 @@ extension TodayView {
             .padding(.top, DesignSystem.Spacing.xl)
         }
     }
-    
+
+    // Whether evening ritual should be shown as the priority CTA
+    private var showEveningFirst: Bool {
+        viewModel.shouldShowEvening && !viewModel.entry.isEveningComplete
+    }
+
+    private var showNutritionSection: Bool {
+        if let summary = nutritionSummary { return summary.mealCount > 0 }
+        return false
+    }
+
     @ViewBuilder
     private var mainContentView: some View {
         if !viewModel.isLoading {
-            // Incomplete rituals at top
+            ritualSection
+            SectionDivider()
+            healthSection
+            SectionDivider()
+            trainingSection
+            if showNutritionSection {
+                SectionDivider()
+                nutritionSection
+            }
+        }
+    }
+
+    // MARK: - YOUR RITUAL Section
+    @ViewBuilder
+    private var ritualSection: some View {
+        PremiumSectionHeader("YOUR RITUAL", timeContext: timeContext)
+
+        if showEveningFirst {
+            // Evening is the active CTA
+            if !viewModel.entry.isEveningComplete {
+                IncompleteEveningCard(
+                    completedSteps: viewModel.entry.completedEveningSteps,
+                    onTap: { showingEveningReflection = true }
+                )
+            }
             if !viewModel.entry.isMorningComplete {
                 IncompleteMorningCard(
                     completedSteps: viewModel.entry.completedMorningSteps,
                     onTap: { showingMorningRitual = true }
                 )
             }
-            
+        } else {
+            // Morning is the active CTA (or neutral ordering)
+            if !viewModel.entry.isMorningComplete {
+                IncompleteMorningCard(
+                    completedSteps: viewModel.entry.completedMorningSteps,
+                    onTap: { showingMorningRitual = true }
+                )
+            }
             if viewModel.shouldShowEvening && !viewModel.entry.isEveningComplete {
                 IncompleteEveningCard(
                     completedSteps: viewModel.entry.completedEveningSteps,
                     onTap: { showingEveningReflection = true }
                 )
             }
-            
-            // Goals card
-            if let goals = viewModel.entry.goals, !goals.isEmpty {
-                GoalsCardView(
-                    goals: goals,
-                    entryDate: viewModel.entry.date,
-                    timeContext: timeContext,
-                    completedGoals: $completedGoals
-                )
-            }
-            
-            // Training plans
-            TrainingPlansSummary(
-                plans: viewModel.sortedTrainingPlans,
-                timeContext: timeContext,
-                onPlanTap: { selectedTrainingPlan = $0 },
-                onManagePlans: { showingTrainingPlans = true },
-                onAddPlan: { showingAddActivity = true },
-                onReflect: { plan in
-                    workoutReflectionPlan = plan
-                    showingWorkoutReflection = true
-                }
-            )
-            
-            // Nutrition summary (visible when meals have been logged)
-            if let summary = nutritionSummary, summary.mealCount > 0 {
-                NutritionSummaryCard(
-                    summary: summary,
-                    timeContext: timeContext,
-                    onTap: { showingMealLog = true }
-                )
-            }
+        }
 
-            // Quick entries
-            QuickEntriesCardView(
-                entries: todayJournalEntries,
-                timeContext: timeContext,
-                onEntryTap: { selectedJournalEntry = $0 }
+        // Completed rituals with green accent
+        if viewModel.entry.isMorningComplete {
+            CompletedRitualCard(
+                type: .morning,
+                completedAt: viewModel.entry.morningCompletedAt,
+                onTap: { showingMorningRitual = true }
             )
-            
-            // Completed rituals at bottom
-            if viewModel.entry.isMorningComplete {
-                CompletedRitualCard(type: .morning, onTap: { showingMorningRitual = true })
+        }
+
+        if viewModel.entry.isEveningComplete {
+            CompletedRitualCard(
+                type: .evening,
+                completedAt: viewModel.entry.eveningCompletedAt,
+                onTap: { showingEveningReflection = true }
+            )
+        }
+
+        // Celebration card when fully done
+        if viewModel.entry.isFullyComplete {
+            CelebrationCard(timeContext: timeContext)
+                .animation(DesignSystem.Animation.gentle, value: viewModel.entry.isFullyComplete)
+        }
+    }
+
+    // MARK: - HEALTH Section
+    @ViewBuilder
+    private var healthSection: some View {
+        PremiumSectionHeader("HEALTH", timeContext: timeContext)
+
+        StreakWidgetView(
+            streaksService: StreaksService.shared,
+            timeContext: timeContext,
+            showingHistory: $showingStreakHistory
+        )
+
+        if HealthKitService.shared.isAuthorized {
+            HealthSummaryCard(
+                healthService: HealthKitService.shared,
+                timeContext: timeContext
+            )
+            .transition(.opacity.combined(with: .move(edge: .top)))
+
+            if !HealthKitService.shared.todayWorkouts.isEmpty {
+                ForEach(HealthKitService.shared.todayWorkouts) { workout in
+                    HealthKitWorkoutCard(
+                        workout: workout,
+                        timeContext: timeContext,
+                        hasReflection: false,
+                        onReflect: { data in
+                            workoutReflectionPlan = nil
+                            healthKitWorkoutData = data
+                            showingWorkoutReflection = true
+                        }
+                    )
+                }
             }
-            
-            if viewModel.entry.isEveningComplete {
-                CompletedRitualCard(type: .evening, onTap: { showingEveningReflection = true })
+        }
+
+        if WhoopService.shared.isConnected,
+           let whoopData = WhoopService.shared.dailyData {
+            WhoopRecoveryCard(
+                data: whoopData,
+                timeContext: timeContext,
+                onTap: { showingSleepDetail = true }
+            )
+            .transition(.opacity.combined(with: .move(edge: .top)))
+        }
+    }
+
+    // MARK: - TRAINING Section
+    @ViewBuilder
+    private var trainingSection: some View {
+        PremiumSectionHeader("TRAINING", timeContext: timeContext)
+
+        if let goals = viewModel.entry.goals, !goals.isEmpty {
+            GoalsCardView(
+                goals: goals,
+                entryDate: viewModel.entry.date,
+                timeContext: timeContext,
+                completedGoals: $completedGoals
+            )
+        }
+
+        TrainingPlansSummary(
+            plans: viewModel.sortedTrainingPlans,
+            timeContext: timeContext,
+            onPlanTap: { selectedTrainingPlan = $0 },
+            onManagePlans: { showingTrainingPlans = true },
+            onAddPlan: { showingAddActivity = true },
+            onReflect: { plan in
+                workoutReflectionPlan = plan
+                showingWorkoutReflection = true
             }
-            
-            // Celebration card
-            if viewModel.entry.isFullyComplete {
-                CelebrationCard(timeContext: timeContext)
-                    .animation(DesignSystem.Animation.gentle, value: viewModel.entry.isFullyComplete)
-            }
+        )
+
+        QuickEntriesCardView(
+            entries: todayJournalEntries,
+            timeContext: timeContext,
+            onEntryTap: { selectedJournalEntry = $0 }
+        )
+    }
+
+    // MARK: - NUTRITION Section
+    @ViewBuilder
+    private var nutritionSection: some View {
+        PremiumSectionHeader("NUTRITION", timeContext: timeContext)
+
+        if let summary = nutritionSummary, summary.mealCount > 0 {
+            NutritionSummaryCard(
+                summary: summary,
+                timeContext: timeContext,
+                onTap: { showingMealLog = true }
+            )
         }
     }
 }
@@ -345,7 +406,7 @@ extension TodayView {
             }
         }
     }
-    
+
     @ViewBuilder
     private func trainingPlanDetailSheet(for plan: TrainingPlan) -> some View {
         TrainingPlanDetailSheet(
@@ -365,7 +426,7 @@ extension TodayView {
             }
         )
     }
-    
+
     @ViewBuilder
     private func journalEntryDetailSheet(for entry: JournalEntry) -> some View {
         JournalEntryDetailView(
@@ -408,7 +469,7 @@ extension TodayView {
             await StreaksService.shared.fetchStreaks(force: true)
         }
     }
-    
+
     private func handlePotentialDayChange() {
         let calendar = Calendar.current
         let newDay = calendar.startOfDay(for: Date())
@@ -421,21 +482,21 @@ extension TodayView {
             completedGoals = loadCompletedGoals(for: newDay)
         }
     }
-    
+
     private func loadCompletedGoals(for date: Date) -> Set<Int> {
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
         let dateString = df.string(from: date)
         return LocalStore.getCompletedGoals(for: dateString)
     }
-    
+
     private func loadJournalEntries() async {
         do {
             let result = try await journalService.fetchEntries(page: 1, limit: 50)
             let calendar = Calendar.current
             let startOfDay = calendar.startOfDay(for: selectedDate)
             let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? startOfDay
-            
+
             journalEntries = result.entries.filter { entry in
                 entry.createdAt >= startOfDay && entry.createdAt < endOfDay
             }
@@ -443,7 +504,7 @@ extension TodayView {
             print("Failed to load journal entries:", error)
         }
     }
-    
+
     private var todayJournalEntries: [JournalEntry] {
         journalEntries
     }
