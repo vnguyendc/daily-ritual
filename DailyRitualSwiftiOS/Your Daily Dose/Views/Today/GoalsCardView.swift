@@ -89,7 +89,7 @@ private struct GoalRowButton: View {
                     .font(DesignSystem.Typography.headlineMedium)
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardButtonStyle())
     }
 }
 
