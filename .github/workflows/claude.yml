@@ -36,7 +36,7 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           assignee_trigger: true
-          claude_args: "--max-turns 30"
+          claude_args: "--max-turns 50"
 
           additional_permissions: |
             actions: read
