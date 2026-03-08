@@ -15,20 +15,20 @@ struct ProfileView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var supabase = SupabaseManager.shared
     @FocusState private var focusedField: ProfileField?
-    
+
     // Auth state
     @State private var email = ""
     @State private var password = ""
     @State private var isSigningIn = false
     @State private var authError: String?
-    
+
     // Profile state
     @State private var name = ""
     @State private var primarySport = ""
     @State private var reminderTime = Date()
     @State private var eveningReminderTime = Calendar.current.date(from: DateComponents(hour: 17, minute: 0)) ?? Date()
     @State private var selectedTimezone = TimeZone.current.identifier
-    
+
     // UI state
     @State private var isSaving = false
     @State private var saveError: String?
@@ -42,9 +42,9 @@ struct ProfileView: View {
     @State private var totalMorningReflections: Int?
     @State private var totalEveningReflections: Int?
     @State private var isLoadingStats = false
-    
+
     private var timeContext: DesignSystem.TimeContext { DesignSystem.TimeContext.current() }
-    
+
     private let sports = [
         ("running", "figure.run", "Running"),
         ("cycling", "bicycle", "Cycling"),
@@ -53,11 +53,11 @@ struct ProfileView: View {
         ("recovery", "bed.double.fill", "Recovery"),
         ("rest", "moon.fill", "Rest")
     ]
-    
+
     enum ProfileField: Hashable {
         case email, password, name
     }
-    
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -80,7 +80,7 @@ struct ProfileView: View {
                     Button("Done") { dismiss() }
                         .foregroundColor(timeContext.primaryColor)
                 }
-                
+
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
                     Button("Done") { focusedField = nil }
@@ -122,7 +122,7 @@ struct ProfileView: View {
             }
         }
     }
-    
+
     // MARK: - Authenticated Content
     private var authenticatedContent: some View {
         VStack(spacing: DesignSystem.Spacing.xl) {
@@ -134,16 +134,16 @@ struct ProfileView: View {
 
             // Account section
             accountSection
-            
+
             // Integrations section
             integrationsSection
 
             // Preferences section
             preferencesSection
-            
+
             // Subscription section
             subscriptionSection
-            
+
             // Save button (shown when any field changed)
             if hasProfileChanges {
                 Button {
@@ -179,7 +179,7 @@ struct ProfileView: View {
             Task { await loadProfileStats() }
         }
     }
-    
+
     // MARK: - Profile Header
     private var profileHeader: some View {
         VStack(spacing: DesignSystem.Spacing.md) {
@@ -188,12 +188,12 @@ struct ProfileView: View {
                 Circle()
                     .fill(timeContext.primaryColor.opacity(0.15))
                     .frame(width: 80, height: 80)
-                
+
                 Text(avatarInitials)
                     .font(.system(size: 32, weight: .semibold))
                     .foregroundColor(timeContext.primaryColor)
             }
-            
+
             // Name & Email
             VStack(spacing: 4) {
                 if let userName = supabase.currentUser?.name, !userName.isEmpty {
@@ -201,7 +201,7 @@ struct ProfileView: View {
                         .font(DesignSystem.Typography.headlineMedium)
                         .foregroundColor(DesignSystem.Colors.primaryText)
                 }
-                
+
                 Text(supabase.currentUser?.email ?? "")
                     .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(DesignSystem.Colors.secondaryText)
@@ -210,14 +210,14 @@ struct ProfileView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, DesignSystem.Spacing.lg)
     }
-    
+
     private var avatarInitials: String {
         let name = supabase.currentUser?.name ?? supabase.currentUser?.email ?? ""
         let parts = name.components(separatedBy: CharacterSet.alphanumerics.inverted)
         let initials = parts.compactMap { $0.first }.prefix(2)
         return String(initials).uppercased()
     }
-    
+
     // MARK: - Account Section
     private var accountSection: some View {
         ProfileSection(title: "Account", icon: "person.fill") {
@@ -230,7 +230,7 @@ struct ProfileView: View {
                     focused: $focusedField,
                     field: .name
                 )
-                
+
                 // Name validation
                 if let nameError = nameValidationError {
                     Text(nameError)
@@ -246,7 +246,7 @@ struct ProfileView: View {
             }
         }
     }
-    
+
     private var hasProfileChanges: Bool {
         guard let user = supabase.currentUser else { return false }
         let tz = TimeZone(identifier: selectedTimezone) ?? .current
@@ -261,7 +261,7 @@ struct ProfileView: View {
         if name.count > 80 { return "Name must be 80 characters or less" }
         return nil
     }
-    
+
     // MARK: - Integrations Section
     private var integrationsSection: some View {
         ProfileSection(title: "Integrations", icon: "link") {
@@ -345,7 +345,7 @@ struct ProfileView: View {
                         .font(DesignSystem.Typography.caption)
                         .foregroundColor(DesignSystem.Colors.secondaryText)
                         .textCase(.uppercase)
-                    
+
                     LazyVGrid(columns: [
                         GridItem(.flexible()),
                         GridItem(.flexible()),
@@ -356,21 +356,21 @@ struct ProfileView: View {
                         }
                     }
                 }
-                
+
                 // Morning Reminder Time
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                     Text("Morning Reminder")
                         .font(DesignSystem.Typography.caption)
                         .foregroundColor(DesignSystem.Colors.secondaryText)
                         .textCase(.uppercase)
-                    
+
                     HStack {
                         Image(systemName: "sun.max.fill")
                             .foregroundColor(DesignSystem.Colors.eliteGold)
-                        
+
                         DatePicker("", selection: $reminderTime, displayedComponents: .hourAndMinute)
                             .labelsHidden()
-                        
+
                         Spacer()
                     }
                     .padding(DesignSystem.Spacing.md)
@@ -379,27 +379,27 @@ struct ProfileView: View {
                             .fill(DesignSystem.Colors.cardBackground)
                     )
                 }
-                
+
                 // Evening Reminder Time
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                     Text("Evening Reflection Time")
                         .font(DesignSystem.Typography.caption)
                         .foregroundColor(DesignSystem.Colors.secondaryText)
                         .textCase(.uppercase)
-                    
+
                     HStack {
                         Image(systemName: "moon.fill")
                             .foregroundColor(DesignSystem.Colors.championBlue)
-                        
+
                         DatePicker("", selection: $eveningReminderTime, displayedComponents: .hourAndMinute)
                             .labelsHidden()
                             .onChange(of: eveningReminderTime) { _, newValue in
                                 let hour = Calendar.current.component(.hour, from: newValue)
                                 UserDefaults.standard.set(hour, forKey: "eveningReminderHour")
                             }
-                        
+
                         Spacer()
-                        
+
                         Text("Available after")
                             .font(DesignSystem.Typography.caption)
                             .foregroundColor(DesignSystem.Colors.tertiaryText)
@@ -410,27 +410,27 @@ struct ProfileView: View {
                             .fill(DesignSystem.Colors.cardBackground)
                     )
                 }
-                
+
                 // Timezone
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                     Text("Timezone")
                         .font(DesignSystem.Typography.caption)
                         .foregroundColor(DesignSystem.Colors.secondaryText)
                         .textCase(.uppercase)
-                    
+
                     Button {
                         showingTimezoneSheet = true
                     } label: {
                         HStack {
                             Image(systemName: "globe")
                                 .foregroundColor(timeContext.primaryColor)
-                            
+
                             Text(formattedTimezone)
                                 .font(DesignSystem.Typography.bodyLargeSafe)
                                 .foregroundColor(DesignSystem.Colors.primaryText)
-                            
+
                             Spacer()
-                            
+
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(DesignSystem.Colors.tertiaryText)
@@ -446,10 +446,10 @@ struct ProfileView: View {
             }
         }
     }
-    
+
     private func sportButton(_ sport: (String, String, String)) -> some View {
         let isSelected = primarySport == sport.0
-        
+
         return Button {
             primarySport = sport.0
             hapticLight()
@@ -474,14 +474,14 @@ struct ProfileView: View {
         }
         .buttonStyle(.plain)
     }
-    
+
     private var formattedTimezone: String {
         let tz = TimeZone(identifier: selectedTimezone) ?? .current
         let abbr = tz.abbreviation() ?? ""
         let city = selectedTimezone.components(separatedBy: "/").last?.replacingOccurrences(of: "_", with: " ") ?? selectedTimezone
         return "\(city) (\(abbr))"
     }
-    
+
     // MARK: - Subscription Section
     private var subscriptionSection: some View {
         ProfileSection(title: "Subscription", icon: "star.fill") {
@@ -490,16 +490,16 @@ struct ProfileView: View {
                     Text(subscriptionDisplayName)
                         .font(DesignSystem.Typography.headlineSmall)
                         .foregroundColor(DesignSystem.Colors.primaryText)
-                    
+
                     if let expiry = supabase.currentUser?.subscriptionExpiresAt {
                         Text("Expires \(expiry, format: .dateTime.month().day().year())")
                             .font(DesignSystem.Typography.caption)
                             .foregroundColor(DesignSystem.Colors.secondaryText)
                     }
                 }
-                
+
                 Spacer()
-                
+
                 subscriptionBadge
             }
             .padding(DesignSystem.Spacing.md)
@@ -509,7 +509,7 @@ struct ProfileView: View {
             )
         }
     }
-    
+
     private var subscriptionDisplayName: String {
         switch supabase.currentUser?.subscriptionStatus {
         case "premium": return "Premium"
@@ -517,10 +517,10 @@ struct ProfileView: View {
         default: return "Free"
         }
     }
-    
+
     private var subscriptionBadge: some View {
         let isPremium = supabase.currentUser?.isPremium ?? false
-        
+
         return Text(isPremium ? "Active" : "Free")
             .font(DesignSystem.Typography.caption)
             .foregroundColor(isPremium ? DesignSystem.Colors.powerGreen : DesignSystem.Colors.secondaryText)
@@ -531,7 +531,7 @@ struct ProfileView: View {
                     .fill(isPremium ? DesignSystem.Colors.powerGreen.opacity(0.15) : DesignSystem.Colors.secondaryBackground)
             )
     }
-    
+
     // MARK: - Actions Section
     private var actionsSection: some View {
         VStack(spacing: DesignSystem.Spacing.md) {
@@ -557,7 +557,7 @@ struct ProfileView: View {
                 )
             }
             .buttonStyle(.plain)
-            
+
             // Sign Out
             Button {
                 Task {
@@ -580,7 +580,7 @@ struct ProfileView: View {
             }
         }
     }
-    
+
     // MARK: - Sign In Content
     private var signInContent: some View {
         VStack(spacing: DesignSystem.Spacing.xl) {
@@ -589,12 +589,12 @@ struct ProfileView: View {
                 Image(systemName: "person.crop.circle.badge.plus")
                     .font(.system(size: 64))
                     .foregroundColor(timeContext.primaryColor.opacity(0.6))
-                
+
                 VStack(spacing: 4) {
                     Text("Sign In")
                         .font(DesignSystem.Typography.headlineLarge)
                         .foregroundColor(DesignSystem.Colors.primaryText)
-                    
+
                     Text("Sign in to sync your data across devices")
                         .font(DesignSystem.Typography.bodyMedium)
                         .foregroundColor(DesignSystem.Colors.secondaryText)
@@ -602,7 +602,7 @@ struct ProfileView: View {
                 }
             }
             .padding(.vertical, DesignSystem.Spacing.xl)
-            
+
             // Email/Password form
             VStack(spacing: DesignSystem.Spacing.md) {
                 ProfileTextField(
@@ -614,7 +614,7 @@ struct ProfileView: View {
                     keyboardType: .emailAddress,
                     textContentType: .emailAddress
                 )
-                
+
                 ProfileSecureField(
                     label: "Password",
                     placeholder: "••••••••",
@@ -622,14 +622,14 @@ struct ProfileView: View {
                     focused: $focusedField,
                     field: .password
                 )
-                
+
                 if let error = authError {
                     Text(error)
                         .font(DesignSystem.Typography.caption)
                         .foregroundColor(DesignSystem.Colors.alertRed)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                
+
                 // Sign In button
                 Button {
                     Task { await signIn() }
@@ -654,7 +654,7 @@ struct ProfileView: View {
                 .disabled(isSigningIn || email.isEmpty || password.isEmpty)
                 .opacity((email.isEmpty || password.isEmpty) ? 0.6 : 1)
             }
-            
+
             // Divider
             HStack {
                 Rectangle()
@@ -667,7 +667,7 @@ struct ProfileView: View {
                     .fill(DesignSystem.Colors.divider)
                     .frame(height: 1)
             }
-            
+
             // Social buttons
             VStack(spacing: DesignSystem.Spacing.md) {
                 SocialSignInButton(
@@ -675,7 +675,7 @@ struct ProfileView: View {
                     icon: "apple.logo",
                     action: { Task { try? await supabase.signInWithAppleOAuth() } }
                 )
-                
+
                 SocialSignInButton(
                     provider: "Google",
                     icon: "g.circle.fill",
@@ -684,12 +684,12 @@ struct ProfileView: View {
             }
         }
     }
-    
+
     // MARK: - Save Success Toast
     private var saveSuccessToast: some View {
         VStack {
             Spacer()
-            
+
             HStack(spacing: DesignSystem.Spacing.sm) {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundColor(DesignSystem.Colors.powerGreen)
@@ -709,7 +709,7 @@ struct ProfileView: View {
         .transition(.move(edge: .bottom).combined(with: .opacity))
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: showSaveSuccess)
     }
-    
+
     // MARK: - Stats Section
     private var profileStatsSection: some View {
         ProfileSection(title: "Your Stats", icon: "chart.bar.fill") {
@@ -758,28 +758,26 @@ struct ProfileView: View {
 
     private func statItem(icon: String, value: Int?, label: String, subtitle: String?, color: Color, isLoading: Bool) -> some View {
         VStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(color)
-
             if isLoading {
-                ProgressView()
-                    .scaleEffect(0.7)
-                    .frame(height: 28)
+                SkeletonStatItem()
             } else {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                    .foregroundColor(color)
+
                 Text("\(value ?? 0)")
                     .font(DesignSystem.Typography.displaySmallSafe)
                     .foregroundColor(DesignSystem.Colors.primaryText)
-            }
 
-            Text(label)
-                .font(DesignSystem.Typography.caption)
-                .foregroundColor(DesignSystem.Colors.secondaryText)
-
-            if let subtitle = subtitle {
-                Text(subtitle)
+                Text(label)
                     .font(DesignSystem.Typography.caption)
-                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+                    .foregroundColor(DesignSystem.Colors.secondaryText)
+
+                if let subtitle = subtitle {
+                    Text(subtitle)
+                        .font(DesignSystem.Typography.caption)
+                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                }
             }
         }
         .frame(maxWidth: .infinity)
@@ -814,11 +812,11 @@ struct ProfileView: View {
         name = user.name ?? ""
         primarySport = user.primarySport ?? ""
         selectedTimezone = user.timezone
-        
+
         if let date = supabase.date(fromTimeString: user.morningReminderTime, in: TimeZone(identifier: user.timezone) ?? .current) {
             reminderTime = date
         }
-        
+
         // Load evening reminder time from UserDefaults
         let savedHour = UserDefaults.standard.integer(forKey: "eveningReminderHour")
         let hour = savedHour > 0 ? savedHour : 17 // Default 5 PM
@@ -826,36 +824,36 @@ struct ProfileView: View {
             eveningReminderTime = date
         }
     }
-    
+
     private func signIn() async {
         focusedField = nil
         isSigningIn = true
         authError = nil
-        
+
         do {
             try await supabase.signIn(email: email, password: password)
         } catch {
             authError = "Invalid email or password"
         }
-        
+
         isSigningIn = false
     }
-    
+
     private func saveProfile() async {
         focusedField = nil
         isSaving = true
         saveError = nil
-        
+
         do {
             let tz = TimeZone(identifier: selectedTimezone) ?? .current
             let timeStr = supabase.timeString(from: reminderTime, in: tz)
-            
+
             var updates: [String: Any] = [:]
             if !name.isEmpty { updates["name"] = name }
             if !primarySport.isEmpty { updates["primary_sport"] = primarySport }
             updates["morning_reminder_time"] = timeStr
             updates["timezone"] = selectedTimezone
-            
+
             _ = try await supabase.updateProfile(updates)
 
             // Reschedule notifications with updated times
@@ -869,7 +867,7 @@ struct ProfileView: View {
                 showSaveSuccess = true
             }
             hapticSuccess()
-            
+
             // Hide after delay
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                 withAnimation {
@@ -880,23 +878,23 @@ struct ProfileView: View {
             saveError = "Failed to save. Please try again."
             hapticError()
         }
-        
+
         isSaving = false
     }
-    
+
     // MARK: - Haptics
     private func hapticLight() {
         #if canImport(UIKit)
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         #endif
     }
-    
+
     private func hapticSuccess() {
         #if canImport(UIKit)
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         #endif
     }
-    
+
     private func hapticError() {
         #if canImport(UIKit)
         UINotificationFeedbackGenerator().notificationOccurred(.error)
@@ -909,20 +907,20 @@ struct ProfileSection<Content: View>: View {
     let title: String
     let icon: String
     @ViewBuilder let content: Content
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             HStack(spacing: DesignSystem.Spacing.sm) {
                 Image(systemName: icon)
                     .font(.system(size: 14))
                     .foregroundColor(DesignSystem.Colors.secondaryText)
-                
+
                 Text(title)
                     .font(DesignSystem.Typography.caption)
                     .foregroundColor(DesignSystem.Colors.secondaryText)
                     .textCase(.uppercase)
             }
-            
+
             content
         }
     }
@@ -937,14 +935,14 @@ struct ProfileTextField: View {
     let field: ProfileView.ProfileField
     var keyboardType: UIKeyboardType = .default
     var textContentType: UITextContentType? = nil
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
                 .font(DesignSystem.Typography.caption)
                 .foregroundColor(DesignSystem.Colors.secondaryText)
                 .textCase(.uppercase)
-            
+
             TextField(placeholder, text: $text)
                 .font(DesignSystem.Typography.bodyLargeSafe)
                 .foregroundColor(DesignSystem.Colors.primaryText)
@@ -976,14 +974,14 @@ struct ProfileSecureField: View {
     @Binding var text: String
     var focused: FocusState<ProfileView.ProfileField?>.Binding
     let field: ProfileView.ProfileField
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
                 .font(DesignSystem.Typography.caption)
                 .foregroundColor(DesignSystem.Colors.secondaryText)
                 .textCase(.uppercase)
-            
+
             SecureField(placeholder, text: $text)
                 .font(DesignSystem.Typography.bodyLargeSafe)
                 .foregroundColor(DesignSystem.Colors.primaryText)
@@ -1010,7 +1008,7 @@ struct SocialSignInButton: View {
     let provider: String
     let icon: String
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: DesignSystem.Spacing.md) {
@@ -1043,4 +1041,3 @@ struct SocialSignInButton: View {
 #Preview("Sign In") {
     ProfileView()
 }
-

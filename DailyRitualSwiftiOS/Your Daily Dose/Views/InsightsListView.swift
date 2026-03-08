@@ -177,27 +177,18 @@ struct InsightsListView: View {
 
                 // List of insights
                 if viewModel.insights.isEmpty && viewModel.isLoading {
-                    LoadingCard(message: "Loading your insights...", progress: nil, cancelAction: nil, useMaterialBackground: false)
-                        .padding(.top, DesignSystem.Spacing.xxxl)
-                } else if viewModel.insights.isEmpty && !viewModel.isLoading {
-                    VStack(spacing: DesignSystem.Spacing.lg) {
-                        Image(systemName: "brain.head.profile")
-                            .font(.system(size: 60))
-                            .foregroundColor(timeContext.primaryColor.opacity(0.6))
-
-                        VStack(spacing: DesignSystem.Spacing.sm) {
-                            Text("No Insights Yet")
-                                .font(DesignSystem.Typography.headlineMedium)
-                                .foregroundColor(DesignSystem.Colors.primaryText)
-
-                            Text("Complete your morning and evening rituals to generate insights.")
-                                .font(DesignSystem.Typography.bodyMedium)
-                                .foregroundColor(DesignSystem.Colors.secondaryText)
-                                .multilineTextAlignment(.center)
+                    VStack(spacing: DesignSystem.Spacing.md) {
+                        ForEach(0..<3, id: \.self) { _ in
+                            SkeletonInsightCard()
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, DesignSystem.Spacing.xxl)
+                    .padding(.top, DesignSystem.Spacing.sm)
+                } else if viewModel.insights.isEmpty && !viewModel.isLoading {
+                    InsightsEmptyStateView(
+                        timeContext: timeContext,
+                        entriesCompleted: 0,
+                        entriesNeeded: 3
+                    )
                 } else {
                     ScrollView {
                         LazyVStack(spacing: DesignSystem.Spacing.md) {

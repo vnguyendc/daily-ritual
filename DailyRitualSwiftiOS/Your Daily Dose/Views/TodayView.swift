@@ -14,7 +14,10 @@ import UIKit
 struct TodayView: View {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var viewModel = TodayViewModel()
-    
+
+    // First-time user welcome card
+    @AppStorage("hasSeenWelcomeCard") private var hasSeenWelcomeCard: Bool = false
+
     // Sheet presentation state
     @State private var showingMorningRitual = false
     @State private var showingEveningReflection = false
@@ -25,14 +28,14 @@ struct TodayView: View {
     @State private var showingAddActivity = false
     @State private var showingStreakHistory = false
     @State private var showingSleepDetail = false
-    
+
     // Selection state
     @State private var selectedDate: Date = Date()
     @State private var currentDay: Date = Calendar.current.startOfDay(for: Date())
     @State private var completedGoals: Set<Int> = []
     @State private var selectedTrainingPlan: TrainingPlan?
     @State private var trainingPlanToEdit: TrainingPlan?
-    
+
     // Workout reflection
     @State private var workoutReflectionPlan: TrainingPlan?
     @State private var healthKitWorkoutData: PartialWorkoutData?
@@ -48,11 +51,11 @@ struct TodayView: View {
     private let plansService: TrainingPlansServiceProtocol = TrainingPlansService()
     private let journalService: JournalEntriesServiceProtocol = JournalEntriesService()
     private let mealsService: MealsServiceProtocol = MealsService()
-    
+
     private var timeContext: DesignSystem.TimeContext {
         DesignSystem.TimeContext.current()
     }
-    
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -62,7 +65,7 @@ struct TodayView: View {
                             selectedDate: selectedDate,
                             onProfileTap: { showingProfile = true }
                         )
-                        
+
                         weekDayStripView
 
                         // Streak widget
@@ -110,7 +113,7 @@ struct TodayView: View {
 
                         loadingView
                         mainContentView
-                        
+
                         Spacer(minLength: DesignSystem.Spacing.xxxl)
                     }
                     .padding(.top, DesignSystem.Spacing.xxl)
@@ -230,26 +233,30 @@ extension TodayView {
                 }
             }
     }
-    
+
     @ViewBuilder
     private var loadingView: some View {
         if viewModel.isLoading {
             VStack(spacing: DesignSystem.Spacing.md) {
-                ProgressView()
-                    .scaleEffect(1.0)
-                    .tint(timeContext.primaryColor)
-                Text("Loading your daily ritual...")
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .foregroundColor(DesignSystem.Colors.secondaryText)
+                ForEach(0..<3, id: \.self) { _ in
+                    SkeletonTodayCard()
+                }
             }
-            .frame(maxWidth: .infinity)
-            .padding(.top, DesignSystem.Spacing.xl)
+            .padding(.top, DesignSystem.Spacing.sm)
         }
     }
-    
+
     @ViewBuilder
     private var mainContentView: some View {
         if !viewModel.isLoading {
+            // First-time user welcome card
+            if !hasSeenWelcomeCard {
+                WelcomeRitualCard(timeContext: timeContext) {
+                    hasSeenWelcomeCard = true
+                    showingMorningRitual = true
+                }
+            }
+
             // Incomplete rituals at top
             if !viewModel.entry.isMorningComplete {
                 IncompleteMorningCard(
@@ -257,14 +264,14 @@ extension TodayView {
                     onTap: { showingMorningRitual = true }
                 )
             }
-            
+
             if viewModel.shouldShowEvening && !viewModel.entry.isEveningComplete {
                 IncompleteEveningCard(
                     completedSteps: viewModel.entry.completedEveningSteps,
                     onTap: { showingEveningReflection = true }
                 )
             }
-            
+
             // Goals card
             if let goals = viewModel.entry.goals, !goals.isEmpty {
                 GoalsCardView(
@@ -274,7 +281,7 @@ extension TodayView {
                     completedGoals: $completedGoals
                 )
             }
-            
+
             // Training plans
             TrainingPlansSummary(
                 plans: viewModel.sortedTrainingPlans,
@@ -287,14 +294,20 @@ extension TodayView {
                     showingWorkoutReflection = true
                 }
             )
-            
+
             // Nutrition summary (visible when meals have been logged)
-            if let summary = nutritionSummary, summary.mealCount > 0 {
-                NutritionSummaryCard(
-                    summary: summary,
-                    timeContext: timeContext,
-                    onTap: { showingMealLog = true }
-                )
+            if let summary = nutritionSummary {
+                if summary.mealCount > 0 {
+                    NutritionSummaryCard(
+                        summary: summary,
+                        timeContext: timeContext,
+                        onTap: { showingMealLog = true }
+                    )
+                } else {
+                    MealsEmptyStateView(timeContext: timeContext) {
+                        showingMealLog = true
+                    }
+                }
             }
 
             // Quick entries
@@ -303,16 +316,16 @@ extension TodayView {
                 timeContext: timeContext,
                 onEntryTap: { selectedJournalEntry = $0 }
             )
-            
+
             // Completed rituals at bottom
             if viewModel.entry.isMorningComplete {
                 CompletedRitualCard(type: .morning, onTap: { showingMorningRitual = true })
             }
-            
+
             if viewModel.entry.isEveningComplete {
                 CompletedRitualCard(type: .evening, onTap: { showingEveningReflection = true })
             }
-            
+
             // Celebration card
             if viewModel.entry.isFullyComplete {
                 CelebrationCard(timeContext: timeContext)
@@ -345,7 +358,7 @@ extension TodayView {
             }
         }
     }
-    
+
     @ViewBuilder
     private func trainingPlanDetailSheet(for plan: TrainingPlan) -> some View {
         TrainingPlanDetailSheet(
@@ -365,7 +378,7 @@ extension TodayView {
             }
         )
     }
-    
+
     @ViewBuilder
     private func journalEntryDetailSheet(for entry: JournalEntry) -> some View {
         JournalEntryDetailView(
@@ -408,7 +421,7 @@ extension TodayView {
             await StreaksService.shared.fetchStreaks(force: true)
         }
     }
-    
+
     private func handlePotentialDayChange() {
         let calendar = Calendar.current
         let newDay = calendar.startOfDay(for: Date())
@@ -421,21 +434,21 @@ extension TodayView {
             completedGoals = loadCompletedGoals(for: newDay)
         }
     }
-    
+
     private func loadCompletedGoals(for date: Date) -> Set<Int> {
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
         let dateString = df.string(from: date)
         return LocalStore.getCompletedGoals(for: dateString)
     }
-    
+
     private func loadJournalEntries() async {
         do {
             let result = try await journalService.fetchEntries(page: 1, limit: 50)
             let calendar = Calendar.current
             let startOfDay = calendar.startOfDay(for: selectedDate)
             let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? startOfDay
-            
+
             journalEntries = result.entries.filter { entry in
                 entry.createdAt >= startOfDay && entry.createdAt < endOfDay
             }
@@ -443,7 +456,7 @@ extension TodayView {
             print("Failed to load journal entries:", error)
         }
     }
-    
+
     private var todayJournalEntries: [JournalEntry] {
         journalEntries
     }
