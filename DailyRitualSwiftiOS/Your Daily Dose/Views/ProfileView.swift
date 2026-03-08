@@ -30,6 +30,7 @@ struct ProfileView: View {
     @State private var selectedTimezone = TimeZone.current.identifier
     
     // UI state
+    @State private var errorShakeAmount: CGFloat = 0
     @State private var isSaving = false
     @State private var saveError: String?
     @State private var showSaveSuccess = false
@@ -64,11 +65,20 @@ struct ProfileView: View {
                 VStack(spacing: DesignSystem.Spacing.xl) {
                     if supabase.isAuthenticated {
                         authenticatedContent
+                            .transition(.asymmetric(
+                                insertion: .move(edge: .trailing).combined(with: .opacity),
+                                removal: .move(edge: .leading).combined(with: .opacity)
+                            ))
                     } else {
                         signInContent
+                            .transition(.asymmetric(
+                                insertion: .move(edge: .leading).combined(with: .opacity),
+                                removal: .move(edge: .trailing).combined(with: .opacity)
+                            ))
                     }
                 }
                 .padding(DesignSystem.Spacing.lg)
+                .animation(.spring(response: 0.5, dampingFraction: 0.85), value: supabase.isAuthenticated)
             }
             .background(DesignSystem.Colors.background)
             .scrollDismissesKeyboard(.interactively)
@@ -584,77 +594,128 @@ struct ProfileView: View {
     // MARK: - Sign In Content
     private var signInContent: some View {
         VStack(spacing: DesignSystem.Spacing.xl) {
-            // Header
+            // Logo Header
             VStack(spacing: DesignSystem.Spacing.md) {
-                Image(systemName: "person.crop.circle.badge.plus")
-                    .font(.system(size: 64))
-                    .foregroundColor(timeContext.primaryColor.opacity(0.6))
-                
-                VStack(spacing: 4) {
-                    Text("Sign In")
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    DesignSystem.Colors.eliteGold.opacity(0.25),
+                                    timeContext.primaryColor.opacity(0.15)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 120, height: 120)
+
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 60))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [DesignSystem.Colors.eliteGold, timeContext.primaryColor],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .shadow(color: DesignSystem.Colors.eliteGold.opacity(0.4), radius: 16, y: 6)
+                }
+
+                VStack(spacing: 6) {
+                    Text("Daily Ritual")
                         .font(DesignSystem.Typography.headlineLarge)
                         .foregroundColor(DesignSystem.Colors.primaryText)
-                    
-                    Text("Sign in to sync your data across devices")
+
+                    Text("Your daily athletic ritual")
                         .font(DesignSystem.Typography.bodyMedium)
                         .foregroundColor(DesignSystem.Colors.secondaryText)
                         .multilineTextAlignment(.center)
                 }
             }
-            .padding(.vertical, DesignSystem.Spacing.xl)
-            
+            .padding(.top, DesignSystem.Spacing.lg)
+
             // Email/Password form
             VStack(spacing: DesignSystem.Spacing.md) {
-                ProfileTextField(
-                    label: "Email",
-                    placeholder: "you@example.com",
+                AuthIconTextField(
+                    icon: "envelope.fill",
+                    placeholder: "Email",
                     text: $email,
                     focused: $focusedField,
                     field: .email,
                     keyboardType: .emailAddress,
                     textContentType: .emailAddress
                 )
-                
-                ProfileSecureField(
-                    label: "Password",
-                    placeholder: "••••••••",
+
+                AuthIconSecureField(
+                    icon: "lock.fill",
+                    placeholder: "Password",
                     text: $password,
                     focused: $focusedField,
                     field: .password
                 )
-                
-                if let error = authError {
-                    Text(error)
+
+                // Forgot password
+                HStack {
+                    Spacer()
+                    Button("Forgot password?") { }
                         .font(DesignSystem.Typography.caption)
-                        .foregroundColor(DesignSystem.Colors.alertRed)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .foregroundColor(timeContext.primaryColor)
                 }
-                
+
+                // Animated error banner
+                if let error = authError {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .foregroundColor(DesignSystem.Colors.alertRed)
+                        Text(error)
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(DesignSystem.Colors.alertRed)
+                        Spacer()
+                    }
+                    .padding(DesignSystem.Spacing.md)
+                    .background(
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                            .fill(DesignSystem.Colors.alertRed.opacity(0.1))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                                    .stroke(DesignSystem.Colors.alertRed.opacity(0.3), lineWidth: 1)
+                            )
+                    )
+                    .offset(x: errorShakeAmount)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .top).combined(with: .opacity),
+                        removal: .opacity
+                    ))
+                }
+
                 // Sign In button
                 Button {
                     Task { await signIn() }
                 } label: {
-                    HStack(spacing: DesignSystem.Spacing.sm) {
+                    Group {
                         if isSigningIn {
                             ProgressView()
-                                .scaleEffect(0.8)
+                                .scaleEffect(0.9)
                                 .tint(DesignSystem.Colors.invertedText)
+                        } else {
+                            Text("Sign In")
+                                .font(DesignSystem.Typography.buttonMedium)
                         }
-                        Text(isSigningIn ? "Signing In..." : "Sign In")
                     }
-                    .font(DesignSystem.Typography.buttonMedium)
                     .foregroundColor(DesignSystem.Colors.invertedText)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, DesignSystem.Spacing.md)
+                    .frame(height: 52)
                     .background(
                         RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
-                            .fill(timeContext.primaryColor)
+                            .fill(timeContext.primaryColor.opacity(
+                                (email.isEmpty || password.isEmpty) ? 0.5 : 1.0
+                            ))
                     )
                 }
                 .disabled(isSigningIn || email.isEmpty || password.isEmpty)
-                .opacity((email.isEmpty || password.isEmpty) ? 0.6 : 1)
             }
-            
+
             // Divider
             HStack {
                 Rectangle()
@@ -663,11 +724,12 @@ struct ProfileView: View {
                 Text("or continue with")
                     .font(DesignSystem.Typography.caption)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
+                    .fixedSize()
                 Rectangle()
                     .fill(DesignSystem.Colors.divider)
                     .frame(height: 1)
             }
-            
+
             // Social buttons
             VStack(spacing: DesignSystem.Spacing.md) {
                 SocialSignInButton(
@@ -675,7 +737,7 @@ struct ProfileView: View {
                     icon: "apple.logo",
                     action: { Task { try? await supabase.signInWithAppleOAuth() } }
                 )
-                
+
                 SocialSignInButton(
                     provider: "Google",
                     icon: "g.circle.fill",
@@ -831,13 +893,27 @@ struct ProfileView: View {
         focusedField = nil
         isSigningIn = true
         authError = nil
-        
+
         do {
             try await supabase.signIn(email: email, password: password)
         } catch {
-            authError = "Invalid email or password"
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.5)) {
+                authError = "Invalid email or password"
+            }
+            // Shake animation sequence
+            withAnimation(.spring(response: 0.1, dampingFraction: 0.3)) { errorShakeAmount = 10 }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.spring(response: 0.1, dampingFraction: 0.3)) { self.errorShakeAmount = -10 }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                withAnimation(.spring(response: 0.1, dampingFraction: 0.3)) { self.errorShakeAmount = 6 }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) { self.errorShakeAmount = 0 }
+            }
+            hapticError()
         }
-        
+
         isSigningIn = false
     }
     
@@ -1005,30 +1081,123 @@ struct ProfileSecureField: View {
     }
 }
 
+// MARK: - Auth Icon Text Field
+struct AuthIconTextField: View {
+    let icon: String
+    let placeholder: String
+    @Binding var text: String
+    var focused: FocusState<ProfileView.ProfileField?>.Binding
+    let field: ProfileView.ProfileField
+    var keyboardType: UIKeyboardType = .default
+    var textContentType: UITextContentType? = nil
+
+    private var isFocused: Bool { focused.wrappedValue == field }
+    private var accentColor: Color { DesignSystem.TimeContext.current().primaryColor }
+
+    var body: some View {
+        HStack(spacing: DesignSystem.Spacing.sm) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(isFocused ? accentColor : DesignSystem.Colors.tertiaryText)
+                .frame(width: 24)
+                .animation(.easeInOut(duration: 0.2), value: isFocused)
+
+            TextField(placeholder, text: $text)
+                .font(DesignSystem.Typography.bodyLargeSafe)
+                .foregroundColor(DesignSystem.Colors.primaryText)
+                .keyboardType(keyboardType)
+                .textContentType(textContentType)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .focused(focused, equals: field)
+        }
+        .padding(DesignSystem.Spacing.md)
+        .background(
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                .fill(DesignSystem.Colors.cardBackground)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                .stroke(
+                    isFocused ? accentColor : DesignSystem.Colors.border,
+                    lineWidth: isFocused ? 2 : 1
+                )
+                .animation(.easeInOut(duration: 0.2), value: isFocused)
+        )
+    }
+}
+
+// MARK: - Auth Icon Secure Field
+struct AuthIconSecureField: View {
+    let icon: String
+    let placeholder: String
+    @Binding var text: String
+    var focused: FocusState<ProfileView.ProfileField?>.Binding
+    let field: ProfileView.ProfileField
+
+    private var isFocused: Bool { focused.wrappedValue == field }
+    private var accentColor: Color { DesignSystem.TimeContext.current().primaryColor }
+
+    var body: some View {
+        HStack(spacing: DesignSystem.Spacing.sm) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(isFocused ? accentColor : DesignSystem.Colors.tertiaryText)
+                .frame(width: 24)
+                .animation(.easeInOut(duration: 0.2), value: isFocused)
+
+            SecureField(placeholder, text: $text)
+                .font(DesignSystem.Typography.bodyLargeSafe)
+                .foregroundColor(DesignSystem.Colors.primaryText)
+                .textContentType(.password)
+                .focused(focused, equals: field)
+        }
+        .padding(DesignSystem.Spacing.md)
+        .background(
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                .fill(DesignSystem.Colors.cardBackground)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                .stroke(
+                    isFocused ? accentColor : DesignSystem.Colors.border,
+                    lineWidth: isFocused ? 2 : 1
+                )
+                .animation(.easeInOut(duration: 0.2), value: isFocused)
+        )
+    }
+}
+
 // MARK: - Social Sign In Button
 struct SocialSignInButton: View {
     let provider: String
     let icon: String
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: DesignSystem.Spacing.md) {
                 Image(systemName: icon)
-                    .font(.system(size: 20))
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+                    .frame(width: 28)
+
                 Text("Continue with \(provider)")
                     .font(DesignSystem.Typography.buttonMedium)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+
+                Spacer()
             }
-            .foregroundColor(DesignSystem.Colors.primaryText)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, DesignSystem.Spacing.md)
+            .frame(height: 52)
+            .padding(.horizontal, DesignSystem.Spacing.md)
             .background(
                 RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
                     .fill(DesignSystem.Colors.cardBackground)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
-                    .stroke(DesignSystem.Colors.border, lineWidth: 1)
+                    .stroke(DesignSystem.Colors.border, lineWidth: 1.5)
             )
         }
         .buttonStyle(.plain)

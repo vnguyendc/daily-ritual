@@ -27,6 +27,11 @@ struct OnboardingFlowView: View {
                 }
             )
 
+            // Hero illustration
+            OnboardingHeroView(step: coordinator.state.currentStep)
+                .padding(.top, DesignSystem.Spacing.sm)
+                .animation(.spring(response: 0.45, dampingFraction: 0.82), value: coordinator.state.currentStep)
+
             // Step Content
             TabView(selection: Binding(
                 get: { coordinator.state.currentStep },
@@ -38,7 +43,7 @@ struct OnboardingFlowView: View {
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
-            .animation(DesignSystem.Animation.standard, value: coordinator.state.currentStep)
+            .animation(.spring(response: 0.45, dampingFraction: 0.82), value: coordinator.state.currentStep)
 
             // Footer with action button
             OnboardingFooter(
@@ -92,6 +97,57 @@ struct OnboardingFlowView: View {
     }
 }
 
+// MARK: - Onboarding Hero View
+struct OnboardingHeroView: View {
+    let step: OnboardingStep
+
+    var heroIcon: String {
+        switch step {
+        case .personalInfo: return "person.fill"
+        case .sports: return "figure.run"
+        case .journalHistory: return "book.fill"
+        case .reflectionReason: return "heart.fill"
+        case .goal: return "trophy.fill"
+        case .reminderTimes: return "bell.badge.fill"
+        case .tutorial: return "lightbulb.fill"
+        case .completion: return "checkmark.circle.fill"
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            DesignSystem.Colors.eliteGold.opacity(0.12),
+                            DesignSystem.Colors.championBlue.opacity(0.08)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            Image(systemName: heroIcon)
+                .font(.system(size: 72, weight: .ultraLight))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [DesignSystem.Colors.eliteGold, DesignSystem.Colors.championBlue],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .id(step)
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .scale(scale: 0.85)),
+                    removal: .opacity.combined(with: .scale(scale: 1.1))
+                ))
+        }
+        .frame(height: 140)
+        .padding(.horizontal, DesignSystem.Spacing.lg)
+    }
+}
+
 // MARK: - Onboarding Header
 struct OnboardingHeader: View {
     @ObservedObject var coordinator: OnboardingCoordinator
@@ -120,10 +176,19 @@ struct OnboardingHeader: View {
 
                 Spacer()
 
-                // Step indicator
-                Text("\(coordinator.currentStepIndex + 1) of \(coordinator.totalSteps)")
-                    .font(DesignSystem.Typography.caption)
-                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+                // Step indicator dots
+                HStack(spacing: 6) {
+                    ForEach(0..<coordinator.totalSteps, id: \.self) { index in
+                        Capsule()
+                            .fill(index < coordinator.currentStepIndex
+                                  ? DesignSystem.Colors.eliteGold
+                                  : index == coordinator.currentStepIndex
+                                    ? DesignSystem.Colors.primaryText
+                                    : DesignSystem.Colors.border)
+                            .frame(width: index == coordinator.currentStepIndex ? 20 : 8, height: 8)
+                    }
+                }
+                .animation(.spring(response: 0.35, dampingFraction: 0.75), value: coordinator.currentStepIndex)
 
                 Spacer()
 
