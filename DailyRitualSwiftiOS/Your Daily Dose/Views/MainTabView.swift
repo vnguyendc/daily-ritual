@@ -96,6 +96,9 @@ struct MainTabView: View {
                 }
         }
         .tint(timeContext.primaryColor)
+        .onChange(of: selectedTab) { _ in
+            HapticManager.selectionChanged()
+        }
         .onChange(of: notificationService.pendingAction) { action in
             guard let action = action else { return }
             // Switch to Today tab and let the notification action propagate

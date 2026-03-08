@@ -1120,4 +1120,52 @@ struct HapticFeedback {
     #endif
 }
 
+// MARK: - Haptic Manager
+
+/// Central haptic manager for consistent tactile feedback throughout the app.
+/// Provides semantic methods so call sites communicate intent, not implementation.
+struct HapticManager {
+    /// Light tap — for subtle acknowledgements (toggles, minor selections)
+    static func tap() {
+        #if canImport(UIKit)
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        #endif
+    }
+
+    /// Medium impact — for primary action buttons (Save, Submit, CTA)
+    static func button() {
+        #if canImport(UIKit)
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        #endif
+    }
+
+    /// Success notification — for completing a task or finishing a flow
+    static func success() {
+        #if canImport(UIKit)
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        #endif
+    }
+
+    /// Error notification — for validation failures or errors
+    static func error() {
+        #if canImport(UIKit)
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
+        #endif
+    }
+
+    /// Selection changed — for pickers, segmented controls, day strips, tab bars
+    static func selectionChanged() {
+        #if canImport(UIKit)
+        UISelectionFeedbackGenerator().selectionChanged()
+        #endif
+    }
+
+    /// Heavy impact — for milestone celebrations (7/30/100 day streaks)
+    static func milestone() {
+        #if canImport(UIKit)
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+        #endif
+    }
+}
+
 

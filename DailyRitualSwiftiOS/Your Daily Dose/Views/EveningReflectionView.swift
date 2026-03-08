@@ -7,9 +7,6 @@
 //
 
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
 
 struct EveningReflectionView: View {
     @Binding var entry: DailyEntry
@@ -73,6 +70,7 @@ struct EveningReflectionView: View {
                     Button {
                         if currentStep > 0 {
                             withAnimation { currentStep -= 1 }
+                            HapticManager.selectionChanged()
                         } else {
                             dismiss()
                         }
@@ -99,7 +97,9 @@ struct EveningReflectionView: View {
                     Button {
                         if currentStep < totalSteps - 1 {
                             withAnimation { currentStep += 1 }
+                            HapticManager.selectionChanged()
                         } else {
+                            HapticManager.button()
                             Task { await completeReflection() }
                         }
                     } label: {
@@ -196,6 +196,7 @@ struct EveningReflectionView: View {
                     celebrationType = .evening
                     celebrationStreakCount = StreaksService.shared.eveningStreak
                 }
+                HapticManager.success()
                 showingCelebration = true
             }
         } catch {
@@ -203,9 +204,7 @@ struct EveningReflectionView: View {
             await MainActor.run {
                 entry.eveningCompletedAt = Date()
                 isSaving = false
-                #if canImport(UIKit)
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
-                #endif
+                HapticManager.success()
                 showingCompletion = true
             }
         }
@@ -506,9 +505,7 @@ struct CleanMoodStepView: View {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             mood = value
                         }
-                        #if canImport(UIKit)
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        #endif
+                        HapticManager.selectionChanged()
                     } label: {
                         Text(moodEmojis[value - 1])
                             .font(.system(size: 28))

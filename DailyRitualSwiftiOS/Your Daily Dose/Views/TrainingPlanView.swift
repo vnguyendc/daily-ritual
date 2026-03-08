@@ -7,9 +7,6 @@
 //
 
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
 
 struct TrainingPlanView: View {
     @State private var selectedDate: Date = Calendar.current.startOfDay(for: Date())
@@ -26,7 +23,7 @@ struct TrainingPlanView: View {
                 TrainingWeekView(selectedDate: $selectedDate) { date in
                     dayDetailDate = date
                     showDayDetail = true
-                    hapticLight()
+                    HapticManager.tap()
                 }
             }
             .navigationTitle("Training")
@@ -37,7 +34,7 @@ struct TrainingPlanView: View {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             selectedDate = Date()
                         }
-                        hapticLight()
+                        HapticManager.tap()
                     } label: {
                         Text("Today")
                             .font(DesignSystem.Typography.buttonSmall)
@@ -51,12 +48,6 @@ struct TrainingPlanView: View {
         }
     }
     
-    // MARK: - Haptics
-    private func hapticLight() {
-        #if canImport(UIKit)
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        #endif
-    }
 }
 
 // MARK: - Day Detail Sheet
@@ -138,7 +129,7 @@ struct DayDetailSheet: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         showingAddForm = true
-                        hapticLight()
+                        HapticManager.tap()
                     } label: {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 22))
@@ -172,7 +163,7 @@ struct DayDetailSheet: View {
                         Task {
                             try? await plansService.remove(plan.id)
                             await load()
-                            hapticSuccess()
+                            HapticManager.success()
                         }
                     }
                 }
@@ -255,7 +246,7 @@ struct DayDetailSheet: View {
             
             Button {
                 showingAddForm = true
-                hapticLight()
+                HapticManager.tap()
             } label: {
                 HStack(spacing: DesignSystem.Spacing.sm) {
                     Image(systemName: "plus")
@@ -283,12 +274,12 @@ struct DayDetailSheet: View {
                     timeContext: timeContext,
                     onEdit: {
                         editingPlan = plan
-                        hapticLight()
+                        HapticManager.tap()
                     },
                     onDelete: {
                         planToDelete = plan
                         showDeleteConfirmation = true
-                        hapticWarning()
+                        HapticManager.error()
                     }
                 )
             }
@@ -296,7 +287,7 @@ struct DayDetailSheet: View {
             // Add another button
             Button {
                 showingAddForm = true
-                hapticLight()
+                HapticManager.tap()
             } label: {
                 HStack(spacing: DesignSystem.Spacing.sm) {
                     Image(systemName: "plus.circle")
@@ -347,24 +338,6 @@ struct DayDetailSheet: View {
         }
     }
     
-    // MARK: - Haptics
-    private func hapticLight() {
-        #if canImport(UIKit)
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        #endif
-    }
-    
-    private func hapticSuccess() {
-        #if canImport(UIKit)
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
-        #endif
-    }
-    
-    private func hapticWarning() {
-        #if canImport(UIKit)
-        UINotificationFeedbackGenerator().notificationOccurred(.warning)
-        #endif
-    }
 }
 
 // MARK: - Day Plan Card
@@ -481,6 +454,7 @@ struct DayPlanCard: View {
                             if value.translation.width < -70 {
                                 offset = -140
                                 showActions = true
+                                HapticManager.tap()
                             } else {
                                 offset = 0
                                 showActions = false

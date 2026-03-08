@@ -7,9 +7,6 @@
 //
 
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
 
 struct MorningRitualView: View {
     @Binding var entry: DailyEntry
@@ -73,6 +70,7 @@ struct MorningRitualView: View {
                     Button {
                         if currentStep > 0 {
                             withAnimation { currentStep -= 1 }
+                            HapticManager.selectionChanged()
                         } else {
                             dismiss()
                         }
@@ -99,7 +97,9 @@ struct MorningRitualView: View {
                     Button {
                         if currentStep < totalSteps - 1 {
                             withAnimation { currentStep += 1 }
+                            HapticManager.selectionChanged()
                         } else {
+                            HapticManager.button()
                             completeRitual()
                         }
                     } label: {
@@ -205,6 +205,7 @@ struct MorningRitualView: View {
                 // Fetch updated streaks and show celebration
                 await StreaksService.shared.fetchStreaks(force: true)
                 celebrationStreakCount = StreaksService.shared.morningStreak
+                HapticManager.success()
                 showingCelebration = true
             } catch {
                 print("completeMorning() failed:", error.localizedDescription)
@@ -492,9 +493,7 @@ struct CleanAffirmationStepView: View {
                 if let suggestion = suggestedText, (affirmation?.isEmpty ?? true) {
                     Button {
                         affirmation = suggestion
-                        #if canImport(UIKit)
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        #endif
+                        HapticManager.tap()
                     } label: {
                         HStack(alignment: .top, spacing: DesignSystem.Spacing.sm) {
                             Image(systemName: "sparkles")

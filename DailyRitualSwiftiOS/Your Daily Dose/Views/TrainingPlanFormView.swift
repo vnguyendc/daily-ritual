@@ -7,9 +7,6 @@
 //
 
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
 
 enum TrainingFormMode {
     case create
@@ -109,6 +106,7 @@ struct TrainingPlanFormView: View {
                 
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
+                        HapticManager.button()
                         Task { await save() }
                     } label: {
                         if isSaving {
@@ -145,7 +143,7 @@ struct TrainingPlanFormView: View {
     private var activityCard: some View {
         Button {
             showActivityPicker = true
-            hapticLight()
+            HapticManager.selectionChanged()
         } label: {
             HStack(spacing: DesignSystem.Spacing.md) {
                 // Icon with gradient background
@@ -253,7 +251,7 @@ struct TrainingPlanFormView: View {
             withAnimation(.easeInOut(duration: 0.15)) {
                 durationMinutes = minutes
             }
-            hapticLight()
+            HapticManager.selectionChanged()
         } label: {
             Text(label)
                 .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
@@ -276,7 +274,7 @@ struct TrainingPlanFormView: View {
             withAnimation(.easeInOut(duration: 0.15)) {
                 intensity = level
             }
-            hapticLight()
+            HapticManager.selectionChanged()
         } label: {
             HStack(spacing: 8) {
                 Circle()
@@ -377,12 +375,6 @@ struct TrainingPlanFormView: View {
         }
     }
     
-    private func hapticLight() {
-        #if canImport(UIKit)
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        #endif
-    }
-    
     // MARK: - Save
     private func save() async {
         focusedField = nil
@@ -430,11 +422,8 @@ struct TrainingPlanFormView: View {
             }
             
             isSaving = false
-            
-            #if canImport(UIKit)
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
-            #endif
-            
+            HapticManager.success()
+
             // Call onSave before dismissing to ensure parent can reload
             await onSave()
             

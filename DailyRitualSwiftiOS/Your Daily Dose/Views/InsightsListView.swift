@@ -122,6 +122,7 @@ struct InsightsListView: View {
                         ForEach(InsightsViewModel.allTypeFilters, id: \.label) { filter in
                             Button {
                                 viewModel.selectedTypeFilter = filter.value
+                                HapticManager.selectionChanged()
                                 Task { await viewModel.load(unreadOnly: showUnreadOnly) }
                             } label: {
                                 HStack(spacing: 4) {
@@ -246,6 +247,7 @@ struct InsightsListView: View {
                                         }
                                         if insight.isRead != true {
                                             Button("Mark as read") {
+                                                HapticManager.tap()
                                                 Task { await viewModel.markRead(insight.id) }
                                             }
                                             .buttonStyle(.borderedProminent)
