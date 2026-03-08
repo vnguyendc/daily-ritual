@@ -13,6 +13,12 @@ struct StreakWidgetView: View {
     let timeContext: DesignSystem.TimeContext
     @Binding var showingHistory: Bool
 
+    private var gracePeriodInfo: (streak: UserStreak, hours: Int)? {
+        guard let grace = streaksService.gracePeriodStreak,
+              let hours = grace.gracePeriodHoursRemaining else { return nil }
+        return (grace, hours)
+    }
+
     var body: some View {
         Button { showingHistory = true } label: {
             PremiumCard(timeContext: timeContext) {
@@ -66,8 +72,20 @@ struct StreakWidgetView: View {
                             .font(DesignSystem.Typography.caption)
                             .foregroundColor(timeContext.primaryColor)
                     }
+
+                    // Grace period progress bar
+                    if let info = gracePeriodInfo {
+                        GracePeriodProgressBar(hoursRemaining: info.hours)
+                    }
                 }
             }
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                    .stroke(
+                        gracePeriodInfo != nil ? DesignSystem.Colors.alertRed.opacity(0.5) : Color.clear,
+                        lineWidth: 2
+                    )
+            )
         }
         .buttonStyle(CardButtonStyle())
     }
@@ -97,6 +115,7 @@ private struct StreakStat: View {
 
 private struct GracePeriodBadge: View {
     let hoursRemaining: Int
+    @State private var pulsing = false
 
     var body: some View {
         HStack(spacing: 4) {
@@ -113,5 +132,35 @@ private struct GracePeriodBadge: View {
             Capsule()
                 .fill(Color.orange.opacity(0.15))
         )
+        .scaleEffect(pulsing ? 1.06 : 1.0)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+                pulsing = true
+            }
+        }
+    }
+}
+
+private struct GracePeriodProgressBar: View {
+    let hoursRemaining: Int
+
+    private var progress: CGFloat {
+        // fills from left; shrinks toward left as hours decrease (right-to-left depletion)
+        CGFloat(min(hoursRemaining, 24)) / 24.0
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .trailing) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(DesignSystem.Colors.divider)
+                    .frame(height: 4)
+
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.orange.opacity(0.7))
+                    .frame(width: geo.size.width * progress, height: 4)
+            }
+        }
+        .frame(height: 4)
     }
 }
