@@ -241,6 +241,7 @@ struct TrainingPlanFormSheet: View {
             withAnimation(.easeInOut(duration: 0.15)) {
                 intensity = level
             }
+            HapticManager.selectionChanged()
         } label: {
             HStack(spacing: 8) {
                 Circle()
@@ -466,9 +467,11 @@ struct TrainingPlanFormSheet: View {
                 _ = try await plansService.update(plan)
             }
             
+            HapticManager.success()
             await onSaved()
             dismiss()
         } catch {
+            HapticManager.error()
             errorMessage = "Failed to save session. Please try again."
             showError = true
             print("Failed to save training session:", error)

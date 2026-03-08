@@ -6,9 +6,6 @@
 //
 
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
 
 struct GoalsCardView: View {
     let goals: [String]
@@ -43,15 +40,18 @@ struct GoalsCardView: View {
         } else {
             completedGoals.insert(index)
         }
-        
+
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
         let dateString = df.string(from: entryDate)
         LocalStore.setCompletedGoals(completedGoals, for: dateString)
-        
-        #if canImport(UIKit)
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        #endif
+
+        let goalCount = min(goals.count, 3)
+        if completedGoals.count == goalCount {
+            HapticManager.success()
+        } else {
+            HapticManager.tap()
+        }
     }
 }
 

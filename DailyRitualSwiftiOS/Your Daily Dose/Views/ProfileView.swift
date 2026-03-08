@@ -7,9 +7,6 @@
 //
 
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
 
 struct ProfileView: View {
     @Environment(\.dismiss) private var dismiss
@@ -452,7 +449,7 @@ struct ProfileView: View {
         
         return Button {
             primarySport = sport.0
-            hapticLight()
+            HapticManager.selectionChanged()
         } label: {
             VStack(spacing: 6) {
                 Image(systemName: sport.1)
@@ -868,7 +865,7 @@ struct ProfileView: View {
             withAnimation {
                 showSaveSuccess = true
             }
-            hapticSuccess()
+            HapticManager.success()
             
             // Hide after delay
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -878,30 +875,12 @@ struct ProfileView: View {
             }
         } catch {
             saveError = "Failed to save. Please try again."
-            hapticError()
+            HapticManager.error()
         }
         
         isSaving = false
     }
     
-    // MARK: - Haptics
-    private func hapticLight() {
-        #if canImport(UIKit)
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        #endif
-    }
-    
-    private func hapticSuccess() {
-        #if canImport(UIKit)
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
-        #endif
-    }
-    
-    private func hapticError() {
-        #if canImport(UIKit)
-        UINotificationFeedbackGenerator().notificationOccurred(.error)
-        #endif
-    }
 }
 
 // MARK: - Profile Section

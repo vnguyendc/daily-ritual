@@ -7,9 +7,6 @@
 //
 
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
 
 struct CelebrationOverlay: View {
     let type: CelebrationType
@@ -87,10 +84,12 @@ struct CelebrationOverlay: View {
     }
 
     private func animate() {
-        // Haptic
-        #if canImport(UIKit)
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
-        #endif
+        // Haptic — heavier impact for milestones
+        if milestone != nil {
+            HapticManager.milestone()
+        } else {
+            HapticManager.success()
+        }
 
         // Background fade in
         withAnimation(.easeIn(duration: 0.2)) {

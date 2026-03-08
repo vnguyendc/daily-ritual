@@ -7,9 +7,6 @@
 //
 
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
 
 struct WeekDayStrip: View {
     @Binding var selectedDate: Date
@@ -55,7 +52,7 @@ struct WeekDayStrip: View {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     if let newDate = calendar.date(byAdding: .weekOfYear, value: -1, to: selectedDate) {
                         selectedDate = newDate
-                        hapticLight()
+                        HapticManager.selectionChanged()
                     }
                 }
             } label: {
@@ -88,7 +85,7 @@ struct WeekDayStrip: View {
                         let today = calendar.startOfDay(for: Date())
                         if newDate <= today {
                             selectedDate = newDate
-                            hapticLight()
+                            HapticManager.selectionChanged()
                         }
                     }
                 }
@@ -112,7 +109,7 @@ struct WeekDayStrip: View {
             guard !isFuture else { return }
             withAnimation(.easeInOut(duration: 0.15)) {
                 selectedDate = day
-                hapticLight()
+                HapticManager.selectionChanged()
             }
         } label: {
             VStack(spacing: 6) {
@@ -190,11 +187,6 @@ struct WeekDayStrip: View {
         return formatter.string(from: date)
     }
     
-    private func hapticLight() {
-        #if canImport(UIKit)
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        #endif
-    }
 }
 
 #Preview {

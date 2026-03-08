@@ -1095,6 +1095,26 @@ func hideKeyboard() {
 }
 #endif
 
+// MARK: - Haptic Manager (Centralized Semantic Haptics)
+
+struct HapticManager {
+    #if canImport(UIKit)
+    static func tap() { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+    static func button() { UIImpactFeedbackGenerator(style: .medium).impactOccurred() }
+    static func success() { UINotificationFeedbackGenerator().notificationOccurred(.success) }
+    static func error() { UINotificationFeedbackGenerator().notificationOccurred(.error) }
+    static func selectionChanged() { UISelectionFeedbackGenerator().selectionChanged() }
+    static func milestone() { UIImpactFeedbackGenerator(style: .heavy).impactOccurred() }
+    #else
+    static func tap() {}
+    static func button() {}
+    static func success() {}
+    static func error() {}
+    static func selectionChanged() {}
+    static func milestone() {}
+    #endif
+}
+
 // MARK: - Haptic Feedback
 
 struct HapticFeedback {
