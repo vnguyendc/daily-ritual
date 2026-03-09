@@ -5,6 +5,7 @@ export declare class IntegrationsController {
     static connectWhoop(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static disconnectWhoop(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static whoopCallback(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    static getWhoopData(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static syncWhoop(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 }
 //# sourceMappingURL=integrations.d.ts.map

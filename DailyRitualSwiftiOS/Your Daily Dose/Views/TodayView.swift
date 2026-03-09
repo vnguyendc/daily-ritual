@@ -241,21 +241,19 @@ extension TodayView {
     private var loadingView: some View {
         if viewModel.isLoading {
             VStack(spacing: DesignSystem.Spacing.md) {
-                ProgressView()
-                    .scaleEffect(1.0)
-                    .tint(timeContext.primaryColor)
-                Text("Loading your daily ritual...")
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .foregroundColor(DesignSystem.Colors.secondaryText)
+                SkeletonTodayCard()
+                SkeletonTodayCard()
+                SkeletonTodayCard()
             }
-            .frame(maxWidth: .infinity)
-            .padding(.top, DesignSystem.Spacing.xl)
         }
     }
     
     @ViewBuilder
     private var mainContentView: some View {
         if !viewModel.isLoading {
+            // First-time welcome card
+            WelcomeRitualCard()
+
             // Incomplete rituals at top
             if !viewModel.entry.isMorningComplete {
                 IncompleteMorningCard(
