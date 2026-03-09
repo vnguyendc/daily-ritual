@@ -54,7 +54,7 @@ export class IntegrationsController {
 
       const user = await getUserFromToken(token)
 
-      const redirectUri = process.env.WHOOP_REDIRECT_URI || `${process.env.API_BASE_URL || 'http://localhost:3000'}/api/integrations/whoop/callback`
+      const redirectUri = process.env.WHOOP_REDIRECT_URI || `${process.env.API_BASE_URL || 'http://localhost:3000'}/api/v1/integrations/whoop/callback`
       const state = crypto.randomBytes(32).toString('hex')
 
       // Store state in a short-lived record so we can verify on callback
@@ -84,7 +84,7 @@ export class IntegrationsController {
         return res.status(400).json({ success: false, error: { error: 'Bad request', message: 'Authorization code is required' } })
       }
 
-      const redirectUri = redirect_uri || process.env.WHOOP_REDIRECT_URI || `${process.env.API_BASE_URL || 'http://localhost:3000'}/api/integrations/whoop/callback`
+      const redirectUri = redirect_uri || process.env.WHOOP_REDIRECT_URI || `${process.env.API_BASE_URL || 'http://localhost:3000'}/api/v1/integrations/whoop/callback`
 
       // Exchange code for tokens
       const tokens = await whoopService.exchangeCodeForTokens(code, redirectUri)
@@ -175,7 +175,7 @@ export class IntegrationsController {
         return res.status(400).send('Invalid state: missing user_id')
       }
 
-      const redirectUri = process.env.WHOOP_REDIRECT_URI || `${process.env.API_BASE_URL || 'http://localhost:3000'}/api/integrations/whoop/callback`
+      const redirectUri = process.env.WHOOP_REDIRECT_URI || `${process.env.API_BASE_URL || 'http://localhost:3000'}/api/v1/integrations/whoop/callback`
 
       // Exchange code for tokens
       const tokens = await whoopService.exchangeCodeForTokens(String(code), redirectUri)
