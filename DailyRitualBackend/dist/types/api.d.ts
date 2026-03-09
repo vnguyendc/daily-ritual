@@ -10,6 +10,9 @@ export type Quote = Database['public']['Tables']['quotes']['Row'];
 export type UserStreak = Database['public']['Tables']['user_streaks']['Row'];
 export type UserIntegration = Database['public']['Tables']['user_integrations']['Row'];
 export type UserIntegrationInsert = Database['public']['Tables']['user_integrations']['Insert'];
+export type Meal = Database['public']['Tables']['meals']['Row'];
+export type MealInsert = Database['public']['Tables']['meals']['Insert'];
+export type MealUpdate = Database['public']['Tables']['meals']['Update'];
 export type UserInsert = Database['public']['Tables']['users']['Insert'];
 export type DailyEntryInsert = Database['public']['Tables']['daily_entries']['Insert'];
 export type WorkoutReflectionInsert = Database['public']['Tables']['workout_reflections']['Insert'];
@@ -149,12 +152,32 @@ export interface AffirmationGenerationRequest {
     recent_challenges: string[];
     recovery_data?: Partial<WhoopData>;
 }
+export type InsightType = 'morning' | 'evening' | 'weekly' | 'competition_prep' | 'pattern_analysis' | 'post_workout' | 'post_meal' | 'daily_nutrition' | 'weekly_comprehensive';
 export interface InsightGenerationRequest {
     user_id: string;
-    insight_type: 'morning' | 'evening' | 'weekly' | 'competition_prep' | 'pattern_analysis';
+    insight_type: InsightType;
     data_period_start?: string;
     data_period_end?: string;
     context_data?: Record<string, any>;
+}
+export interface DailyNutritionSummary {
+    date: string;
+    meal_count: number;
+    total_calories: number;
+    total_protein_g: number;
+    total_carbs_g: number;
+    total_fat_g: number;
+    total_fiber_g: number;
+    meals: Meal[];
+}
+export interface MealAnalysisResult {
+    food_description: string;
+    estimated_calories: number;
+    estimated_protein_g: number;
+    estimated_carbs_g: number;
+    estimated_fat_g: number;
+    estimated_fiber_g: number;
+    ai_confidence: number;
 }
 export interface APIError {
     error: string;
