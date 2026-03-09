@@ -142,7 +142,7 @@ export class WhoopService {
 
   // Get user profile
   async getUserProfile(accessToken: string) {
-    const response = await fetch(`${this.baseUrl}/v1/user/profile/basic`, {
+    const response = await fetch(`${this.baseUrl}/v2/user/profile/basic`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }
@@ -160,7 +160,7 @@ export class WhoopService {
     const startDate = `${date}T00:00:00.000Z`
     const endDate = `${date}T23:59:59.999Z`
 
-    const response = await fetch(`${this.baseUrl}/v1/recovery?start=${startDate}&end=${endDate}`, {
+    const response = await fetch(`${this.baseUrl}/v2/recovery?start=${startDate}&end=${endDate}`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }
@@ -200,7 +200,7 @@ export class WhoopService {
     const startDate = `${date}T00:00:00.000Z`
     const endDate = `${date}T23:59:59.999Z`
 
-    const response = await fetch(`${this.baseUrl}/v1/activity/sleep?start=${startDate}&end=${endDate}`, {
+    const response = await fetch(`${this.baseUrl}/v2/activity/sleep?start=${startDate}&end=${endDate}`, {
       headers: { 'Authorization': `Bearer ${accessToken}` }
     })
 
@@ -235,7 +235,7 @@ export class WhoopService {
     const startDate = `${date}T00:00:00.000Z`
     const endDate = `${date}T23:59:59.999Z`
 
-    const response = await fetch(`${this.baseUrl}/v1/cycle?start=${startDate}&end=${endDate}`, {
+    const response = await fetch(`${this.baseUrl}/v2/cycle?start=${startDate}&end=${endDate}`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }
@@ -286,7 +286,7 @@ export class WhoopService {
 
   // Get workouts for a date range
   async getWorkouts(accessToken: string, startDate: string, endDate: string) {
-    const response = await fetch(`${this.baseUrl}/v1/workout?start=${startDate}T00:00:00.000Z&end=${endDate}T23:59:59.999Z`, {
+    const response = await fetch(`${this.baseUrl}/v2/activity/workout?start=${startDate}T00:00:00.000Z&end=${endDate}T23:59:59.999Z`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }
@@ -300,38 +300,18 @@ export class WhoopService {
     return data.records || []
   }
 
-  // Setup webhook for real-time updates
-  async setupWebhook(accessToken: string, webhookUrl: string) {
-    const response = await fetch(`${this.baseUrl}/v1/webhook`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        url: webhookUrl,
-        enabled: true
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error(`Whoop webhook setup failed: ${response.status}`)
-    }
-
-    return await response.json()
-  }
-
-  // Validate webhook signature
-  validateWebhookSignature(payload: string, signature: string, secret: string): boolean {
+  // Validate webhook signature (v2: prepend timestamp to body, base64-encode HMAC)
+  validateWebhookSignature(payload: string, signature: string, timestamp: string, secret: string): boolean {
     const crypto = require('crypto')
+    const signedPayload = `${timestamp}${payload}`
     const expectedSignature = crypto
       .createHmac('sha256', secret)
-      .update(payload)
-      .digest('hex')
+      .update(signedPayload)
+      .digest('base64')
 
     return crypto.timingSafeEqual(
-      Buffer.from(signature, 'hex'),
-      Buffer.from(expectedSignature, 'hex')
+      Buffer.from(signature),
+      Buffer.from(expectedSignature)
     )
   }
 

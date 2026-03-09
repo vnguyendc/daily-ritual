@@ -13,11 +13,12 @@ export class WebhooksController {
     try {
       // Validate webhook signature
       const signature = req.headers['x-whoop-signature'] as string
+      const timestamp = req.headers['x-whoop-signature-timestamp'] as string
       const webhookSecret = process.env.WHOOP_WEBHOOK_SECRET
 
-      if (webhookSecret && signature) {
+      if (webhookSecret && signature && timestamp) {
         const payload = JSON.stringify(req.body)
-        const isValid = whoopService.validateWebhookSignature(payload, signature, webhookSecret)
+        const isValid = whoopService.validateWebhookSignature(payload, signature, timestamp, webhookSecret)
         if (!isValid) {
           return res.status(401).json({ error: 'Invalid webhook signature' })
         }
