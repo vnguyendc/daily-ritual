@@ -224,54 +224,18 @@ struct DayDetailSheet: View {
     // MARK: - Loading State
     private var loadingState: some View {
         VStack(spacing: DesignSystem.Spacing.md) {
-            ProgressView()
-                .scaleEffect(1.2)
-                .tint(timeContext.primaryColor)
-            Text("Loading sessions...")
-                .font(DesignSystem.Typography.bodyMedium)
-                .foregroundColor(DesignSystem.Colors.secondaryText)
+            SkeletonTrainingCard()
+            SkeletonTrainingCard()
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, DesignSystem.Spacing.xxl)
+        .padding(.top, DesignSystem.Spacing.sm)
     }
-    
+
     // MARK: - Empty State
     private var emptyState: some View {
-        VStack(spacing: DesignSystem.Spacing.lg) {
-            Image(systemName: "moon.zzz.fill")
-                .font(.system(size: 64))
-                .foregroundColor(DesignSystem.Colors.tertiaryText.opacity(0.5))
-            
-            VStack(spacing: DesignSystem.Spacing.xs) {
-                Text("Rest Day")
-                    .font(DesignSystem.Typography.headlineMedium)
-                    .foregroundColor(DesignSystem.Colors.primaryText)
-                
-                Text("No sessions scheduled for this day")
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .foregroundColor(DesignSystem.Colors.secondaryText)
-                    .multilineTextAlignment(.center)
-            }
-            
-            Button {
-                showingAddForm = true
-                hapticLight()
-            } label: {
-                HStack(spacing: DesignSystem.Spacing.sm) {
-                    Image(systemName: "plus")
-                    Text("Add Session")
-                }
-                .font(DesignSystem.Typography.buttonMedium)
-                .foregroundColor(DesignSystem.Colors.invertedText)
-                .padding(.horizontal, DesignSystem.Spacing.xl)
-                .padding(.vertical, DesignSystem.Spacing.md)
-                .background(
-                    Capsule().fill(timeContext.primaryColor)
-                )
-            }
+        TrainingEmptyStateView {
+            showingAddForm = true
+            hapticLight()
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, DesignSystem.Spacing.xxl)
     }
     
     // MARK: - Plans List

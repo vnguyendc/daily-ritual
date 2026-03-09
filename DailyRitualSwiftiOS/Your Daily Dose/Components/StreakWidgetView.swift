@@ -33,41 +33,41 @@ struct StreakWidgetView: View {
                                     .foregroundColor(DesignSystem.Colors.tertiaryText)
                             }
                         }
+
+                        Spacer()
+
+                        if let grace = streaksService.gracePeriodStreak,
+                           let hours = grace.gracePeriodHoursRemaining {
+                            GracePeriodBadge(hoursRemaining: hours)
+                        }
                     }
 
-                    Spacer()
+                    // Secondary stats
+                    HStack(spacing: DesignSystem.Spacing.lg) {
+                        StreakStat(
+                            icon: "sunrise.fill",
+                            label: "Morning",
+                            value: streaksService.morningStreak,
+                            color: DesignSystem.Colors.eliteGold
+                        )
 
-                    if let grace = streaksService.gracePeriodStreak,
-                       let hours = grace.gracePeriodHoursRemaining {
-                        GracePeriodBadge(hoursRemaining: hours)
+                        StreakStat(
+                            icon: "moon.stars.fill",
+                            label: "Evening",
+                            value: streaksService.eveningStreak,
+                            color: DesignSystem.Colors.championBlue
+                        )
+
+                        Spacer()
+
+                        Text("View history")
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(timeContext.primaryColor)
                     }
-                }
-
-                // Secondary stats
-                HStack(spacing: DesignSystem.Spacing.lg) {
-                    StreakStat(
-                        icon: "sunrise.fill",
-                        label: "Morning",
-                        value: streaksService.morningStreak,
-                        color: DesignSystem.Colors.eliteGold
-                    )
-
-                    StreakStat(
-                        icon: "moon.stars.fill",
-                        label: "Evening",
-                        value: streaksService.eveningStreak,
-                        color: DesignSystem.Colors.championBlue
-                    )
-
-                    Spacer()
-
-                    Text("View history")
-                        .font(DesignSystem.Typography.caption)
-                        .foregroundColor(timeContext.primaryColor)
                 }
             }
         }
-        .onTapGesture { showingHistory = true }
+        .buttonStyle(CardButtonStyle())
     }
 }
 

@@ -71,7 +71,7 @@ struct TrainingPlanCard: View {
                                 .fill(DesignSystem.Colors.powerGreen.opacity(0.12))
                         )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(ScaleButtonStyle())
                 }
 
                 // Intensity indicator
@@ -92,7 +92,7 @@ struct TrainingPlanCard: View {
                     .stroke(DesignSystem.Colors.border, lineWidth: 1)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardButtonStyle())
     }
 }
 
@@ -143,7 +143,7 @@ struct MiniTrainingPlanCard: View {
                     .stroke(DesignSystem.Colors.border, lineWidth: 1)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardButtonStyle())
     }
 }
 
@@ -213,6 +213,7 @@ struct TrainingPlansSummary: View {
                             .font(DesignSystem.Typography.caption)
                             .foregroundColor(timeContext.primaryColor)
                     }
+                    .buttonStyle(ScaleButtonStyle())
                 }
             }
             
@@ -233,6 +234,7 @@ struct TrainingPlansSummary: View {
                         .font(DesignSystem.Typography.buttonSmall)
                         .foregroundColor(timeContext.primaryColor)
                     }
+                    .buttonStyle(ScaleButtonStyle())
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, DesignSystem.Spacing.md)

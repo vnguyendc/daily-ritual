@@ -90,7 +90,7 @@ private struct QuickEntryRowView: View {
             }
             .padding(.vertical, DesignSystem.Spacing.sm)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardButtonStyle())
     }
 }
 
