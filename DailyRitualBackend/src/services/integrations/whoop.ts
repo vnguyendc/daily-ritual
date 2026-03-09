@@ -83,7 +83,7 @@ export class WhoopService {
       state
     })
 
-    return `${this.baseUrl}/oauth/auth?${params.toString()}`
+    return `${this.baseUrl}/v1/oauth/oauth2/auth?${params.toString()}`
   }
 
   // Exchange authorization code for access token
@@ -92,7 +92,7 @@ export class WhoopService {
     refresh_token: string
     expires_in: number
   }> {
-    const response = await fetch(`${this.baseUrl}/oauth/token`, {
+    const response = await fetch(`${this.baseUrl}/v1/oauth/oauth2/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -119,7 +119,7 @@ export class WhoopService {
     refresh_token: string
     expires_in: number
   }> {
-    const response = await fetch(`${this.baseUrl}/oauth/token`, {
+    const response = await fetch(`${this.baseUrl}/v1/oauth/oauth2/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
