@@ -282,7 +282,10 @@ struct ProfileView: View {
                     WhoopConnectView()
                 } label: {
                     integrationRow(
-                        icon: "applewatch",
+                        // "circle.circle" is a placeholder for the official WHOOP puck icon.
+                        // Replace with the WHOOP puck asset from:
+                        // https://developer.whoop.com/docs/developing/design-guidelines/
+                        icon: "circle.circle",
                         name: "WHOOP",
                         status: WhoopService.shared.isConnected ? "Connected" : nil,
                         statusColor: DesignSystem.Colors.powerGreen,

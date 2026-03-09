@@ -20,12 +20,33 @@ struct WhoopConnectView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: DesignSystem.Spacing.xl) {
+                // WHOOP logo header with exclusion zone padding (per brand guidelines)
+                // "circle.circle" is a placeholder for the official WHOOP puck icon.
+                // Replace with the WHOOP puck asset from:
+                // https://developer.whoop.com/docs/developing/design-guidelines/
+                // Logo must be white (dark mode) or black (light mode) only — no color changes.
+                VStack(spacing: DesignSystem.Spacing.sm) {
+                    Image(systemName: "circle.circle")
+                        .font(.system(size: 40))
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                        .padding(DesignSystem.Spacing.lg) // exclusion zone around logo
+                    Text("WHOOP")
+                        .font(.system(size: 22, weight: .bold))
+                        .tracking(2)
+                        .foregroundColor(DesignSystem.Colors.primaryText)
+                }
+
                 if whoopService.isConnected {
                     connectedSection
                     privacySection
                 } else {
                     disconnectedSection
                 }
+
+                // Required attribution per WHOOP brand guidelines
+                Text("Data by WHOOP")
+                    .font(DesignSystem.Typography.caption)
+                    .foregroundColor(DesignSystem.Colors.tertiaryText)
             }
             .padding(DesignSystem.Spacing.lg)
         }
@@ -116,7 +137,10 @@ struct WhoopConnectView: View {
     private var disconnectedSection: some View {
         PremiumCard(timeContext: timeContext) {
             VStack(spacing: DesignSystem.Spacing.lg) {
-                Image(systemName: "applewatch")
+                // "circle.circle" is a placeholder for the official WHOOP puck icon.
+                // Replace with the WHOOP puck asset from:
+                // https://developer.whoop.com/docs/developing/design-guidelines/
+                Image(systemName: "circle.circle")
                     .font(.system(size: 48))
                     .foregroundStyle(
                         LinearGradient(
@@ -146,7 +170,7 @@ struct WhoopConnectView: View {
                                 .scaleEffect(0.7)
                                 .tint(.white)
                         }
-                        Text("Connect Whoop")
+                        Text("Connect WHOOP")
                             .font(DesignSystem.Typography.buttonLarge)
                     }
                     .foregroundColor(.white)

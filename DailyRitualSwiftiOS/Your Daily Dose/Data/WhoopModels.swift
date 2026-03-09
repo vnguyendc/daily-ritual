@@ -31,11 +31,13 @@ struct WhoopDailyData: Codable, Identifiable, Sendable {
     enum RecoveryZone: String, Codable, Sendable {
         case green, yellow, red
 
+        /// Official WHOOP brand colors per design guidelines:
+        /// https://developer.whoop.com/docs/developing/design-guidelines/
         var color: Color {
             switch self {
-            case .green: return DesignSystem.Colors.powerGreen
-            case .yellow: return DesignSystem.Colors.eliteGold
-            case .red: return DesignSystem.Colors.alertRed
+            case .green: return DesignSystem.Colors.whoopHighRecovery    // #16EC06 — 67-100%
+            case .yellow: return DesignSystem.Colors.whoopMediumRecovery // #FFDE00 — 34-66%
+            case .red: return DesignSystem.Colors.whoopLowRecovery       // #FF0026 — 0-33%
             }
         }
 

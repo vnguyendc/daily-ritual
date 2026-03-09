@@ -115,6 +115,16 @@ struct DesignSystem {
             dark: Color(red: 0.42, green: 0.45, blue: 0.50)                // #6B7280 (dark mode)
         )
         
+        // MARK: - WHOOP Brand Colors (official guidelines)
+        // Source: https://developer.whoop.com/docs/developing/design-guidelines/
+        static let whoopRecoveryBlue = Color(hex: "67AEE6")       // Neutral recovery display
+        static let whoopHighRecovery = Color(hex: "16EC06")        // 67–100% — green
+        static let whoopMediumRecovery = Color(hex: "FFDE00")      // 34–66% — yellow
+        static let whoopLowRecovery = Color(hex: "FF0026")         // 0–33%  — red
+        static let whoopSleep = Color(hex: "7BA1BB")               // Sleep-related data
+        static let whoopBackgroundStart = Color(hex: "283339")     // Background gradient start
+        static let whoopBackgroundEnd = Color(hex: "101518")       // Background gradient end
+
         // MARK: - Legacy Support (for backward compatibility)
         static let primary = eliteGold                                       // Map to Elite Gold
         static let primaryLight = eliteGold.opacity(0.8)                    // Lighter version
@@ -915,6 +925,17 @@ struct PremiumTextEditor: View {
 // MARK: - Elite Performance Extensions
 
 extension Color {
+    /// Creates a color from a hex string (e.g. "FF0026" or "#FF0026")
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let r = Double((int >> 16) & 0xFF) / 255
+        let g = Double((int >> 8) & 0xFF) / 255
+        let b = Double(int & 0xFF) / 255
+        self = Color(red: r, green: g, blue: b)
+    }
+
     /// Creates a color that adapts to light and dark mode
     /// - Parameters:
     ///   - light: Color for light mode

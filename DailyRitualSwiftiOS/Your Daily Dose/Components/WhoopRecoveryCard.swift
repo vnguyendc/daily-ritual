@@ -19,15 +19,23 @@ struct WhoopRecoveryCard: View {
     var body: some View {
         PremiumCard(timeContext: timeContext) {
             VStack(spacing: DesignSystem.Spacing.md) {
-                // Header
+                // Header — keep WHOOP's official metric name "Recovery" per brand guidelines
                 HStack {
                     Text("Recovery")
                         .font(DesignSystem.Typography.headlineMedium)
                         .foregroundColor(DesignSystem.Colors.primaryText)
                     Spacer()
-                    Text("WHOOP")
-                        .font(DesignSystem.Typography.caption)
-                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                    // WHOOP attribution — required by WHOOP brand guidelines
+                    // "circle.circle" is a placeholder; replace with the official WHOOP
+                    // puck icon downloaded from https://developer.whoop.com/docs/developing/design-guidelines/
+                    HStack(spacing: 4) {
+                        Image(systemName: "circle.circle")
+                            .font(.caption)
+                            .foregroundColor(DesignSystem.Colors.tertiaryText)
+                        Text("Data by WHOOP")
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(DesignSystem.Colors.tertiaryText)
+                    }
                 }
 
                 if showRecovery, let score = data.recoveryScore {
@@ -97,8 +105,9 @@ struct RecoveryCircle: View {
                 .trim(from: 0, to: animatedProgress)
                 .stroke(zone.color, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                 .rotationEffect(.degrees(-90))
+            // Use monospaced digits to match WHOOP's DINPro Bold numeric style
             Text("\(Int(score))%")
-                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .font(.system(size: 20, weight: .bold, design: .monospaced))
                 .foregroundColor(zone.color)
         }
         .onAppear {
