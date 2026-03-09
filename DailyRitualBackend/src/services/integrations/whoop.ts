@@ -61,6 +61,7 @@ const WHOOP_SPORT_MAP = new Map<number, string>([
 
 export class WhoopService {
   private readonly baseUrl = 'https://api.prod.whoop.com/developer'
+  private readonly oauthBaseUrl = 'https://api.prod.whoop.com/oauth/oauth2'
   private readonly clientId: string
   private readonly clientSecret: string
 
@@ -83,7 +84,7 @@ export class WhoopService {
       state
     })
 
-    return `${this.baseUrl}/v1/oauth/oauth2/auth?${params.toString()}`
+    return `${this.oauthBaseUrl}/auth?${params.toString()}`
   }
 
   // Exchange authorization code for access token
@@ -92,7 +93,7 @@ export class WhoopService {
     refresh_token: string
     expires_in: number
   }> {
-    const response = await fetch(`${this.baseUrl}/v1/oauth/oauth2/token`, {
+    const response = await fetch(`${this.oauthBaseUrl}/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -119,7 +120,7 @@ export class WhoopService {
     refresh_token: string
     expires_in: number
   }> {
-    const response = await fetch(`${this.baseUrl}/v1/oauth/oauth2/token`, {
+    const response = await fetch(`${this.oauthBaseUrl}/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
