@@ -221,17 +221,12 @@ struct DayDetailSheet: View {
     // MARK: - Loading State
     private var loadingState: some View {
         VStack(spacing: DesignSystem.Spacing.md) {
-            ProgressView()
-                .scaleEffect(1.2)
-                .tint(timeContext.primaryColor)
-            Text("Loading sessions...")
-                .font(DesignSystem.Typography.bodyMedium)
-                .foregroundColor(DesignSystem.Colors.secondaryText)
+            SkeletonTrainingCard()
+            SkeletonTrainingCard()
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, DesignSystem.Spacing.xxl)
+        .padding(.top, DesignSystem.Spacing.sm)
     }
-    
+
     // MARK: - Empty State
     private var emptyState: some View {
         VStack(spacing: DesignSystem.Spacing.lg) {
@@ -267,8 +262,6 @@ struct DayDetailSheet: View {
                 )
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, DesignSystem.Spacing.xxl)
     }
     
     // MARK: - Plans List

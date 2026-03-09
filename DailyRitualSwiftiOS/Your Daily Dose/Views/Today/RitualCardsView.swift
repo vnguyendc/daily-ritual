@@ -55,7 +55,7 @@ struct IncompleteMorningCard: View {
                 }
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardButtonStyle())
         .animation(DesignSystem.Animation.gentle, value: completedSteps)
     }
 }
@@ -108,7 +108,7 @@ struct IncompleteEveningCard: View {
                 }
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardButtonStyle())
         .animation(DesignSystem.Animation.gentle, value: completedSteps)
     }
 }
@@ -158,7 +158,7 @@ struct CompletedRitualCard: View {
                     .fill(DesignSystem.Colors.cardBackground.opacity(0.5))
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardButtonStyle())
     }
 }
 
