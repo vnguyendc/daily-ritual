@@ -63,6 +63,9 @@ export class IntegrationsController {
 
       const authUrl = whoopService.getAuthorizationUrl(redirectUri, statePayload)
 
+      console.log('Whoop OAuth redirect_uri:', redirectUri)
+      console.log('Whoop OAuth full auth URL:', authUrl)
+
       const response: APIResponse = { success: true, data: { auth_url: authUrl, state: statePayload } }
       res.json(response)
     } catch (error: any) {
