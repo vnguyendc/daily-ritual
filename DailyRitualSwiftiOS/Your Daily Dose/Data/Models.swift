@@ -670,52 +670,82 @@ enum TrainingActivityType: String, Codable, CaseIterable, Sendable {
             return "figure.pool.swim"
         case .rowing:
             return "figure.rowing"
-        case .elliptical, .stairClimbing:
+        case .elliptical:
+            return "figure.elliptical"
+        case .stairClimbing:
             return "figure.stair.stepper"
         case .jumpRope:
             return "figure.jumprope"
-        case .boxing, .kickboxing, .mma, .muayThai:
+        case .boxing, .mma, .muayThai:
             return "figure.boxing"
-        case .jiuJitsu, .wrestling:
+        case .kickboxing:
+            return "figure.kickboxing"
+        case .jiuJitsu:
             return "figure.martial.arts"
-        case .karate, .taekwondo:
+        case .wrestling:
+            return "figure.wrestling"
+        case .karate:
+            return "figure.karate"
+        case .taekwondo:
             return "figure.taekwondo"
         case .basketball:
             return "basketball.fill"
         case .soccer:
             return "soccerball"
         case .football:
-            return "football.fill"
+            return "figure.american.football"
         case .volleyball:
             return "volleyball.fill"
         case .baseball:
             return "baseball.fill"
         case .hockey:
             return "hockey.puck.fill"
-        case .rugby, .lacrosse:
+        case .rugby:
             return "sportscourt.fill"
-        case .tennis, .badminton, .pickleball:
+        case .lacrosse:
+            return "figure.lacrosse"
+        case .tennis:
             return "tennisball.fill"
+        case .badminton:
+            return "figure.badminton"
+        case .pickleball:
+            return "figure.pickleball"
         case .squash, .racquetball:
             return "figure.racquetball"
         case .golf:
             return "figure.golf"
-        case .skiing, .snowboarding:
+        case .skiing:
             return "figure.skiing.downhill"
+        case .snowboarding:
+            return "figure.snowboarding"
         case .surfing:
             return "figure.surfing"
         case .skateboarding:
             return "figure.skateboarding"
-        case .rockClimbing, .bouldering:
+        case .rockClimbing:
             return "figure.climbing"
+        case .bouldering:
+            return "figure.bouldering"
         case .hiking:
             return "figure.hiking"
-        case .yoga, .pilates, .stretching, .mobility:
+        case .yoga:
             return "figure.yoga"
-        case .taiChi, .meditation:
+        case .pilates:
+            return "figure.pilates"
+        case .stretching:
+            return "figure.flexibility"
+        case .mobility:
+            return "figure.cooldown"
+        case .taiChi:
+            return "figure.tai.chi"
+        case .meditation:
             return "brain.head.profile"
-        case .recovery, .rest, .massage, .activeRecovery:
+        case .recovery, .activeRecovery:
             return "bed.double.fill"
+        case .rest:
+            return "zzz"
+        case .massage:
+            return "hand.raised.fill"
         case .physicalTherapy:
             return "cross.case.fill"
         case .walking:

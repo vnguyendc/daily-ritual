@@ -22,6 +22,7 @@ struct CelebrationOverlay: View {
     @State private var backgroundOpacity: Double = 0
     @State private var confettiParticles: [ConfettiParticle] = []
     @State private var dismissed = false
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     private var milestone: CelebrationMilestone? {
         CelebrationMilestone.milestone(for: streakCount)
@@ -33,8 +34,8 @@ struct CelebrationOverlay: View {
             Color.black.opacity(backgroundOpacity * 0.5)
                 .ignoresSafeArea()
 
-            // Confetti layer
-            if let milestone = milestone {
+            // Confetti layer (disabled when reduceMotion is on)
+            if !reduceMotion, milestone != nil {
                 ForEach(confettiParticles) { particle in
                     ConfettiPiece(particle: particle)
                 }
@@ -98,6 +99,10 @@ struct CelebrationOverlay: View {
             }
             .padding(DesignSystem.Spacing.xl)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(overlayAccessibilityLabel)
+        .accessibilityHint("Tap to dismiss")
+        .accessibilityAddTraits(.isButton)
         .onAppear {
             animate()
         }
@@ -108,24 +113,15 @@ struct CelebrationOverlay: View {
         }
     }
 
-    private var shareText: String {
-        let milestoneMsg = milestone?.message ?? ""
-        return "I just hit a \(streakCount)-day streak on Daily Ritual! \(milestoneMsg) 🔥"
-    }
-
-    private func playMilestoneSound() {
-        #if canImport(UIKit)
-        guard let intensity = milestone?.intensity else { return }
-        // AudioServicesPlaySystemSound respects the ringer/silent switch
-        switch intensity {
-        case .standard:
-            AudioServicesPlaySystemSound(1016)  // subtle chime
-        case .enhanced:
-            AudioServicesPlaySystemSound(1057)  // brighter tone
-        case .epic:
-            AudioServicesPlaySystemSound(1108)  // anticipate bell
+    private var overlayAccessibilityLabel: String {
+        var parts = [type.message]
+        if streakCount > 0 {
+            parts.append("\(streakCount) day streak")
         }
-        #endif
+        if let milestone = milestone {
+            parts.append(milestone.message)
+        }
+        return parts.joined(separator: ". ")
     }
 
     private func animate() {
@@ -134,8 +130,20 @@ struct CelebrationOverlay: View {
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         #endif
 
-        // Sound for milestone
-        playMilestoneSound()
+        if reduceMotion {
+            // Skip animations — jump to final state immediately
+            backgroundOpacity = 1
+            iconScale = 1.0
+            textOpacity = 1
+            // Auto-dismiss
+            let duration = milestone?.intensity.duration ?? 2.0
+            DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+                guard !dismissed else { return }
+                dismissed = true
+                onDismiss()
+            }
+            return
+        }
 
         // Background fade in
         withAnimation(.easeIn(duration: 0.2)) {

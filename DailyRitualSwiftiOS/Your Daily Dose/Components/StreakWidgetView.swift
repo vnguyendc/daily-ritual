@@ -87,7 +87,22 @@ struct StreakWidgetView: View {
                     )
             )
         }
-        .buttonStyle(CardButtonStyle())
+        .onTapGesture { showingHistory = true }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(streakAccessibilityLabel)
+        .accessibilityHint("Tap to view streak history")
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private var streakAccessibilityLabel: String {
+        var label = "Current streak, \(streaksService.dailyStreak) days"
+        if streaksService.morningStreak > 0 || streaksService.eveningStreak > 0 {
+            label += ". Morning streak \(streaksService.morningStreak), evening streak \(streaksService.eveningStreak)"
+        }
+        if streaksService.longestDailyStreak > streaksService.dailyStreak {
+            label += ". Best: \(streaksService.longestDailyStreak) days"
+        }
+        return label
     }
 }
 
@@ -124,6 +139,8 @@ private struct GracePeriodBadge: View {
             Text("\(hoursRemaining)h left")
                 .font(DesignSystem.Typography.caption)
                 .fontWeight(.medium)
+                .minimumScaleFactor(0.8)
+                .lineLimit(1)
         }
         .foregroundColor(.orange)
         .padding(.horizontal, DesignSystem.Spacing.sm)
@@ -132,35 +149,6 @@ private struct GracePeriodBadge: View {
             Capsule()
                 .fill(Color.orange.opacity(0.15))
         )
-        .scaleEffect(pulsing ? 1.06 : 1.0)
-        .onAppear {
-            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
-                pulsing = true
-            }
-        }
-    }
-}
-
-private struct GracePeriodProgressBar: View {
-    let hoursRemaining: Int
-
-    private var progress: CGFloat {
-        // fills from left; shrinks toward left as hours decrease (right-to-left depletion)
-        CGFloat(min(hoursRemaining, 24)) / 24.0
-    }
-
-    var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .trailing) {
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(DesignSystem.Colors.divider)
-                    .frame(height: 4)
-
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(Color.orange.opacity(0.7))
-                    .frame(width: geo.size.width * progress, height: 4)
-            }
-        }
-        .frame(height: 4)
+        .accessibilityLabel("Grace period, \(hoursRemaining) hours remaining")
     }
 }

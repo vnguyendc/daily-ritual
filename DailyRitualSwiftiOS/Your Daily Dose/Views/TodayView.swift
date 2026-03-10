@@ -14,7 +14,7 @@ import UIKit
 struct TodayView: View {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var viewModel = TodayViewModel()
-    
+
     // Sheet presentation state
     @State private var showingMorningRitual = false
     @State private var showingEveningReflection = false
@@ -26,13 +26,16 @@ struct TodayView: View {
     @State private var showingStreakHistory = false
     @State private var showingSleepDetail = false
     
+    // Animation state
+    @State private var cardsVisible = false
+
     // Selection state
     @State private var selectedDate: Date = Date()
     @State private var currentDay: Date = Calendar.current.startOfDay(for: Date())
     @State private var completedGoals: Set<Int> = []
     @State private var selectedTrainingPlan: TrainingPlan?
     @State private var trainingPlanToEdit: TrainingPlan?
-    
+
     // Workout reflection
     @State private var workoutReflectionPlan: TrainingPlan?
     @State private var healthKitWorkoutData: PartialWorkoutData?
@@ -48,11 +51,16 @@ struct TodayView: View {
     private let plansService: TrainingPlansServiceProtocol = TrainingPlansService()
     private let journalService: JournalEntriesServiceProtocol = JournalEntriesService()
     private let mealsService: MealsServiceProtocol = MealsService()
-    
+
     private var timeContext: DesignSystem.TimeContext {
         DesignSystem.TimeContext.current()
     }
-    
+
+    // Show evening ritual first when it's after 5 PM and evening is incomplete
+    private var showEveningFirst: Bool {
+        viewModel.entry.shouldShowEvening && !viewModel.entry.isEveningComplete
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -60,57 +68,16 @@ struct TodayView: View {
                     VStack(spacing: DesignSystem.Spacing.sectionSpacing) {
                         TodayHeaderView(
                             selectedDate: selectedDate,
+                            timeContext: timeContext,
+                            userName: SupabaseManager.shared.currentUser?.name,
                             onProfileTap: { showingProfile = true }
                         )
-                        
+
                         weekDayStripView
-
-                        // Streak widget
-                        StreakWidgetView(
-                            streaksService: StreaksService.shared,
-                            timeContext: timeContext,
-                            showingHistory: $showingStreakHistory
-                        )
-
-                        // Apple Health Card (when connected)
-                        if HealthKitService.shared.isAuthorized {
-                            HealthSummaryCard(
-                                healthService: HealthKitService.shared,
-                                timeContext: timeContext
-                            )
-                            .transition(.opacity.combined(with: .move(edge: .top)))
-
-                            // HealthKit workouts with "Reflect" buttons
-                            if !HealthKitService.shared.todayWorkouts.isEmpty {
-                                ForEach(HealthKitService.shared.todayWorkouts) { workout in
-                                    HealthKitWorkoutCard(
-                                        workout: workout,
-                                        timeContext: timeContext,
-                                        hasReflection: false,
-                                        onReflect: { data in
-                                            workoutReflectionPlan = nil
-                                            healthKitWorkoutData = data
-                                            showingWorkoutReflection = true
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        // Whoop Recovery Card (only when connected with data)
-                        if WhoopService.shared.isConnected,
-                           let whoopData = WhoopService.shared.dailyData {
-                            WhoopRecoveryCard(
-                                data: whoopData,
-                                timeContext: timeContext,
-                                onTap: { showingSleepDetail = true }
-                            )
-                            .transition(.opacity.combined(with: .move(edge: .top)))
-                        }
 
                         loadingView
                         mainContentView
-                        
+
                         Spacer(minLength: DesignSystem.Spacing.xxxl)
                     }
                     .padding(.top, DesignSystem.Spacing.xxl)
@@ -148,6 +115,9 @@ struct TodayView: View {
                 await WhoopService.shared.fetchDailyData()
                 if HealthKitService.shared.isAuthorized {
                     await HealthKitService.shared.fetchTodayData()
+                }
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+                    cardsVisible = true
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
@@ -230,7 +200,7 @@ extension TodayView {
                 }
             }
     }
-    
+
     @ViewBuilder
     private var loadingView: some View {
         if viewModel.isLoading {
@@ -241,28 +211,89 @@ extension TodayView {
             }
         }
     }
-    
+
     @ViewBuilder
     private var mainContentView: some View {
         if !viewModel.isLoading {
             // First-time welcome card
             WelcomeRitualCard()
 
-            // Incomplete rituals at top
-            if !viewModel.entry.isMorningComplete {
-                IncompleteMorningCard(
-                    completedSteps: viewModel.entry.completedMorningSteps,
+            ritualSection
+
+            SectionDivider()
+
+            healthSection
+
+            SectionDivider()
+
+            trainingSection
+
+            if let summary = nutritionSummary {
+                if summary.mealCount > 0 {
+                    SectionDivider()
+                    nutritionSection(summary: summary)
+                } else {
+                    SectionDivider()
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                        PremiumSectionHeader("NUTRITION", timeContext: timeContext)
+                        MealsEmptyStateView(onLogTap: { showingMealLog = true })
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - YOUR RITUAL Section
+    @ViewBuilder
+    private var ritualSection: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+            PremiumSectionHeader("YOUR RITUAL", timeContext: timeContext)
+
+            if showEveningFirst {
+                if viewModel.entry.shouldShowEvening && !viewModel.entry.isEveningComplete {
+                    IncompleteEveningCard(
+                        completedSteps: viewModel.entry.completedEveningSteps,
+                        onTap: { showingEveningReflection = true }
+                    )
+                }
+                if !viewModel.entry.isMorningComplete {
+                    IncompleteMorningCard(
+                        completedSteps: viewModel.entry.completedMorningSteps,
+                        onTap: { showingMorningRitual = true }
+                    )
+                }
+            } else {
+                if !viewModel.entry.isMorningComplete {
+                    IncompleteMorningCard(
+                        completedSteps: viewModel.entry.completedMorningSteps,
+                        onTap: { showingMorningRitual = true }
+                    )
+                }
+                if viewModel.entry.shouldShowEvening && !viewModel.entry.isEveningComplete {
+                    IncompleteEveningCard(
+                        completedSteps: viewModel.entry.completedEveningSteps,
+                        onTap: { showingEveningReflection = true }
+                    )
+                }
+            }
+
+            if viewModel.entry.isMorningComplete {
+                CompletedRitualCard(
+                    type: .morning,
+                    completedAt: viewModel.entry.morningCompletedAt,
                     onTap: { showingMorningRitual = true }
                 )
+                .staggeredAppear(visible: cardsVisible, delay: 0.0)
             }
-            
+
             if viewModel.shouldShowEvening && !viewModel.entry.isEveningComplete {
                 IncompleteEveningCard(
                     completedSteps: viewModel.entry.completedEveningSteps,
                     onTap: { showingEveningReflection = true }
                 )
+                .staggeredAppear(visible: cardsVisible, delay: 0.05)
             }
-            
+
             // Goals card
             if let goals = viewModel.entry.goals, !goals.isEmpty {
                 GoalsCardView(
@@ -271,8 +302,9 @@ extension TodayView {
                     timeContext: timeContext,
                     completedGoals: $completedGoals
                 )
+                .staggeredAppear(visible: cardsVisible, delay: 0.1)
             }
-            
+
             // Training plans
             TrainingPlansSummary(
                 plans: viewModel.sortedTrainingPlans,
@@ -285,40 +317,47 @@ extension TodayView {
                     showingWorkoutReflection = true
                 }
             )
-            
-            // Nutrition summary or empty meals state
-            if let summary = nutritionSummary {
-                if summary.mealCount > 0 {
-                    NutritionSummaryCard(
-                        summary: summary,
-                        timeContext: timeContext,
-                        onTap: { showingMealLog = true }
-                    )
-                } else {
-                    MealsEmptyStateView(onLogTap: { showingMealLog = true })
-                }
+            .staggeredAppear(visible: cardsVisible, delay: 0.15)
+
+            // Nutrition summary (visible when meals have been logged)
+            if let summary = nutritionSummary, summary.mealCount > 0 {
+                NutritionSummaryCard(
+                    summary: summary,
+                    timeContext: timeContext,
+                    onTap: { showingMealLog = true }
+                )
+                .staggeredAppear(visible: cardsVisible, delay: 0.2)
             }
 
-            // Quick entries
-            QuickEntriesCardView(
-                entries: todayJournalEntries,
+    // MARK: - NUTRITION Section
+    @ViewBuilder
+    private func nutritionSection(summary: DailyNutritionSummary) -> some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+            PremiumSectionHeader("NUTRITION", timeContext: timeContext)
+
+            NutritionSummaryCard(
+                summary: summary,
                 timeContext: timeContext,
-                onEntryTap: { selectedJournalEntry = $0 }
+                onTap: { showingMealLog = true }
             )
-            
+            .staggeredAppear(visible: cardsVisible, delay: 0.25)
+
             // Completed rituals at bottom
             if viewModel.entry.isMorningComplete {
                 CompletedRitualCard(type: .morning, onTap: { showingMorningRitual = true })
+                    .staggeredAppear(visible: cardsVisible, delay: 0.3)
             }
-            
+
             if viewModel.entry.isEveningComplete {
                 CompletedRitualCard(type: .evening, onTap: { showingEveningReflection = true })
+                    .staggeredAppear(visible: cardsVisible, delay: 0.35)
             }
-            
+
             // Celebration card
             if viewModel.entry.isFullyComplete {
                 CelebrationCard(timeContext: timeContext)
                     .animation(DesignSystem.Animation.gentle, value: viewModel.entry.isFullyComplete)
+                    .staggeredAppear(visible: cardsVisible, delay: 0.4)
             }
         }
     }
@@ -347,7 +386,7 @@ extension TodayView {
             }
         }
     }
-    
+
     @ViewBuilder
     private func trainingPlanDetailSheet(for plan: TrainingPlan) -> some View {
         TrainingPlanDetailSheet(
@@ -367,7 +406,7 @@ extension TodayView {
             }
         )
     }
-    
+
     @ViewBuilder
     private func journalEntryDetailSheet(for entry: JournalEntry) -> some View {
         JournalEntryDetailView(
@@ -410,7 +449,7 @@ extension TodayView {
             await StreaksService.shared.fetchStreaks(force: true)
         }
     }
-    
+
     private func handlePotentialDayChange() {
         let calendar = Calendar.current
         let newDay = calendar.startOfDay(for: Date())
@@ -423,21 +462,21 @@ extension TodayView {
             completedGoals = loadCompletedGoals(for: newDay)
         }
     }
-    
+
     private func loadCompletedGoals(for date: Date) -> Set<Int> {
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
         let dateString = df.string(from: date)
         return LocalStore.getCompletedGoals(for: dateString)
     }
-    
+
     private func loadJournalEntries() async {
         do {
             let result = try await journalService.fetchEntries(page: 1, limit: 50)
             let calendar = Calendar.current
             let startOfDay = calendar.startOfDay(for: selectedDate)
             let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? startOfDay
-            
+
             journalEntries = result.entries.filter { entry in
                 entry.createdAt >= startOfDay && entry.createdAt < endOfDay
             }
@@ -445,7 +484,7 @@ extension TodayView {
             print("Failed to load journal entries:", error)
         }
     }
-    
+
     private var todayJournalEntries: [JournalEntry] {
         journalEntries
     }
@@ -459,6 +498,16 @@ extension TodayView {
         } catch {
             print("Failed to load nutrition:", error)
         }
+    }
+}
+
+// MARK: - Staggered Appear Modifier
+private extension View {
+    func staggeredAppear(visible: Bool, delay: Double) -> some View {
+        self
+            .opacity(visible ? 1 : 0)
+            .offset(y: visible ? 0 : 12)
+            .animation(.spring(response: 0.5, dampingFraction: 0.85).delay(delay), value: visible)
     }
 }
 

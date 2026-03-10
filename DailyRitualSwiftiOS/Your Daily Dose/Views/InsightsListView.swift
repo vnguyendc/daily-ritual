@@ -71,6 +71,7 @@ final class InsightsViewModel: ObservableObject {
 struct InsightsListView: View {
     @StateObject private var viewModel = InsightsViewModel()
     @State private var showUnreadOnly = false
+    @Namespace private var chipHighlight
 
     private var timeContext: DesignSystem.TimeContext { .evening }
 
@@ -120,8 +121,11 @@ struct InsightsListView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: DesignSystem.Spacing.sm) {
                         ForEach(InsightsViewModel.allTypeFilters, id: \.label) { filter in
+                            let isSelected = viewModel.selectedTypeFilter == filter.value
                             Button {
-                                viewModel.selectedTypeFilter = filter.value
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                    viewModel.selectedTypeFilter = filter.value
+                                }
                                 Task { await viewModel.load(unreadOnly: showUnreadOnly) }
                             } label: {
                                 HStack(spacing: 4) {
@@ -132,26 +136,22 @@ struct InsightsListView: View {
                                 }
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
-                                .background(
-                                    viewModel.selectedTypeFilter == filter.value
-                                        ? timeContext.primaryColor
-                                        : DesignSystem.Colors.cardBackground
-                                )
-                                .foregroundColor(
-                                    viewModel.selectedTypeFilter == filter.value
-                                        ? .white
-                                        : DesignSystem.Colors.primaryText
-                                )
+                                .foregroundColor(isSelected ? .white : DesignSystem.Colors.primaryText)
+                                .background {
+                                    if isSelected {
+                                        Capsule()
+                                            .fill(timeContext.primaryColor)
+                                            .matchedGeometryEffect(id: "chipHighlight", in: chipHighlight)
+                                    } else {
+                                        Capsule()
+                                            .fill(DesignSystem.Colors.cardBackground)
+                                            .overlay(
+                                                Capsule()
+                                                    .strokeBorder(DesignSystem.Colors.divider, lineWidth: 1)
+                                            )
+                                    }
+                                }
                                 .clipShape(Capsule())
-                                .overlay(
-                                    Capsule()
-                                        .strokeBorder(
-                                            viewModel.selectedTypeFilter == filter.value
-                                                ? Color.clear
-                                                : DesignSystem.Colors.divider,
-                                            lineWidth: 1
-                                        )
-                                )
                             }
                             .buttonStyle(ScaleButtonStyle())
                         }
