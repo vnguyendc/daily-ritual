@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { supabaseServiceClient, getUserFromToken } from '../services/supabase.js';
+import { SupabaseEdgeFunctions } from '../services/integrations/supabaseEdgeFunctions.js';
 const workoutReflectionSchema = z.object({
     training_feeling: z.number().min(1).max(5),
     what_went_well: z.string().min(1).max(1000),
@@ -60,6 +61,13 @@ export class WorkoutReflectionsController {
                 p_streak_type: 'workout_reflection',
                 p_completed_date: today
             });
+            SupabaseEdgeFunctions.generateInsight({
+                supabaseUrl: process.env.SUPABASE_URL || '',
+                authToken: token,
+                insight_type: 'post_workout',
+                context_data: { workout_reflection_id: reflection.id },
+                data_period_end: today
+            }).catch(() => { });
             const response = {
                 success: true,
                 data: reflection,

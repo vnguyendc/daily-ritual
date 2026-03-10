@@ -170,17 +170,17 @@ enum CelebrationIntensity {
 
     var confettiCount: Int {
         switch self {
-        case .standard: return 20
-        case .enhanced: return 35
-        case .epic: return 50
+        case .standard: return 30
+        case .enhanced: return 60
+        case .epic: return 100
         }
     }
 
     var duration: TimeInterval {
         switch self {
-        case .standard: return 2.0
-        case .enhanced: return 3.0
-        case .epic: return 4.0
+        case .standard: return 3.0
+        case .enhanced: return 5.0
+        case .epic: return 7.0
         }
     }
 }

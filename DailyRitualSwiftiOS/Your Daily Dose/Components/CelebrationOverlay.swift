@@ -7,6 +7,10 @@
 //
 
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+import AudioToolbox
+#endif
 
 struct CelebrationOverlay: View {
     let type: CelebrationType
@@ -18,6 +22,7 @@ struct CelebrationOverlay: View {
     @State private var backgroundOpacity: Double = 0
     @State private var confettiParticles: [ConfettiParticle] = []
     @State private var dismissed = false
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     private var milestone: CelebrationMilestone? {
         CelebrationMilestone.milestone(for: streakCount)
@@ -29,8 +34,8 @@ struct CelebrationOverlay: View {
             Color.black.opacity(backgroundOpacity * 0.5)
                 .ignoresSafeArea()
 
-            // Confetti layer
-            if let milestone = milestone {
+            // Confetti layer (disabled when reduceMotion is on)
+            if !reduceMotion, milestone != nil {
                 ForEach(confettiParticles) { particle in
                     ConfettiPiece(particle: particle)
                 }
@@ -68,11 +73,36 @@ struct CelebrationOverlay: View {
                 }
                 .opacity(textOpacity)
 
+                if milestone != nil {
+                    ShareLink(
+                        item: shareText,
+                        label: {
+                            HStack(spacing: DesignSystem.Spacing.xs) {
+                                Image(systemName: "square.and.arrow.up")
+                                Text("Share")
+                            }
+                            .font(DesignSystem.Typography.bodyMedium)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, DesignSystem.Spacing.lg)
+                            .padding(.vertical, DesignSystem.Spacing.sm)
+                            .background(
+                                Capsule()
+                                    .fill(type.color.opacity(0.8))
+                            )
+                        }
+                    )
+                    .opacity(textOpacity)
+                }
+
                 Spacer()
                 Spacer()
             }
             .padding(DesignSystem.Spacing.xl)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(overlayAccessibilityLabel)
+        .accessibilityHint("Tap to dismiss")
+        .accessibilityAddTraits(.isButton)
         .onAppear {
             animate()
         }
@@ -83,12 +113,38 @@ struct CelebrationOverlay: View {
         }
     }
 
+    private var overlayAccessibilityLabel: String {
+        var parts = [type.message]
+        if streakCount > 0 {
+            parts.append("\(streakCount) day streak")
+        }
+        if let milestone = milestone {
+            parts.append(milestone.message)
+        }
+        return parts.joined(separator: ". ")
+    }
+
     private func animate() {
         // Haptic — heavier impact for milestones
         if milestone != nil {
             HapticManager.milestone()
         } else {
             HapticManager.success()
+        }
+
+        if reduceMotion {
+            // Skip animations — jump to final state immediately
+            backgroundOpacity = 1
+            iconScale = 1.0
+            textOpacity = 1
+            // Auto-dismiss
+            let duration = milestone?.intensity.duration ?? 2.0
+            DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+                guard !dismissed else { return }
+                dismissed = true
+                onDismiss()
+            }
+            return
         }
 
         // Background fade in
@@ -128,21 +184,53 @@ struct CelebrationOverlay: View {
     }
 
     private func spawnConfetti(count: Int) {
-        let colors: [Color] = [
-            DesignSystem.Colors.eliteGold,
-            DesignSystem.Colors.championBlue,
-            DesignSystem.Colors.powerGreen,
-            .white.opacity(0.8)
-        ]
+        let intensity = milestone?.intensity ?? .standard
+
+        let colors: [Color]
+        let maxSize: CGFloat
+        switch intensity {
+        case .standard:
+            colors = [
+                DesignSystem.Colors.eliteGold,
+                DesignSystem.Colors.championBlue,
+                DesignSystem.Colors.powerGreen,
+                .white.opacity(0.8)
+            ]
+            maxSize = 8
+        case .enhanced:
+            colors = [
+                DesignSystem.Colors.eliteGold,
+                DesignSystem.Colors.championBlue,
+                DesignSystem.Colors.powerGreen,
+                .white.opacity(0.8),
+                Color.orange,
+                Color.pink
+            ]
+            maxSize = 10
+        case .epic:
+            colors = [
+                DesignSystem.Colors.eliteGold,
+                DesignSystem.Colors.championBlue,
+                DesignSystem.Colors.powerGreen,
+                .white.opacity(0.8),
+                Color.orange,
+                Color.pink,
+                Color.red,
+                Color.purple,
+                Color.yellow,
+                Color.cyan
+            ]
+            maxSize = 14
+        }
 
         for i in 0..<count {
             let particle = ConfettiParticle(
                 id: i,
                 x: CGFloat.random(in: 0...1),
-                delay: Double.random(in: 0...0.5),
+                delay: Double.random(in: 0...0.8),
                 duration: Double.random(in: 1.5...3.0),
                 color: colors.randomElement() ?? .white,
-                size: CGFloat.random(in: 4...8),
+                size: CGFloat.random(in: 4...maxSize),
                 rotation: Double.random(in: 0...360)
             )
             confettiParticles.append(particle)

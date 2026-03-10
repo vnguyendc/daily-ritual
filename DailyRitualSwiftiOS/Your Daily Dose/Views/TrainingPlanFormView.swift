@@ -158,7 +158,7 @@ struct TrainingPlanFormView: View {
                         .frame(width: 56, height: 56)
                     
                     Image(systemName: activityType.icon)
-                        .font(.system(size: 24, weight: .semibold))
+                        .font(DesignSystem.Typography.displaySmall)
                         .foregroundColor(.white)
                 }
                 
@@ -175,7 +175,7 @@ struct TrainingPlanFormView: View {
                 Spacer()
                 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
             }
             .padding(DesignSystem.Spacing.md)
@@ -193,7 +193,7 @@ struct TrainingPlanFormView: View {
             // Duration
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                 Text("DURATION")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(DesignSystem.Typography.metadata)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
                     .tracking(1)
                 
@@ -216,7 +216,7 @@ struct TrainingPlanFormView: View {
             // Intensity
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                 Text("INTENSITY")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(DesignSystem.Typography.metadata)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
                     .tracking(1)
                 
@@ -253,10 +253,10 @@ struct TrainingPlanFormView: View {
             HapticManager.selectionChanged()
         } label: {
             Text(label)
-                .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
+                .font(DesignSystem.Typography.bodyMedium)
                 .foregroundColor(isSelected ? .white : DesignSystem.Colors.primaryText)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
+                .padding(.vertical, DesignSystem.Spacing.compactSpacing)
                 .background(
                     RoundedRectangle(cornerRadius: 10)
                         .fill(isSelected ? timeContext.primaryColor : DesignSystem.Colors.secondaryBackground)
@@ -281,11 +281,11 @@ struct TrainingPlanFormView: View {
                     .frame(width: 10, height: 10)
                 
                 Text(level.displayName)
-                    .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
+                    .font(DesignSystem.Typography.bodyMedium)
             }
             .foregroundColor(isSelected ? DesignSystem.Colors.primaryText : DesignSystem.Colors.secondaryText)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
+            .padding(.vertical, DesignSystem.Spacing.compactSpacing)
             .background(
                 RoundedRectangle(cornerRadius: 10)
                     .fill(isSelected ? color.opacity(0.15) : DesignSystem.Colors.secondaryBackground)
@@ -302,7 +302,7 @@ struct TrainingPlanFormView: View {
     private var timeCard: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             Text("START TIME")
-                .font(.system(size: 11, weight: .semibold))
+                .font(DesignSystem.Typography.metadata)
                 .foregroundColor(DesignSystem.Colors.tertiaryText)
                 .tracking(1)
             
@@ -328,7 +328,7 @@ struct TrainingPlanFormView: View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             HStack {
                 Text("NOTES")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(DesignSystem.Typography.metadata)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
                     .tracking(1)
                 

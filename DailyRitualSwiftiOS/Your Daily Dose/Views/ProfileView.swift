@@ -198,7 +198,7 @@ struct ProfileView: View {
                     .frame(width: 80, height: 80)
                 
                 Text(avatarInitials)
-                    .font(.system(size: 32, weight: .semibold))
+                    .font(DesignSystem.Typography.displayMedium)
                     .foregroundColor(timeContext.primaryColor)
             }
             
@@ -336,7 +336,7 @@ struct ProfileView: View {
             }
             if showChevron {
                 Image(systemName: "chevron.right")
-                    .font(.caption)
+                    .font(DesignSystem.Typography.caption)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
             }
         }
@@ -440,7 +440,7 @@ struct ProfileView: View {
                             Spacer()
                             
                             Image(systemName: "chevron.right")
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(DesignSystem.Typography.bodyMedium)
                                 .foregroundColor(DesignSystem.Colors.tertiaryText)
                         }
                         .padding(DesignSystem.Spacing.md)
@@ -464,7 +464,7 @@ struct ProfileView: View {
         } label: {
             VStack(spacing: 6) {
                 Image(systemName: sport.1)
-                    .font(.system(size: 20))
+                    .font(DesignSystem.Typography.headlineLarge)
                 Text(sport.2)
                     .font(DesignSystem.Typography.caption)
             }
@@ -555,7 +555,7 @@ struct ProfileView: View {
                         .foregroundColor(DesignSystem.Colors.primaryText)
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(DesignSystem.Typography.bodyMedium)
                         .foregroundColor(DesignSystem.Colors.tertiaryText)
                 }
                 .padding(DesignSystem.Spacing.md)
@@ -815,12 +815,18 @@ struct ProfileView: View {
     private func statItem(icon: String, value: Int?, label: String, subtitle: String?, color: Color) -> some View {
         VStack(spacing: 6) {
             Image(systemName: icon)
-                .font(.system(size: 20))
+                .font(DesignSystem.Typography.headlineLarge)
                 .foregroundColor(color)
 
-            Text("\(value ?? 0)")
-                .font(DesignSystem.Typography.displaySmallSafe)
-                .foregroundColor(DesignSystem.Colors.primaryText)
+            if isLoading {
+                ProgressView()
+                    .scaleEffect(0.7)
+                    .frame(height: 28)
+            } else {
+                AnimatedCounter(target: value ?? 0)
+                    .font(DesignSystem.Typography.displaySmallSafe)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+            }
 
             Text(label)
                 .font(DesignSystem.Typography.caption)
@@ -940,6 +946,28 @@ struct ProfileView: View {
     
 }
 
+// MARK: - Animated Counter
+struct AnimatedCounter: View {
+    let target: Int
+    @State private var displayed: Int = 0
+
+    var body: some View {
+        Text("\(displayed)")
+            .onAppear {
+                let duration: Double = min(1.0, Double(target) * 0.02 + 0.3)
+                let steps = min(target, 30)
+                guard steps > 0 else { return }
+                let stepDelay = duration / Double(steps)
+                let increment = max(1, target / steps)
+                for i in 1...steps {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + stepDelay * Double(i)) {
+                        displayed = min(target, increment * i)
+                    }
+                }
+            }
+    }
+}
+
 // MARK: - Profile Section
 struct ProfileSection<Content: View>: View {
     let title: String
@@ -950,9 +978,9 @@ struct ProfileSection<Content: View>: View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             HStack(spacing: DesignSystem.Spacing.sm) {
                 Image(systemName: icon)
-                    .font(.system(size: 14))
+                    .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(DesignSystem.Colors.secondaryText)
-                
+
                 Text(title)
                     .font(DesignSystem.Typography.caption)
                     .foregroundColor(DesignSystem.Colors.secondaryText)
@@ -1051,9 +1079,7 @@ struct SocialSignInButton: View {
         Button(action: action) {
             HStack(spacing: DesignSystem.Spacing.md) {
                 Image(systemName: icon)
-                    .font(.system(size: 22))
-                    .frame(width: 28, alignment: .leading)
-                Spacer()
+                    .font(DesignSystem.Typography.headlineLarge)
                 Text("Continue with \(provider)")
                     .font(DesignSystem.Typography.buttonMedium)
                 Spacer()

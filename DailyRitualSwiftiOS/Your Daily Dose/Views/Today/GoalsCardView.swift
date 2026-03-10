@@ -89,7 +89,10 @@ private struct GoalRowButton: View {
                     .font(DesignSystem.Typography.headlineMedium)
             }
         }
-        .buttonStyle(CardButtonStyle())
+        .buttonStyle(.plain)
+        .accessibilityLabel("Goal \(index + 1), \(goal), \(isCompleted ? "completed" : "not completed")")
+        .accessibilityAddTraits(isCompleted ? [.isSelected] : [])
+        .accessibilityHint(isCompleted ? "Tap to mark as not completed" : "Tap to mark as completed")
     }
 }
 

@@ -159,6 +159,56 @@ export class InsightsController {
             });
         }
     }
+    static async getLatestInsights(req, res) {
+        try {
+            const token = req.headers.authorization?.replace('Bearer ', '');
+            const useMock = process.env.USE_MOCK === 'true';
+            const devUserId = process.env.DEV_USER_ID;
+            let user;
+            if (!token) {
+                if (useMock) {
+                    user = { id: 'mock-user-id' };
+                }
+                else if (devUserId) {
+                    user = { id: devUserId };
+                }
+                else {
+                    return res.status(401).json({ error: 'Authorization token required' });
+                }
+            }
+            else {
+                user = await getUserFromToken(token);
+            }
+            const type = req.query.type;
+            if (useMock) {
+                return res.json({ success: true, data: null });
+            }
+            let query = supabaseServiceClient
+                .from('ai_insights')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(1);
+            if (type) {
+                query = query.eq('insight_type', type);
+            }
+            const { data, error } = await query;
+            if (error)
+                throw error;
+            res.json({
+                success: true,
+                data: data?.[0] || null
+            });
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            console.error('Error getting latest insight:', error);
+            res.status(500).json({
+                success: false,
+                error: { error: 'Internal server error', message }
+            });
+        }
+    }
     static async getInsightsStats(req, res) {
         try {
             const token = req.headers.authorization?.replace('Bearer ', '');

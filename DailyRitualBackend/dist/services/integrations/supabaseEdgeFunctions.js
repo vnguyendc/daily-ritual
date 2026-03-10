@@ -37,5 +37,26 @@ export class SupabaseEdgeFunctions {
         catch {
         }
     }
+    static async generateInsight({ supabaseUrl, authToken, insight_type, context_data, data_period_end }) {
+        if (!supabaseUrl)
+            throw new Error('SUPABASE_URL not configured');
+        try {
+            const resp = await fetch(`${supabaseUrl}/functions/v1/generate-insights`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': authToken ? `Bearer ${authToken}` : '',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ insight_type, context_data, data_period_end })
+            });
+            if (!resp.ok)
+                return {};
+            const data = await resp.json();
+            return { insight: data.insight };
+        }
+        catch {
+            return {};
+        }
+    }
 }
 //# sourceMappingURL=supabaseEdgeFunctions.js.map

@@ -2,7 +2,7 @@
 //  NutritionSummaryCard.swift
 //  Your Daily Dose
 //
-//  Card for TodayView showing daily calories + macro rings.
+//  Card for TodayView showing daily calories + macro rings with fill animation and calorie context.
 //
 
 import SwiftUI
@@ -11,6 +11,8 @@ struct NutritionSummaryCard: View {
     let summary: DailyNutritionSummary
     let timeContext: DesignSystem.TimeContext
     var onTap: (() -> Void)?
+
+    @State private var appeared = false
 
     var body: some View {
         Button {
@@ -56,10 +58,37 @@ struct NutritionSummaryCard: View {
                             color: .yellow
                         )
                     }
+
+                    // Daily calorie context line with color coding
+                    let calorieTarget = Int(targetFor("Calories"))
+                    let ratio = Double(summary.totalCalories) / Double(max(1, calorieTarget))
+                    let calorieColor: Color = ratio >= 1.0 ? .red : ratio >= 0.9 ? .orange : .green
+                    let remaining = calorieTarget - summary.totalCalories
+
+                    HStack {
+                        Text("\(summary.totalCalories) / \(calorieTarget) kcal")
+                            .font(DesignSystem.Typography.metadata)
+                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                        Spacer()
+                        if remaining > 0 {
+                            Text("\(remaining) kcal remaining")
+                                .font(DesignSystem.Typography.metadata)
+                                .foregroundColor(calorieColor)
+                        } else {
+                            Text("\(-remaining) kcal over")
+                                .font(DesignSystem.Typography.metadata)
+                                .foregroundColor(.red)
+                        }
+                    }
                 }
             }
         }
         .buttonStyle(.plain)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.8)) {
+                appeared = true
+            }
+        }
     }
 
     private func macroRing(label: String, value: Int, unit: String, color: Color) -> some View {
@@ -67,14 +96,14 @@ struct NutritionSummaryCard: View {
             ZStack {
                 Circle()
                     .stroke(color.opacity(0.2), lineWidth: 4)
-                    .frame(width: 44, height: 44)
+                    .frame(width: 56, height: 56)
                 Circle()
-                    .trim(from: 0, to: min(1.0, CGFloat(value) / max(1, targetFor(label))))
+                    .trim(from: 0, to: appeared ? min(1.0, CGFloat(value) / max(1, targetFor(label))) : 0)
                     .stroke(color, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                     .rotationEffect(.degrees(-90))
-                    .frame(width: 44, height: 44)
+                    .frame(width: 56, height: 56)
                 Text("\(value)")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .font(DesignSystem.Typography.metadata)
                     .foregroundColor(DesignSystem.Colors.primaryText)
             }
             Text(label)

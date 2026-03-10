@@ -53,7 +53,7 @@ struct WhoopConnectView: View {
                 HStack {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(DesignSystem.Colors.powerGreen)
-                        .font(.title2)
+                        .font(DesignSystem.Typography.displaySmall)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("WHOOP Connected")
                             .font(DesignSystem.Typography.headlineSmall)

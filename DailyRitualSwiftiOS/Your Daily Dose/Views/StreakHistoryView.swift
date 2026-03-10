@@ -12,6 +12,7 @@ struct StreakHistoryView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var streaksService: StreaksService
     @State private var currentMonth = Date()
+    @State private var selectedDay: CompletionHistoryItem?
 
     private let calendar = Calendar.current
     private let timeContext: DesignSystem.TimeContext = .neutral
@@ -49,6 +50,9 @@ struct StreakHistoryView: View {
             .task {
                 await loadMonth(currentMonth)
             }
+            .sheet(item: $selectedDay) { day in
+                DayDetailSheet(item: day)
+            }
         }
     }
 
@@ -65,7 +69,7 @@ struct StreakHistoryView: View {
                 ForEach(displayStreaks, id: \.streakType) { streak in
                     HStack {
                         Image(systemName: streak.streakType.icon)
-                            .font(.system(size: 16))
+                            .font(DesignSystem.Typography.headlineSmall)
                             .foregroundColor(colorFor(streak.streakType))
                             .frame(width: 24)
 
@@ -140,7 +144,7 @@ struct StreakHistoryView: View {
 
             // Day cells
             let days = daysInMonth
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: DesignSystem.Spacing.xs) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 4) {
                 ForEach(days, id: \.self) { day in
                     if let day = day {
                         calendarDayCell(day)
@@ -163,6 +167,17 @@ struct StreakHistoryView: View {
         let status = completionStatus(for: dateStr)
         let isToday = isCurrentDay(day)
         let isFuture = isFutureDay(day)
+        let historyItem = streaksService.history.first { $0.date == dateStr }
+
+        let fillColor: Color = {
+            if isFuture { return DesignSystem.Colors.cardBackground }
+            switch status {
+            case .none: return DesignSystem.Colors.cardBackground
+            case .morningOnly: return DesignSystem.Colors.eliteGold.opacity(0.4)
+            case .eveningOnly: return DesignSystem.Colors.championBlue.opacity(0.4)
+            case .both: return DesignSystem.Colors.powerGreen.opacity(0.75)
+            }
+        }()
 
         return Text("\(day)")
             .font(DesignSystem.Typography.bodyMedium)
@@ -170,29 +185,34 @@ struct StreakHistoryView: View {
             .foregroundColor(isFuture ? DesignSystem.Colors.tertiaryText : DesignSystem.Colors.primaryText)
             .frame(width: 36, height: 36)
             .background(
-                Circle()
-                    .fill(status.color.opacity(status == .none ? 0 : 0.3))
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(fillColor)
             )
             .overlay(
-                Circle()
+                RoundedRectangle(cornerRadius: 3)
                     .stroke(isToday ? timeContext.primaryColor : Color.clear, lineWidth: 2)
             )
+            .onTapGesture {
+                if !isFuture, let item = historyItem {
+                    selectedDay = item
+                }
+            }
     }
 
     // MARK: - Legend
 
     private var legend: some View {
         HStack(spacing: DesignSystem.Spacing.lg) {
-            legendItem(color: CompletionHistoryItem.CompletionStatus.both.color, label: "Both")
-            legendItem(color: CompletionHistoryItem.CompletionStatus.morningOnly.color, label: "Morning")
-            legendItem(color: CompletionHistoryItem.CompletionStatus.eveningOnly.color, label: "Evening")
+            legendItem(color: DesignSystem.Colors.powerGreen.opacity(0.75), label: "Both")
+            legendItem(color: DesignSystem.Colors.eliteGold.opacity(0.4), label: "Morning")
+            legendItem(color: DesignSystem.Colors.championBlue.opacity(0.4), label: "Evening")
         }
         .frame(maxWidth: .infinity)
     }
 
     private func legendItem(color: Color, label: String) -> some View {
         HStack(spacing: 4) {
-            Circle()
+            RoundedRectangle(cornerRadius: 2)
                 .fill(color)
                 .frame(width: 10, height: 10)
             Text(label)
@@ -322,5 +342,99 @@ struct StreakHistoryView: View {
         guard let start = calendar.date(from: components),
               let end = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: start) else { return }
         await streaksService.fetchHistory(start: start, end: end)
+    }
+}
+
+// MARK: - Day Detail Sheet
+
+private struct DayDetailSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let item: CompletionHistoryItem
+
+    private var displayDate: String {
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        df.locale = Locale(identifier: "en_US_POSIX")
+        guard let date = df.date(from: item.date) else { return item.date }
+        let out = DateFormatter()
+        out.dateStyle = .full
+        return out.string(from: date)
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ritualRow(
+                        icon: "sunrise.fill",
+                        label: "Morning Ritual",
+                        completedAt: item.morningCompletedAt,
+                        color: DesignSystem.Colors.eliteGold
+                    )
+                    ritualRow(
+                        icon: "moon.stars.fill",
+                        label: "Evening Reflection",
+                        completedAt: item.eveningCompletedAt,
+                        color: DesignSystem.Colors.championBlue
+                    )
+                } header: {
+                    Text(displayDate)
+                }
+            }
+            .navigationTitle("Day Detail")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func ritualRow(icon: String, label: String, completedAt: String?, color: Color) -> some View {
+        HStack(spacing: DesignSystem.Spacing.md) {
+            Image(systemName: icon)
+                .font(.system(size: 20))
+                .foregroundColor(color)
+                .frame(width: 28)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(DesignSystem.Typography.bodyMedium)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+
+                if let completedAt = completedAt, let timeStr = formattedTime(from: completedAt) {
+                    Text("Completed at \(timeStr)")
+                        .font(DesignSystem.Typography.caption)
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                } else {
+                    Text("Not completed")
+                        .font(DesignSystem.Typography.caption)
+                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                }
+            }
+
+            Spacer()
+
+            Image(systemName: completedAt != nil ? "checkmark.circle.fill" : "circle")
+                .foregroundColor(completedAt != nil ? color : DesignSystem.Colors.tertiaryText)
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func formattedTime(from isoString: String) -> String? {
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "en_US_POSIX")
+        df.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        guard let date = df.date(from: isoString) else {
+            df.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+            guard let date2 = df.date(from: isoString) else { return nil }
+            let out = DateFormatter()
+            out.dateFormat = "HH:mm"
+            return out.string(from: date2)
+        }
+        let out = DateFormatter()
+        out.dateFormat = "HH:mm"
+        return out.string(from: date)
     }
 }

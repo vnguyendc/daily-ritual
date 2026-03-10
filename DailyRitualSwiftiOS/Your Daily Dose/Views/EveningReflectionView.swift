@@ -60,7 +60,7 @@ struct EveningReflectionView: View {
                         .tag(3)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
-                    .animation(.easeInOut(duration: 0.3), value: currentStep)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.85), value: currentStep)
                 }
             }
             .loadingOverlay(isLoading: isSaving, message: "Saving...")
@@ -77,7 +77,7 @@ struct EveningReflectionView: View {
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: currentStep > 0 ? "chevron.left" : "xmark")
-                                .font(.system(size: 14, weight: .medium))
+                                .font(DesignSystem.Typography.bodyMedium)
                             if currentStep > 0 {
                                 Text("Back")
                                     .font(DesignSystem.Typography.bodyMedium)
@@ -157,12 +157,12 @@ struct EveningReflectionView: View {
                 RoundedRectangle(cornerRadius: 2)
                     .fill(timeContext.primaryColor)
                     .frame(width: geometry.size.width * CGFloat(currentStep + 1) / CGFloat(totalSteps), height: 4)
-                    .animation(.easeInOut(duration: 0.3), value: currentStep)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.7), value: currentStep)
             }
         }
         .frame(height: 4)
     }
-    
+
     private var canProceed: Bool {
         switch currentStep {
         case 0: return !(entry.quoteApplication?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
@@ -351,17 +351,17 @@ struct CleanWentWellStepView: View {
         } label: {
             HStack {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 12))
+                    .font(DesignSystem.Typography.caption)
                     .foregroundColor(timeContext.primaryColor)
-                
+
                 Text(text)
                     .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(DesignSystem.Colors.primaryText)
-                
+
                 Spacer()
-                
+
                 Image(systemName: "plus")
-                    .font(.system(size: 12))
+                    .font(DesignSystem.Typography.caption)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
             }
             .padding(DesignSystem.Spacing.sm)
@@ -439,17 +439,17 @@ struct CleanToImproveStepView: View {
         } label: {
             HStack {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 12))
+                    .font(DesignSystem.Typography.caption)
                     .foregroundColor(timeContext.primaryColor)
-                
+
                 Text(text)
                     .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(DesignSystem.Colors.primaryText)
-                
+
                 Spacer()
-                
+
                 Image(systemName: "plus")
-                    .font(.system(size: 12))
+                    .font(DesignSystem.Typography.caption)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
             }
             .padding(DesignSystem.Spacing.sm)
@@ -508,7 +508,7 @@ struct CleanMoodStepView: View {
                         HapticManager.selectionChanged()
                     } label: {
                         Text(moodEmojis[value - 1])
-                            .font(.system(size: 28))
+                            .font(DesignSystem.Typography.displayMedium)
                             .frame(width: 52, height: 52)
                             .background(
                                 Circle()
@@ -520,6 +520,8 @@ struct CleanMoodStepView: View {
                             )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Mood: \(moodLabels[value - 1])")
+                    .accessibilityAddTraits(mood == value ? [.isSelected] : [])
                 }
             }
             

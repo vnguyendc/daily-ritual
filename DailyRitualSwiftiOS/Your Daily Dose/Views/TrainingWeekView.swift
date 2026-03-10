@@ -86,7 +86,7 @@ struct TrainingWeekView: View {
                 }
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(DesignSystem.Typography.headlineSmall)
                     .foregroundColor(timeContext.primaryColor)
                     .frame(width: 44, height: 44)
             }
@@ -115,7 +115,7 @@ struct TrainingWeekView: View {
                 }
             } label: {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(DesignSystem.Typography.headlineSmall)
                     .foregroundColor(timeContext.primaryColor)
                     .frame(width: 44, height: 44)
             }
@@ -290,7 +290,7 @@ struct WeekDayCard: View {
                     // Plan count badge
                     if !plans.isEmpty {
                         Text("\(plans.count)")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(DesignSystem.Typography.caption)
                             .foregroundColor(DesignSystem.Colors.secondaryText)
                             .frame(width: 24, height: 24)
                             .background(
@@ -300,7 +300,7 @@ struct WeekDayCard: View {
                     }
                     
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(DesignSystem.Typography.bodyMedium)
                         .foregroundColor(DesignSystem.Colors.tertiaryText)
                 }
             }
@@ -310,7 +310,7 @@ struct WeekDayCard: View {
             if plans.isEmpty {
                 HStack {
                     Image(systemName: "moon.zzz.fill")
-                        .font(.system(size: 14))
+                        .font(DesignSystem.Typography.bodyMedium)
                         .foregroundColor(DesignSystem.Colors.tertiaryText)
                     
                     Text("Rest day")
@@ -324,7 +324,7 @@ struct WeekDayCard: View {
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "plus")
-                                .font(.system(size: 12))
+                                .font(DesignSystem.Typography.caption)
                             Text("Add")
                                 .font(DesignSystem.Typography.caption)
                         }
@@ -397,7 +397,7 @@ struct CompactPlanRow: View {
                     .frame(width: 36, height: 36)
                 
                 Image(systemName: plan.activityType.icon)
-                    .font(.system(size: 16))
+                    .font(DesignSystem.Typography.headlineSmall)
                     .foregroundColor(timeContext.primaryColor)
             }
             
@@ -411,14 +411,14 @@ struct CompactPlanRow: View {
                     if let time = plan.formattedStartTime {
                         HStack(spacing: 2) {
                             Image(systemName: "clock")
-                                .font(.system(size: 10))
+                                .font(DesignSystem.Typography.metadata)
                             Text(time)
                         }
                     }
                     if let duration = plan.formattedDuration {
                         HStack(spacing: 2) {
                             Image(systemName: "timer")
-                                .font(.system(size: 10))
+                                .font(DesignSystem.Typography.metadata)
                             Text(duration)
                         }
                     }
