@@ -12,6 +12,8 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
+      id-token: write
+      actions: read
 
     steps:
       - uses: actions/checkout@v4
@@ -37,8 +39,8 @@ jobs:
         if: steps.issue.outputs.found == 'true'
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          max_turns: 30
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: "--max-turns 75"
           prompt: |
             Work on GitHub issue #${{ steps.issue.outputs.number }}: ${{ steps.issue.outputs.title }}
 
