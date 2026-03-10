@@ -25,6 +25,9 @@ struct TodayView: View {
     @State private var showingAddActivity = false
     @State private var showingStreakHistory = false
     @State private var showingSleepDetail = false
+    
+    // Animation state
+    @State private var cardsVisible = false
 
     // Selection state
     @State private var selectedDate: Date = Date()
@@ -112,6 +115,9 @@ struct TodayView: View {
                 await WhoopService.shared.fetchDailyData()
                 if HealthKitService.shared.isAuthorized {
                     await HealthKitService.shared.fetchTodayData()
+                }
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+                    cardsVisible = true
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
@@ -277,16 +283,18 @@ extension TodayView {
                     completedAt: viewModel.entry.morningCompletedAt,
                     onTap: { showingMorningRitual = true }
                 )
+                .staggeredAppear(visible: cardsVisible, delay: 0.0)
             }
 
-            if viewModel.entry.isEveningComplete {
-                CompletedRitualCard(
-                    type: .evening,
-                    completedAt: viewModel.entry.eveningCompletedAt,
+            if viewModel.shouldShowEvening && !viewModel.entry.isEveningComplete {
+                IncompleteEveningCard(
+                    completedSteps: viewModel.entry.completedEveningSteps,
                     onTap: { showingEveningReflection = true }
                 )
+                .staggeredAppear(visible: cardsVisible, delay: 0.05)
             }
 
+            // Goals card
             if let goals = viewModel.entry.goals, !goals.isEmpty {
                 GoalsCardView(
                     goals: goals,
@@ -294,74 +302,10 @@ extension TodayView {
                     timeContext: timeContext,
                     completedGoals: $completedGoals
                 )
+                .staggeredAppear(visible: cardsVisible, delay: 0.1)
             }
 
-            QuickEntriesCardView(
-                entries: todayJournalEntries,
-                timeContext: timeContext,
-                onEntryTap: { selectedJournalEntry = $0 }
-            )
-
-            if viewModel.entry.isFullyComplete {
-                CelebrationCard(timeContext: timeContext)
-                    .animation(DesignSystem.Animation.gentle, value: viewModel.entry.isFullyComplete)
-            }
-        }
-    }
-
-    // MARK: - HEALTH Section
-    @ViewBuilder
-    private var healthSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-            PremiumSectionHeader("HEALTH", timeContext: timeContext)
-
-            StreakWidgetView(
-                streaksService: StreaksService.shared,
-                timeContext: timeContext,
-                showingHistory: $showingStreakHistory
-            )
-
-            if HealthKitService.shared.isAuthorized {
-                HealthSummaryCard(
-                    healthService: HealthKitService.shared,
-                    timeContext: timeContext
-                )
-                .transition(.opacity.combined(with: .move(edge: .top)))
-
-                if !HealthKitService.shared.todayWorkouts.isEmpty {
-                    ForEach(HealthKitService.shared.todayWorkouts) { workout in
-                        HealthKitWorkoutCard(
-                            workout: workout,
-                            timeContext: timeContext,
-                            hasReflection: false,
-                            onReflect: { data in
-                                workoutReflectionPlan = nil
-                                healthKitWorkoutData = data
-                                showingWorkoutReflection = true
-                            }
-                        )
-                    }
-                }
-            }
-
-            if WhoopService.shared.isConnected,
-               let whoopData = WhoopService.shared.dailyData {
-                WhoopRecoveryCard(
-                    data: whoopData,
-                    timeContext: timeContext,
-                    onTap: { showingSleepDetail = true }
-                )
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-        }
-    }
-
-    // MARK: - TRAINING Section
-    @ViewBuilder
-    private var trainingSection: some View {
-        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-            PremiumSectionHeader("TRAINING", timeContext: timeContext)
-
+            // Training plans
             TrainingPlansSummary(
                 plans: viewModel.sortedTrainingPlans,
                 timeContext: timeContext,
@@ -373,8 +317,17 @@ extension TodayView {
                     showingWorkoutReflection = true
                 }
             )
-        }
-    }
+            .staggeredAppear(visible: cardsVisible, delay: 0.15)
+
+            // Nutrition summary (visible when meals have been logged)
+            if let summary = nutritionSummary, summary.mealCount > 0 {
+                NutritionSummaryCard(
+                    summary: summary,
+                    timeContext: timeContext,
+                    onTap: { showingMealLog = true }
+                )
+                .staggeredAppear(visible: cardsVisible, delay: 0.2)
+            }
 
     // MARK: - NUTRITION Section
     @ViewBuilder
@@ -387,6 +340,25 @@ extension TodayView {
                 timeContext: timeContext,
                 onTap: { showingMealLog = true }
             )
+            .staggeredAppear(visible: cardsVisible, delay: 0.25)
+
+            // Completed rituals at bottom
+            if viewModel.entry.isMorningComplete {
+                CompletedRitualCard(type: .morning, onTap: { showingMorningRitual = true })
+                    .staggeredAppear(visible: cardsVisible, delay: 0.3)
+            }
+
+            if viewModel.entry.isEveningComplete {
+                CompletedRitualCard(type: .evening, onTap: { showingEveningReflection = true })
+                    .staggeredAppear(visible: cardsVisible, delay: 0.35)
+            }
+
+            // Celebration card
+            if viewModel.entry.isFullyComplete {
+                CelebrationCard(timeContext: timeContext)
+                    .animation(DesignSystem.Animation.gentle, value: viewModel.entry.isFullyComplete)
+                    .staggeredAppear(visible: cardsVisible, delay: 0.4)
+            }
         }
     }
 }
@@ -526,6 +498,16 @@ extension TodayView {
         } catch {
             print("Failed to load nutrition:", error)
         }
+    }
+}
+
+// MARK: - Staggered Appear Modifier
+private extension View {
+    func staggeredAppear(visible: Bool, delay: Double) -> some View {
+        self
+            .opacity(visible ? 1 : 0)
+            .offset(y: visible ? 0 : 12)
+            .animation(.spring(response: 0.5, dampingFraction: 0.85).delay(delay), value: visible)
     }
 }
 
