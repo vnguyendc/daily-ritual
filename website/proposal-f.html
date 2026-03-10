@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Ritual — Proposal F: Raw Structure</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Darker+Grotesque:wght@300;400;500;600;700;800;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0c0c0b;
+            --bg-card: #131312;
+            --bg-raised: #1a1918;
+            --text: #e8e5de;
+            --text-mid: #8f8a80;
+            --text-dim: #4d4a44;
+            --border: rgba(255, 255, 255, 0.06);
+            --border-accent: rgba(200, 178, 140, 0.14);
+            --warm: #c8b28c;
+            --warm-light: #dccba6;
+            --warm-glow: rgba(200, 178, 140, 0.05);
+            --morning: #cc7a42;
+            --morning-bg: rgba(204, 122, 66, 0.07);
+            --workout: #5e9460;
+            --workout-bg: rgba(94, 148, 96, 0.07);
+            --evening: #6880a0;
+            --evening-bg: rgba(104, 128, 160, 0.07);
+            --ai: #b29860;
+            --ai-bg: rgba(178, 152, 96, 0.07);
+            --font-display: 'Syne', sans-serif;
+            --font-body: 'Darker Grotesque', sans-serif;
+            --font-mono: 'IBM Plex Mono', monospace;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-body);
+            font-weight: 400;
+            line-height: 1.55;
+            overflow-x: hidden;
+        }
+
+        /* Noise */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.025;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+
+        .content { position: relative; z-index: 1; }
+
+        /* ─── NAV ─── */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 1.25rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            background: rgba(12, 12, 11, 0.9);
+            backdrop-filter: blur(12px);
+        }
+
+        .nav-brand {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text);
+            text-decoration: none;
+        }
+
+        .nav-brand span { color: var(--warm); }
+
+        .nav-right {
+            display: flex;
+            gap: 2.5rem;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-right a {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+            color: var(--text-mid);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .nav-right a:hover { color: var(--text); }
+
+        .nav-right .nav-cta {
+            padding: 0.5rem 1.25rem;
+            border: 1px solid var(--border-accent);
+            color: var(--warm) !important;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .nav-right .nav-cta:hover {
+            background: var(--warm-glow);
+            border-color: var(--warm);
+        }
+
+        /* ─── HERO ─── */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 6rem 2.5rem 4rem;
+            border-bottom: 1px solid var(--border);
+            position: relative;
+        }
+
+        .hero-tag {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--warm);
+            margin-bottom: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            opacity: 0;
+            animation: fadeIn 0.6s ease forwards 0.2s;
+        }
+
+        .hero-tag::before,
+        .hero-tag::after {
+            content: '';
+            width: 24px;
+            height: 1px;
+            background: var(--warm);
+            opacity: 0.5;
+        }
+
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(3.5rem, 8vw, 7rem);
+            font-weight: 800;
+            line-height: 0.92;
+            letter-spacing: -0.03em;
+            text-transform: uppercase;
+            color: var(--text);
+            max-width: 12ch;
+            margin-bottom: 2rem;
+            opacity: 0;
+            animation: fadeIn 0.7s ease forwards 0.35s;
+        }
+
+        .hero h1 .warm { color: var(--warm-light); }
+
+        .hero-sub {
+            font-family: var(--font-body);
+            font-size: 1.2rem;
+            font-weight: 400;
+            line-height: 1.6;
+            color: var(--text-mid);
+            max-width: 46ch;
+            margin-bottom: 3rem;
+            opacity: 0;
+            animation: fadeIn 0.7s ease forwards 0.5s;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 1rem;
+            opacity: 0;
+            animation: fadeIn 0.7s ease forwards 0.65s;
+        }
+
+        .hero-scroll {
+            position: absolute;
+            bottom: 2.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1px;
+            height: 40px;
+            background: linear-gradient(to bottom, var(--warm), transparent);
+            opacity: 0;
+            animation: fadeIn 0.6s ease forwards 1s;
+        }
+
+        .hero-scroll::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -1.5px;
+            width: 4px;
+            height: 6px;
+            background: var(--warm);
+            border-radius: 2px;
+            animation: scrollPulse 2.2s ease-in-out infinite;
+        }
+
+        @keyframes scrollPulse {
+            0%, 100% { top: 0; opacity: 1; }
+            75% { top: 34px; opacity: 0; }
+        }
+
+        .btn-fill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.85rem 2rem;
+            background: var(--warm);
+            color: var(--bg);
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            text-decoration: none;
+            transition: all 0.25s;
+        }
+
+        .btn-fill:hover {
+            background: var(--warm-light);
+            transform: translateY(-1px);
+        }
+
+        .btn-fill svg {
+            width: 14px;
+            height: 14px;
+            transition: transform 0.2s;
+        }
+
+        .btn-fill:hover svg { transform: translateX(3px); }
+
+        .btn-border {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.85rem 1.75rem;
+            background: transparent;
+            color: var(--text-mid);
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            text-decoration: none;
+            border: 1px solid var(--border);
+            transition: all 0.25s;
+        }
+
+        .btn-border:hover {
+            border-color: rgba(255,255,255,0.14);
+            color: var(--text);
+        }
+
+
+        /* ─── FLOW SECTION (expanded) ─── */
+        .flow {
+            padding: 7rem 2.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .flow-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 4rem;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .flow-header h2 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 4.5vw, 3.5rem);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+            line-height: 0.95;
+        }
+
+        .flow-header-label {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+        }
+
+        .flow-track {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0;
+            max-width: 1200px;
+            margin: 0 auto;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        /* Connecting bar across top */
+        .flow-track::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(to right, var(--morning), var(--workout), var(--evening), var(--ai));
+            z-index: 1;
+        }
+
+        .flow-card {
+            padding: 2.5rem 2rem;
+            border-right: 1px solid var(--border);
+            position: relative;
+            transition: background 0.3s;
+        }
+
+        .flow-card:last-child { border-right: none; }
+
+        .flow-card:hover { background: var(--bg-card); }
+
+        .flow-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+        }
+
+        .flow-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .flow-icon svg { width: 22px; height: 22px; }
+
+        .flow-icon.morning { background: var(--morning-bg); color: var(--morning); }
+        .flow-icon.workout { background: var(--workout-bg); color: var(--workout); }
+        .flow-icon.evening { background: var(--evening-bg); color: var(--evening); }
+        .flow-icon.ai { background: var(--ai-bg); color: var(--ai); }
+
+        .flow-card-num {
+            font-family: var(--font-display);
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1;
+            color: rgba(255,255,255,0.035);
+        }
+
+        .flow-time {
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+        }
+
+        .flow-time.t-morning { color: var(--morning); }
+        .flow-time.t-workout { color: var(--workout); }
+        .flow-time.t-evening { color: var(--evening); }
+        .flow-time.t-ai { color: var(--ai); }
+
+        .flow-card h4 {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            color: var(--text);
+            margin-bottom: 0.75rem;
+        }
+
+        .flow-card p {
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            font-weight: 400;
+            line-height: 1.6;
+            color: var(--text-mid);
+        }
+
+        /* ─── FEATURES ─── */
+        .features {
+            padding: 7rem 2.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .features-header {
+            margin-bottom: 4rem;
+        }
+
+        .features-header h2 {
+            font-family: var(--font-display);
+            font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.75rem;
+        }
+
+        .features-header p {
+            font-family: var(--font-body);
+            font-size: 1.1rem;
+            color: var(--text-mid);
+            max-width: 50ch;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+        }
+
+        .f-cell {
+            background: var(--bg);
+            padding: 2.5rem 2rem;
+            transition: background 0.3s;
+        }
+
+        .f-cell:hover { background: var(--bg-card); }
+
+        .f-cell-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .f-cell-icon svg { width: 18px; height: 18px; }
+
+        .f-cell-icon.morning { background: var(--morning-bg); color: var(--morning); }
+        .f-cell-icon.workout { background: var(--workout-bg); color: var(--workout); }
+        .f-cell-icon.evening { background: var(--evening-bg); color: var(--evening); }
+        .f-cell-icon.ai { background: var(--ai-bg); color: var(--ai); }
+
+        .f-cell h3 {
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+        }
+
+        .f-cell p {
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--text-mid);
+        }
+
+        /* ─── INTEGRATIONS ─── */
+        .integrations {
+            padding: 4.5rem 2.5rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .integrations h3 {
+            font-family: var(--font-display);
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+        }
+
+        .int-row {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .int-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.55rem 1.2rem;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+            cursor: default;
+        }
+
+        .int-tag:hover {
+            border-color: var(--border-accent);
+            background: var(--warm-glow);
+        }
+
+        .int-tag svg { width: 14px; height: 14px; color: var(--warm); }
+
+        .int-tag span {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            color: var(--text-mid);
+        }
+
+        /* ─── WAITLIST ─── */
+        .waitlist {
+            padding: 7rem 2.5rem;
+            max-width: 620px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .waitlist h2 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            margin-bottom: 0.75rem;
+        }
+
+        .waitlist h2 .warm { color: var(--warm-light); }
+
+        .waitlist > p {
+            font-family: var(--font-body);
+            font-size: 1.1rem;
+            color: var(--text-mid);
+            margin-bottom: 2.5rem;
+        }
+
+        .waitlist-form {
+            display: flex;
+            gap: 0;
+            border: 1px solid var(--border);
+            transition: border-color 0.3s;
+        }
+
+        .waitlist-form:focus-within {
+            border-color: var(--border-accent);
+        }
+
+        .waitlist-form input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-family: var(--font-body);
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .waitlist-form input::placeholder { color: var(--text-dim); }
+
+        .waitlist-form button {
+            padding: 1rem 2.25rem;
+            background: var(--warm);
+            color: var(--bg);
+            font-family: var(--font-display);
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .waitlist-form button:hover:not(:disabled) { background: var(--warm-light); }
+        .waitlist-form button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .waitlist-message {
+            margin-top: 1rem;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            min-height: 1.4em;
+        }
+
+        .waitlist-message.success { color: var(--workout); }
+        .waitlist-message.error { color: var(--morning); }
+
+        /* ─── FOOTER ─── */
+        footer {
+            padding: 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer-left {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: var(--text-dim);
+        }
+
+        .footer-links { display: flex; gap: 2rem; }
+
+        .footer-links a {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: var(--text-mid);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover { color: var(--warm); }
+
+        /* ─── ANIMATIONS ─── */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 1000px) {
+            .flow-track { grid-template-columns: 1fr 1fr; }
+            .flow-card { border-bottom: 1px solid var(--border); }
+            .flow-card:nth-child(2) { border-right: none; }
+            .features-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 600px) {
+            nav { padding: 1rem 1.5rem; }
+            .nav-right li:not(:last-child) { display: none; }
+            .hero { padding: 7rem 1.5rem 4rem; }
+            .flow { padding: 5rem 1.5rem; }
+            .flow-track { grid-template-columns: 1fr; }
+            .flow-card { border-right: none !important; }
+            .features { padding: 5rem 1.5rem; }
+            .features-grid { grid-template-columns: 1fr; }
+            .hero-actions { flex-direction: column; align-items: flex-start; }
+            .waitlist { padding: 5rem 1.5rem; }
+            .waitlist-form { flex-direction: column; }
+            .int-row { flex-direction: column; align-items: center; }
+            footer { flex-direction: column; gap: 1rem; text-align: center; padding: 2rem 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <nav>
+            <a href="/" class="nav-brand">Daily <span>Ritual</span></a>
+            <ul class="nav-right">
+                <li><a href="#flow">Process</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="privacy.html">Privacy</a></li>
+                <li><a href="#waitlist" class="nav-cta">Early Access</a></li>
+            </ul>
+        </nav>
+
+        <section class="hero">
+            <div class="hero-tag">Performance Journaling</div>
+            <h1>Train your <span class="warm">mind</span> like your body</h1>
+            <p class="hero-sub">
+                Structured daily practice that turns mental training into a habit
+                as automatic as your physical training. Morning rituals. Workout reflections.
+                Evening insights. All connected.
+            </p>
+            <div class="hero-actions">
+                <a href="#waitlist" class="btn-fill">
+                    Join waitlist
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+                </a>
+                <a href="#flow" class="btn-border">How it works</a>
+            </div>
+            <div class="hero-scroll"></div>
+        </section>
+
+        <section class="flow" id="flow">
+            <div class="flow-header reveal">
+                <h2>Your Daily<br>Practice</h2>
+                <span class="flow-header-label">Process / 04 Steps</span>
+            </div>
+
+            <div class="flow-track">
+                <div class="flow-card reveal">
+                    <div class="flow-card-top">
+                        <div class="flow-icon morning">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/></svg>
+                        </div>
+                        <div class="flow-card-num">01</div>
+                    </div>
+                    <div class="flow-time t-morning">Morning</div>
+                    <h4>Set Your Intention</h4>
+                    <p>Goals, gratitudes, affirmation, and an athlete-curated quote. Five minutes that frame your entire day.</p>
+                </div>
+                <div class="flow-card reveal">
+                    <div class="flow-card-top">
+                        <div class="flow-icon workout">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                        </div>
+                        <div class="flow-card-num">02</div>
+                    </div>
+                    <div class="flow-time t-workout">Post-Workout</div>
+                    <h4>Reflect on the Session</h4>
+                    <p>Rate feeling, energy, focus. Note what clicked and what didn't. Freshest insights come right after training.</p>
+                </div>
+                <div class="flow-card reveal">
+                    <div class="flow-card-top">
+                        <div class="flow-icon evening">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                        </div>
+                        <div class="flow-card-num">03</div>
+                    </div>
+                    <div class="flow-time t-evening">Evening</div>
+                    <h4>Close the Day</h4>
+                    <p>Overall mood and honest self-assessment. The loop closes, the data builds, the patterns emerge.</p>
+                </div>
+                <div class="flow-card reveal">
+                    <div class="flow-card-top">
+                        <div class="flow-icon ai">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2zM22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+                        </div>
+                        <div class="flow-card-num">04</div>
+                    </div>
+                    <div class="flow-time t-ai">Continuous</div>
+                    <h4>AI Connects the Dots</h4>
+                    <p>Reveals relationships between mental state and physical performance no single entry could show you.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="features" id="features">
+            <div class="features-header reveal">
+                <h2>Built for the athlete's rhythm</h2>
+                <p>Not another generic journal. Every feature designed around how athletes actually train, recover, and compete.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="f-cell reveal">
+                    <div class="f-cell-icon morning">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/></svg>
+                    </div>
+                    <h3>Morning Ritual</h3>
+                    <p>Set your intention before the day begins. Goals, gratitude, affirmations, and a curated quote to anchor your mindset.</p>
+                </div>
+                <div class="f-cell reveal">
+                    <div class="f-cell-icon workout">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                    </div>
+                    <h3>Workout Reflections</h3>
+                    <p>Capture what went well and what to improve while the session is fresh. Rate your energy, focus, and feeling.</p>
+                </div>
+                <div class="f-cell reveal">
+                    <div class="f-cell-icon evening">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                    </div>
+                    <h3>Evening Reflection</h3>
+                    <p>Close the day with structured reflection. Mood tracking, wins, and areas for growth that build over time.</p>
+                </div>
+                <div class="f-cell reveal">
+                    <div class="f-cell-icon ai">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2zM22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+                    </div>
+                    <h3>AI Insights</h3>
+                    <p>Surfaces patterns you can't see — mood-performance links and recovery blind spots revealed over time.</p>
+                </div>
+                <div class="f-cell reveal">
+                    <div class="f-cell-icon workout">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    </div>
+                    <h3>Device Sync</h3>
+                    <p>Pulls recovery, strain, and workout data from Whoop, Strava, and Apple Health automatically.</p>
+                </div>
+                <div class="f-cell reveal">
+                    <div class="f-cell-icon morning">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+                    </div>
+                    <h3>Streaks & Consistency</h3>
+                    <p>Track daily practice streaks. Small deposits, compounding returns. Build momentum that sticks.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="integrations reveal">
+            <h3>Connects with your stack</h3>
+            <div class="int-row">
+                <div class="int-tag">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    <span>Whoop</span>
+                </div>
+                <div class="int-tag">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    <span>Strava</span>
+                </div>
+                <div class="int-tag">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                    <span>Apple Health</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="waitlist" id="waitlist">
+            <h2 class="reveal">Get <span class="warm">Early</span> Access</h2>
+            <p class="reveal">One email when we launch. No spam. No noise.</p>
+            <form class="waitlist-form reveal" id="waitlist-form" action="https://formspree.io/f/xaqdqapz" method="POST">
+                <input type="email" name="email" placeholder="your@email.com" required autocomplete="email">
+                <button type="submit" id="waitlist-submit">Notify Me</button>
+            </form>
+            <p class="waitlist-message" id="waitlist-message" aria-live="polite"></p>
+        </section>
+
+        <footer>
+            <div class="footer-left">&copy; 2025 Daily Ritual</div>
+            <div class="footer-links">
+                <a href="privacy.html">Privacy</a>
+                <a href="mailto:support@dailyritual.app">Support</a>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const reveals = document.querySelectorAll('.reveal');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry, i) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => entry.target.classList.add('visible'), i * 60);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.08, rootMargin: '0px 0px -20px 0px' });
+        reveals.forEach(el => observer.observe(el));
+
+        const waitlistForm = document.getElementById('waitlist-form');
+        const waitlistSubmit = document.getElementById('waitlist-submit');
+        const waitlistMessage = document.getElementById('waitlist-message');
+        if (waitlistForm) {
+            waitlistForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                waitlistSubmit.disabled = true;
+                waitlistMessage.textContent = '';
+                waitlistMessage.className = 'waitlist-message';
+                try {
+                    const res = await fetch(waitlistForm.action, {
+                        method: 'POST', body: new FormData(waitlistForm),
+                        headers: { Accept: 'application/json' }
+                    });
+                    const data = await res.json();
+                    if (data.ok) {
+                        waitlistMessage.textContent = "You're on the list.";
+                        waitlistMessage.className = 'waitlist-message success';
+                        waitlistForm.reset();
+                    } else {
+                        waitlistMessage.textContent = 'Something went wrong. Try again.';
+                        waitlistMessage.className = 'waitlist-message error';
+                    }
+                } catch {
+                    waitlistMessage.textContent = 'Something went wrong. Try again.';
+                    waitlistMessage.className = 'waitlist-message error';
+                }
+                waitlistSubmit.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>

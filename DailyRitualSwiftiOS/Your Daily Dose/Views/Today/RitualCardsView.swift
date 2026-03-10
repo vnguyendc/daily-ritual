@@ -7,11 +7,19 @@
 
 import SwiftUI
 
+// MARK: - Scale Button Style (press feedback)
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
+    }
+}
+
 // MARK: - Morning Ritual Card (Incomplete)
 struct IncompleteMorningCard: View {
     let completedSteps: Int
     let onTap: () -> Void
-    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var body: some View {
         Button(action: onTap) {
@@ -56,11 +64,8 @@ struct IncompleteMorningCard: View {
                 }
             }
         }
-        .buttonStyle(.plain)
-        .animation(reduceMotion ? nil : DesignSystem.Animation.gentle, value: completedSteps)
-        .accessibilityLabel("Morning Ritual, \(completedSteps) of 4 steps completed")
-        .accessibilityHint("Tap to open morning ritual")
-        .accessibilityAddTraits(.isButton)
+        .buttonStyle(ScaleButtonStyle())
+        .animation(DesignSystem.Animation.gentle, value: completedSteps)
     }
 }
 
@@ -68,7 +73,6 @@ struct IncompleteMorningCard: View {
 struct IncompleteEveningCard: View {
     let completedSteps: Int
     let onTap: () -> Void
-    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var body: some View {
         Button(action: onTap) {
@@ -113,11 +117,8 @@ struct IncompleteEveningCard: View {
                 }
             }
         }
-        .buttonStyle(.plain)
-        .animation(reduceMotion ? nil : DesignSystem.Animation.gentle, value: completedSteps)
-        .accessibilityLabel("Evening Reflection, \(completedSteps) of 3 steps completed")
-        .accessibilityHint("Tap to open evening reflection")
-        .accessibilityAddTraits(.isButton)
+        .buttonStyle(ScaleButtonStyle())
+        .animation(DesignSystem.Animation.gentle, value: completedSteps)
     }
 }
 
@@ -126,7 +127,7 @@ struct CompletedRitualCard: View {
     enum RitualType {
         case morning
         case evening
-        
+
         var title: String {
             switch self {
             case .morning: return "Morning Complete"
@@ -134,27 +135,31 @@ struct CompletedRitualCard: View {
             }
         }
     }
-    
+
     let type: RitualType
     let onTap: () -> Void
-    
+
+    @State private var checkmarkScale: CGFloat = 0
+    @State private var backgroundFlash = false
+
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: DesignSystem.Spacing.md) {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundColor(DesignSystem.Colors.success)
                     .font(.system(size: 18))
-                
+                    .scaleEffect(checkmarkScale)
+
                 Text(type.title)
                     .font(DesignSystem.Typography.bodySmall)
                     .foregroundColor(DesignSystem.Colors.secondaryText)
-                
+
                 Spacer()
-                
+
                 Text("Edit")
                     .font(DesignSystem.Typography.caption)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
-                
+
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
@@ -163,12 +168,25 @@ struct CompletedRitualCard: View {
             .padding(.vertical, DesignSystem.Spacing.sm)
             .background(
                 RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
-                    .fill(DesignSystem.Colors.cardBackground.opacity(0.5))
+                    .fill(backgroundFlash
+                          ? DesignSystem.Colors.success.opacity(0.12)
+                          : DesignSystem.Colors.cardBackground.opacity(0.5))
             )
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("\(type.title), tap to edit")
-        .accessibilityAddTraits(.isButton)
+        .buttonStyle(ScaleButtonStyle())
+        .onAppear {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.6)) {
+                checkmarkScale = 1.0
+            }
+            withAnimation(.easeOut(duration: 0.25)) {
+                backgroundFlash = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    backgroundFlash = false
+                }
+            }
+        }
     }
 }
 
