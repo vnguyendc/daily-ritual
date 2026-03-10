@@ -17,6 +17,8 @@ struct TodayFloatingActionButton: View {
     var onWorkoutReflection: (() -> Void)?
     var onLogMeal: (() -> Void)?
 
+    @State private var breatheScale: CGFloat = 1.0
+
     var body: some View {
         Menu {
             Button {
@@ -64,15 +66,28 @@ struct TodayFloatingActionButton: View {
                     .fill(timeContext.primaryColor)
                     .frame(width: 56, height: 56)
                     .shadow(color: DesignSystem.Colors.background.opacity(0.3), radius: 8, x: 0, y: 4)
+                    .scaleEffect(breatheScale)
                 Image(systemName: "plus")
                     .foregroundColor(DesignSystem.Colors.invertedText)
                     .font(.system(size: 22, weight: .bold))
             }
         }
-        .accessibilityLabel("Quick Action")
-        .accessibilityHint("Opens menu to add new entry or activity")
+        .accessibilityLabel("Add new entry, menu")
+        .accessibilityHint("Opens menu to add new entry, activity, or meal")
         .padding(.trailing, DesignSystem.Spacing.lg)
         .padding(.bottom, DesignSystem.Spacing.lg)
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                withAnimation(.easeInOut(duration: 0.6)) {
+                    breatheScale = 1.03
+                }
+                try? await Task.sleep(nanoseconds: 600_000_000)
+                withAnimation(.easeInOut(duration: 0.6)) {
+                    breatheScale = 1.0
+                }
+            }
+        }
     }
 }
 

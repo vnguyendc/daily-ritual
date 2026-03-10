@@ -14,60 +14,77 @@ struct StreakWidgetView: View {
     @Binding var showingHistory: Bool
 
     var body: some View {
-        PremiumCard(timeContext: timeContext) {
-            VStack(spacing: DesignSystem.Spacing.md) {
-                // Main streak display
-                HStack {
-                    HStack(spacing: DesignSystem.Spacing.sm) {
-                        Text("🔥")
-                            .font(.system(size: 28))
+        Button { showingHistory = true } label: {
+            PremiumCard(timeContext: timeContext) {
+                VStack(spacing: DesignSystem.Spacing.md) {
+                    // Main streak display
+                    HStack {
+                        HStack(spacing: DesignSystem.Spacing.sm) {
+                            Text("🔥")
+                                .font(.system(size: 28))
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("\(streaksService.dailyStreak) Day Streak")
-                                .font(DesignSystem.Typography.headlineMedium)
-                                .foregroundColor(DesignSystem.Colors.primaryText)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("\(streaksService.dailyStreak) Day Streak")
+                                    .font(DesignSystem.Typography.headlineMedium)
+                                    .foregroundColor(DesignSystem.Colors.primaryText)
 
-                            if streaksService.longestDailyStreak > streaksService.dailyStreak {
-                                Text("Best: \(streaksService.longestDailyStreak)")
-                                    .font(DesignSystem.Typography.caption)
-                                    .foregroundColor(DesignSystem.Colors.tertiaryText)
+                                if streaksService.longestDailyStreak > streaksService.dailyStreak {
+                                    Text("Best: \(streaksService.longestDailyStreak)")
+                                        .font(DesignSystem.Typography.caption)
+                                        .foregroundColor(DesignSystem.Colors.tertiaryText)
+                                }
                             }
+                        }
+
+                        Spacer()
+
+                        if let grace = streaksService.gracePeriodStreak,
+                           let hours = grace.gracePeriodHoursRemaining {
+                            GracePeriodBadge(hoursRemaining: hours)
                         }
                     }
 
-                    Spacer()
+                    // Secondary stats
+                    HStack(spacing: DesignSystem.Spacing.lg) {
+                        StreakStat(
+                            icon: "sunrise.fill",
+                            label: "Morning",
+                            value: streaksService.morningStreak,
+                            color: DesignSystem.Colors.eliteGold
+                        )
 
-                    if let grace = streaksService.gracePeriodStreak,
-                       let hours = grace.gracePeriodHoursRemaining {
-                        GracePeriodBadge(hoursRemaining: hours)
+                        StreakStat(
+                            icon: "moon.stars.fill",
+                            label: "Evening",
+                            value: streaksService.eveningStreak,
+                            color: DesignSystem.Colors.championBlue
+                        )
+
+                        Spacer()
+
+                        Text("View history")
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(timeContext.primaryColor)
                     }
-                }
-
-                // Secondary stats
-                HStack(spacing: DesignSystem.Spacing.lg) {
-                    StreakStat(
-                        icon: "sunrise.fill",
-                        label: "Morning",
-                        value: streaksService.morningStreak,
-                        color: DesignSystem.Colors.eliteGold
-                    )
-
-                    StreakStat(
-                        icon: "moon.stars.fill",
-                        label: "Evening",
-                        value: streaksService.eveningStreak,
-                        color: DesignSystem.Colors.championBlue
-                    )
-
-                    Spacer()
-
-                    Text("View history")
-                        .font(DesignSystem.Typography.caption)
-                        .foregroundColor(timeContext.primaryColor)
                 }
             }
         }
         .onTapGesture { showingHistory = true }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(streakAccessibilityLabel)
+        .accessibilityHint("Tap to view streak history")
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private var streakAccessibilityLabel: String {
+        var label = "Current streak, \(streaksService.dailyStreak) days"
+        if streaksService.morningStreak > 0 || streaksService.eveningStreak > 0 {
+            label += ". Morning streak \(streaksService.morningStreak), evening streak \(streaksService.eveningStreak)"
+        }
+        if streaksService.longestDailyStreak > streaksService.dailyStreak {
+            label += ". Best: \(streaksService.longestDailyStreak) days"
+        }
+        return label
     }
 }
 
@@ -103,6 +120,8 @@ private struct GracePeriodBadge: View {
             Text("\(hoursRemaining)h left")
                 .font(DesignSystem.Typography.caption)
                 .fontWeight(.medium)
+                .minimumScaleFactor(0.8)
+                .lineLimit(1)
         }
         .foregroundColor(.orange)
         .padding(.horizontal, DesignSystem.Spacing.sm)
@@ -111,5 +130,6 @@ private struct GracePeriodBadge: View {
             Capsule()
                 .fill(Color.orange.opacity(0.15))
         )
+        .accessibilityLabel("Grace period, \(hoursRemaining) hours remaining")
     }
 }
