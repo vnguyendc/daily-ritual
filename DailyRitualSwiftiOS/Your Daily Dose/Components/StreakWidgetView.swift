@@ -13,6 +13,12 @@ struct StreakWidgetView: View {
     let timeContext: DesignSystem.TimeContext
     @Binding var showingHistory: Bool
 
+    private var gracePeriodInfo: (streak: UserStreak, hours: Int)? {
+        guard let grace = streaksService.gracePeriodStreak,
+              let hours = grace.gracePeriodHoursRemaining else { return nil }
+        return (grace, hours)
+    }
+
     var body: some View {
         PremiumCard(timeContext: timeContext) {
             VStack(spacing: DesignSystem.Spacing.md) {
@@ -64,10 +70,37 @@ struct StreakWidgetView: View {
                             .font(DesignSystem.Typography.caption)
                             .foregroundColor(timeContext.primaryColor)
                     }
+
+                    // Grace period progress bar
+                    if let info = gracePeriodInfo {
+                        GracePeriodProgressBar(hoursRemaining: info.hours)
+                    }
                 }
             }
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                    .stroke(
+                        gracePeriodInfo != nil ? DesignSystem.Colors.alertRed.opacity(0.5) : Color.clear,
+                        lineWidth: 2
+                    )
+            )
         }
-        .buttonStyle(CardButtonStyle())
+        .onTapGesture { showingHistory = true }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(streakAccessibilityLabel)
+        .accessibilityHint("Tap to view streak history")
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private var streakAccessibilityLabel: String {
+        var label = "Current streak, \(streaksService.dailyStreak) days"
+        if streaksService.morningStreak > 0 || streaksService.eveningStreak > 0 {
+            label += ". Morning streak \(streaksService.morningStreak), evening streak \(streaksService.eveningStreak)"
+        }
+        if streaksService.longestDailyStreak > streaksService.dailyStreak {
+            label += ". Best: \(streaksService.longestDailyStreak) days"
+        }
+        return label
     }
 }
 
@@ -95,6 +128,7 @@ private struct StreakStat: View {
 
 private struct GracePeriodBadge: View {
     let hoursRemaining: Int
+    @State private var pulsing = false
 
     var body: some View {
         HStack(spacing: 4) {
@@ -103,6 +137,8 @@ private struct GracePeriodBadge: View {
             Text("\(hoursRemaining)h left")
                 .font(DesignSystem.Typography.caption)
                 .fontWeight(.medium)
+                .minimumScaleFactor(0.8)
+                .lineLimit(1)
         }
         .foregroundColor(.orange)
         .padding(.horizontal, DesignSystem.Spacing.sm)
@@ -111,5 +147,6 @@ private struct GracePeriodBadge: View {
             Capsule()
                 .fill(Color.orange.opacity(0.15))
         )
+        .accessibilityLabel("Grace period, \(hoursRemaining) hours remaining")
     }
 }

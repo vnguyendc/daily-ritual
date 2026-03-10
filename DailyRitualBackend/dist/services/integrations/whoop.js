@@ -148,6 +148,36 @@ export class WhoopService {
             resting_hr: recovery.score?.resting_heart_rate || 0
         };
     }
+    async getSleepData(accessToken, date) {
+        const startDate = `${date}T00:00:00.000Z`;
+        const endDate = `${date}T23:59:59.999Z`;
+        const response = await fetch(`${this.baseUrl}/v1/activity/sleep?start=${startDate}&end=${endDate}`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        if (!response.ok) {
+            if (response.status === 404)
+                return null;
+            throw new Error(`Whoop sleep fetch failed: ${response.status}`);
+        }
+        const data = await response.json();
+        if (!data.records || data.records.length === 0)
+            return null;
+        const sleep = data.records[0];
+        const score = sleep.score || {};
+        return {
+            performance: score.sleep_performance_percentage || 0,
+            duration_minutes: Math.round((score.total_sleep_duration || 0) / 60000),
+            efficiency: score.sleep_efficiency_percentage || 0,
+            stages: {
+                awake: Math.round((score.stage_summary?.total_awake_time || 0) / 60000),
+                light: Math.round((score.stage_summary?.total_light_sleep_time || 0) / 60000),
+                rem: Math.round((score.stage_summary?.total_rem_sleep_time || 0) / 60000),
+                deep: Math.round((score.stage_summary?.total_slow_wave_sleep_time || 0) / 60000)
+            },
+            respiratory_rate: score.respiratory_rate || 0,
+            skin_temp_delta: score.skin_temp_celsius_delta || 0
+        };
+    }
     async getStrainData(accessToken, date) {
         const startDate = `${date}T00:00:00.000Z`;
         const endDate = `${date}T23:59:59.999Z`;

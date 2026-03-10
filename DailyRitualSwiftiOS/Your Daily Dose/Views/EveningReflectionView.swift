@@ -63,7 +63,7 @@ struct EveningReflectionView: View {
                         .tag(3)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
-                    .animation(.easeInOut(duration: 0.3), value: currentStep)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.85), value: currentStep)
                 }
             }
             .loadingOverlay(isLoading: isSaving, message: "Saving...")
@@ -157,12 +157,12 @@ struct EveningReflectionView: View {
                 RoundedRectangle(cornerRadius: 2)
                     .fill(timeContext.primaryColor)
                     .frame(width: geometry.size.width * CGFloat(currentStep + 1) / CGFloat(totalSteps), height: 4)
-                    .animation(.easeInOut(duration: 0.3), value: currentStep)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.7), value: currentStep)
             }
         }
         .frame(height: 4)
     }
-    
+
     private var canProceed: Bool {
         switch currentStep {
         case 0: return !(entry.quoteApplication?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
@@ -523,6 +523,8 @@ struct CleanMoodStepView: View {
                             )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Mood: \(moodLabels[value - 1])")
+                    .accessibilityAddTraits(mood == value ? [.isSelected] : [])
                 }
             }
             

@@ -61,7 +61,7 @@ struct DesignSystem {
         )
         static let tertiaryText = Color(
             light: Color(red: 0.35, green: 0.38, blue: 0.42),              // Darker for higher contrast (approx #5C636A)
-            dark: Color(red: 0.42, green: 0.45, blue: 0.50)                // #6B7280 (dark)
+            dark: Color(red: 0.518, green: 0.549, blue: 0.60)              // #848C99 — improved WCAG AA contrast on dark cardBackground (~5.6:1)
         )
         static let invertedText = Color(
             light: Color.white,                                              // White (light)
@@ -103,6 +103,22 @@ struct DesignSystem {
         static let graphite = Color(
             light: Color(red: 0.94, green: 0.93, blue: 0.90),              // #F0EDE6 - Warm light gray (light mode)
             dark: Color(red: 0.18, green: 0.18, blue: 0.16)                // #2D2D29 - Warm graphite (dark mode)
+        )
+        
+        // Performance Text Colors with High Contrast
+        static let performancePrimaryText = Color(
+            light: Color(red: 0.10, green: 0.11, blue: 0.12),              // #1A1B1F (light mode)
+            dark: Color.white                                                // #FFFFFF (dark mode)
+        )
+        
+        static let performanceSecondaryText = Color(
+            light: Color(red: 0.29, green: 0.31, blue: 0.34),              // #495057 (light mode)
+            dark: Color(red: 0.72, green: 0.74, blue: 0.78)                // #B8BCC8 (dark mode)
+        )
+        
+        static let performanceTertiaryText = Color(
+            light: Color(red: 0.42, green: 0.46, blue: 0.49),              // #6C757D (light mode)
+            dark: Color(red: 0.518, green: 0.549, blue: 0.60)              // #848C99 — improved WCAG AA contrast (dark mode)
         )
         
         // MARK: - Legacy Support (for backward compatibility)
