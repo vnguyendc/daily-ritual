@@ -71,6 +71,8 @@ struct DayDetailSheet: View {
     @State private var planToDelete: TrainingPlan?
     @State private var showDeleteConfirmation = false
     @State private var dayMeals: [Meal] = []
+    @State private var mealToDelete: Meal?
+    @State private var showDeleteMealConfirmation = false
 
     private let plansService: TrainingPlansServiceProtocol = TrainingPlansService()
     private let mealsService: MealsServiceProtocol = MealsService()
@@ -242,6 +244,26 @@ struct DayDetailSheet: View {
                 }
             } message: {
                 Text("This training session will be permanently deleted.")
+            }
+            .confirmationDialog(
+                "Delete Meal",
+                isPresented: $showDeleteMealConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Delete", role: .destructive) {
+                    if let meal = mealToDelete {
+                        Task {
+                            try? await mealsService.deleteMeal(id: meal.id)
+                            await load()
+                            hapticSuccess()
+                        }
+                    }
+                }
+                Button("Cancel", role: .cancel) {
+                    mealToDelete = nil
+                }
+            } message: {
+                Text("This meal will be permanently deleted.")
             }
         }
     }
