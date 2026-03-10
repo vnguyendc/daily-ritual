@@ -233,6 +233,7 @@ struct InsightsListView: View {
                                         }
                                         if insight.isRead != true {
                                             Button("Mark as read") {
+                                                HapticManager.tap()
                                                 Task { await viewModel.markRead(insight.id) }
                                             }
                                             .buttonStyle(.borderedProminent)

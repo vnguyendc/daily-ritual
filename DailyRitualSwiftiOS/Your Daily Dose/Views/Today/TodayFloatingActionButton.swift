@@ -6,9 +6,6 @@
 //
 
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
 
 struct TodayFloatingActionButton: View {
     let timeContext: DesignSystem.TimeContext
@@ -22,29 +19,23 @@ struct TodayFloatingActionButton: View {
     var body: some View {
         Menu {
             Button {
+                HapticManager.tap()
                 onNewEntry()
-                #if canImport(UIKit)
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                #endif
             } label: {
                 Label("New Entry", systemImage: "square.and.pencil")
             }
 
             Button {
+                HapticManager.tap()
                 onAddActivity()
-                #if canImport(UIKit)
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                #endif
             } label: {
                 Label("Add Activity", systemImage: "figure.run")
             }
 
             if let onLogMeal = onLogMeal {
                 Button {
+                    HapticManager.tap()
                     onLogMeal()
-                    #if canImport(UIKit)
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    #endif
                 } label: {
                     Label("Log Meal", systemImage: "fork.knife")
                 }
@@ -52,10 +43,8 @@ struct TodayFloatingActionButton: View {
 
             if let onWorkoutReflection = onWorkoutReflection {
                 Button {
+                    HapticManager.tap()
                     onWorkoutReflection()
-                    #if canImport(UIKit)
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    #endif
                 } label: {
                     Label("Workout Reflection", systemImage: "checkmark.circle")
                 }

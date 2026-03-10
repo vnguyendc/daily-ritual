@@ -7,9 +7,6 @@
 //
 
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
 
 struct TrainingPlanView: View {
     @State private var selectedDate: Date = Calendar.current.startOfDay(for: Date())
@@ -26,7 +23,7 @@ struct TrainingPlanView: View {
                 TrainingWeekView(selectedDate: $selectedDate) { date in
                     dayDetailDate = date
                     showDayDetail = true
-                    hapticLight()
+                    HapticManager.tap()
                 }
             }
             .navigationTitle("Training")
@@ -37,7 +34,7 @@ struct TrainingPlanView: View {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             selectedDate = Date()
                         }
-                        hapticLight()
+                        HapticManager.tap()
                     } label: {
                         Text("Today")
                             .font(DesignSystem.Typography.buttonSmall)
@@ -52,7 +49,7 @@ struct TrainingPlanView: View {
     }
 
     // MARK: - Haptics
-    private func hapticLight() {
+    private func HapticManager.tap() {
         #if canImport(UIKit)
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         #endif
@@ -201,7 +198,7 @@ struct DayDetailSheet: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         showingAddForm = true
-                        hapticLight()
+                        HapticManager.tap()
                     } label: {
                         Image(systemName: "plus.circle.fill")
                             .font(DesignSystem.Typography.displaySmall)
@@ -235,7 +232,7 @@ struct DayDetailSheet: View {
                         Task {
                             try? await plansService.remove(plan.id)
                             await load()
-                            hapticSuccess()
+                            HapticManager.success()
                         }
                     }
                 }
@@ -315,9 +312,38 @@ struct DayDetailSheet: View {
 
     // MARK: - Empty State
     private var emptyState: some View {
-        TrainingEmptyStateView {
-            showingAddForm = true
-            hapticLight()
+        VStack(spacing: DesignSystem.Spacing.lg) {
+            Image(systemName: "moon.zzz.fill")
+                .font(.system(size: 64))
+                .foregroundColor(DesignSystem.Colors.tertiaryText.opacity(0.5))
+            
+            VStack(spacing: DesignSystem.Spacing.xs) {
+                Text("Rest Day")
+                    .font(DesignSystem.Typography.headlineMedium)
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+                
+                Text("No sessions scheduled for this day")
+                    .font(DesignSystem.Typography.bodyMedium)
+                    .foregroundColor(DesignSystem.Colors.secondaryText)
+                    .multilineTextAlignment(.center)
+            }
+            
+            Button {
+                showingAddForm = true
+                HapticManager.tap()
+            } label: {
+                HStack(spacing: DesignSystem.Spacing.sm) {
+                    Image(systemName: "plus")
+                    Text("Add Session")
+                }
+                .font(DesignSystem.Typography.buttonMedium)
+                .foregroundColor(DesignSystem.Colors.invertedText)
+                .padding(.horizontal, DesignSystem.Spacing.xl)
+                .padding(.vertical, DesignSystem.Spacing.md)
+                .background(
+                    Capsule().fill(timeContext.primaryColor)
+                )
+            }
         }
     }
 

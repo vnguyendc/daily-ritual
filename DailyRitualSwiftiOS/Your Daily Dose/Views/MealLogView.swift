@@ -190,6 +190,7 @@ struct MealLogView: View {
                     ForEach(mealTypes, id: \.value) { type in
                         Button {
                             mealType = type.value
+                            HapticManager.selectionChanged()
                         } label: {
                             VStack(spacing: 4) {
                                 Image(systemName: type.icon)
@@ -473,14 +474,13 @@ struct MealLogView: View {
                 editCarbs = String(format: "%.0f", meal.carbsG)
                 editFat = String(format: "%.0f", meal.fatG)
                 isAnalyzing = false
-                #if canImport(UIKit)
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
-                #endif
+                HapticManager.success()
             }
         } catch {
             await MainActor.run {
                 errorMessage = "Failed to analyze meal: \(error.localizedDescription)"
                 isAnalyzing = false
+                HapticManager.error()
             }
         }
     }

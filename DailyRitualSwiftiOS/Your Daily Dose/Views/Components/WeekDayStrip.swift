@@ -7,9 +7,6 @@
 //
 
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
 
 struct WeekDayStrip: View {
     @Binding var selectedDate: Date
@@ -114,7 +111,7 @@ struct WeekDayStrip: View {
             guard !isFuture else { return }
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 selectedDate = day
-                hapticLight()
+                HapticManager.selectionChanged()
             }
         } label: {
             VStack(spacing: 6) {

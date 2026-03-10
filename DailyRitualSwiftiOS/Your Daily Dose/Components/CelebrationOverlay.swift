@@ -125,10 +125,12 @@ struct CelebrationOverlay: View {
     }
 
     private func animate() {
-        // Haptic
-        #if canImport(UIKit)
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
-        #endif
+        // Haptic — heavier impact for milestones
+        if milestone != nil {
+            HapticManager.milestone()
+        } else {
+            HapticManager.success()
+        }
 
         if reduceMotion {
             // Skip animations — jump to final state immediately
