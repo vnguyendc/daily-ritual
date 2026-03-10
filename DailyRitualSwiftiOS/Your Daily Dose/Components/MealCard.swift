@@ -134,7 +134,7 @@ struct MealCard: View {
                 .fill(timeContext.primaryColor.opacity(0.1))
                 .frame(width: 64, height: 64)
             Image(systemName: meal.mealTypeIcon)
-                .font(.title3)
+                .font(DesignSystem.Typography.headlineLarge)
                 .foregroundColor(timeContext.primaryColor)
         }
     }
@@ -142,7 +142,7 @@ struct MealCard: View {
     private func macroLabel(_ prefix: String, value: Double, color: Color) -> some View {
         HStack(spacing: 2) {
             Text(prefix)
-                .font(.system(size: 10, weight: .bold))
+                .font(DesignSystem.Typography.metadata)
                 .foregroundColor(color)
             Text(String(format: "%.0fg", value))
                 .font(DesignSystem.Typography.metadata)

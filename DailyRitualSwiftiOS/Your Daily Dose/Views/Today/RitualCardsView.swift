@@ -200,7 +200,7 @@ struct CompletedRitualCard: View {
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(DesignSystem.Typography.metadata)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
             }
             .background(

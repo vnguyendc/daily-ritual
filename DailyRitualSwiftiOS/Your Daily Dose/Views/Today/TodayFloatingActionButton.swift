@@ -69,7 +69,7 @@ struct TodayFloatingActionButton: View {
                     .scaleEffect(breatheScale)
                 Image(systemName: "plus")
                     .foregroundColor(DesignSystem.Colors.invertedText)
-                    .font(.system(size: 22, weight: .bold))
+                    .font(DesignSystem.Typography.displaySmall)
             }
         }
         .accessibilityLabel("Add new entry, menu")

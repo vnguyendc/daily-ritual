@@ -89,7 +89,7 @@ struct TodayHeaderView: View {
                     )
                 Image(systemName: "person.crop.circle")
                     .foregroundColor(DesignSystem.Colors.primaryText)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(DesignSystem.Typography.headlineMedium)
             }
         }
         .buttonStyle(.plain)

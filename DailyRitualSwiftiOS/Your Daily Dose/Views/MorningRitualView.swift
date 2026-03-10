@@ -79,7 +79,7 @@ struct MorningRitualView: View {
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: currentStep > 0 ? "chevron.left" : "xmark")
-                                .font(.system(size: 14, weight: .medium))
+                                .font(DesignSystem.Typography.bodyMedium)
                             if currentStep > 0 {
                                 Text("Back")
                                     .font(DesignSystem.Typography.bodyMedium)
@@ -317,9 +317,9 @@ struct CleanGoalsStepView: View {
         } label: {
             HStack {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 12))
+                    .font(DesignSystem.Typography.caption)
                     .foregroundColor(timeContext.primaryColor)
-                
+
                 Text(label)
                     .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(DesignSystem.Colors.primaryText)
@@ -432,17 +432,17 @@ struct CleanGratitudeStepView: View {
         } label: {
             HStack {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 12))
+                    .font(DesignSystem.Typography.caption)
                     .foregroundColor(timeContext.primaryColor)
-                
+
                 Text(text)
                     .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(DesignSystem.Colors.primaryText)
-                
+
                 Spacer()
-                
+
                 Image(systemName: "plus")
-                    .font(.system(size: 12))
+                    .font(DesignSystem.Typography.caption)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
             }
             .padding(DesignSystem.Spacing.sm)
@@ -498,7 +498,7 @@ struct CleanAffirmationStepView: View {
                     } label: {
                         HStack(alignment: .top, spacing: DesignSystem.Spacing.sm) {
                             Image(systemName: "sparkles")
-                                .font(.system(size: 14))
+                                .font(DesignSystem.Typography.bodyMedium)
                                 .foregroundColor(timeContext.primaryColor)
                             
                             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {

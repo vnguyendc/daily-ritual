@@ -204,7 +204,7 @@ struct DayDetailSheet: View {
                         hapticLight()
                     } label: {
                         Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 22))
+                            .font(DesignSystem.Typography.displaySmall)
                             .foregroundColor(timeContext.primaryColor)
                     }
                 }

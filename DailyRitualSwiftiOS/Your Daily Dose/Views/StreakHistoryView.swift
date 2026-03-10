@@ -69,7 +69,7 @@ struct StreakHistoryView: View {
                 ForEach(displayStreaks, id: \.streakType) { streak in
                     HStack {
                         Image(systemName: streak.streakType.icon)
-                            .font(.system(size: 16))
+                            .font(DesignSystem.Typography.headlineSmall)
                             .foregroundColor(colorFor(streak.streakType))
                             .frame(width: 24)
 

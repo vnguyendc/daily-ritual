@@ -20,25 +20,23 @@ struct StreakWidgetView: View {
     }
 
     var body: some View {
-        Button { showingHistory = true } label: {
-            PremiumCard(timeContext: timeContext) {
-                VStack(spacing: DesignSystem.Spacing.md) {
-                    // Main streak display
-                    HStack {
-                        HStack(spacing: DesignSystem.Spacing.sm) {
-                            Text("🔥")
-                                .font(.system(size: 28))
+        PremiumCard(timeContext: timeContext) {
+            VStack(spacing: DesignSystem.Spacing.md) {
+                // Main streak display
+                HStack {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        Text("🔥")
+                            .font(DesignSystem.Typography.displayMedium)
 
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("\(streaksService.dailyStreak) Day Streak")
-                                    .font(DesignSystem.Typography.headlineMedium)
-                                    .foregroundColor(DesignSystem.Colors.primaryText)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(streaksService.dailyStreak) Day Streak")
+                                .font(DesignSystem.Typography.headlineMedium)
+                                .foregroundColor(DesignSystem.Colors.primaryText)
 
-                                if streaksService.longestDailyStreak > streaksService.dailyStreak {
-                                    Text("Best: \(streaksService.longestDailyStreak)")
-                                        .font(DesignSystem.Typography.caption)
-                                        .foregroundColor(DesignSystem.Colors.tertiaryText)
-                                }
+                            if streaksService.longestDailyStreak > streaksService.dailyStreak {
+                                Text("Best: \(streaksService.longestDailyStreak)")
+                                    .font(DesignSystem.Typography.caption)
+                                    .foregroundColor(DesignSystem.Colors.tertiaryText)
                             }
                         }
 
@@ -117,7 +115,7 @@ private struct StreakStat: View {
     var body: some View {
         HStack(spacing: 4) {
             Image(systemName: icon)
-                .font(.system(size: 12))
+                .font(DesignSystem.Typography.caption)
                 .foregroundColor(color)
 
             Text("\(value)")
@@ -135,7 +133,7 @@ private struct GracePeriodBadge: View {
     var body: some View {
         HStack(spacing: 4) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 10))
+                .font(DesignSystem.Typography.metadata)
             Text("\(hoursRemaining)h left")
                 .font(DesignSystem.Typography.caption)
                 .fontWeight(.medium)

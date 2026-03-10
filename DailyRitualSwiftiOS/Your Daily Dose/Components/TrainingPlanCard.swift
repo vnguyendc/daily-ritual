@@ -77,7 +77,7 @@ struct TrainingPlanCard: View {
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "checkmark.circle")
-                                .font(.system(size: 12))
+                                .font(DesignSystem.Typography.caption)
                             Text("Reflect")
                                 .font(DesignSystem.Typography.caption)
                         }
@@ -97,7 +97,7 @@ struct TrainingPlanCard: View {
 
                 // Chevron
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(DesignSystem.Typography.caption)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
             }
             .padding(DesignSystem.Spacing.md)
@@ -213,7 +213,7 @@ struct TrainingPlansSummary: View {
             HStack {
                 HStack(spacing: DesignSystem.Spacing.sm) {
                     Image(systemName: "figure.run")
-                        .font(.system(size: 16))
+                        .font(DesignSystem.Typography.headlineSmall)
                         .foregroundColor(timeContext.primaryColor)
                     
                     Text("Today's Training")

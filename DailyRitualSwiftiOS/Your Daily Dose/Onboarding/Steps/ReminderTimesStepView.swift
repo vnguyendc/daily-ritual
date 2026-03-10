@@ -205,7 +205,7 @@ struct ReminderTimeCard: View {
                     .frame(width: 48, height: 48)
 
                 Image(systemName: icon)
-                    .font(.system(size: 22))
+                    .font(DesignSystem.Typography.displaySmall)
                     .foregroundColor(iconColor)
             }
 

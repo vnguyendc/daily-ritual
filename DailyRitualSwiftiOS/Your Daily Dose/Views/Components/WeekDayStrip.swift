@@ -70,7 +70,7 @@ struct WeekDayStrip: View {
                 navigateWeek(by: -1)
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(timeContext.primaryColor)
                     .frame(width: 32, height: 32)
             }
@@ -95,7 +95,7 @@ struct WeekDayStrip: View {
                 navigateWeek(by: 1)
             } label: {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(canGoForward ? timeContext.primaryColor : DesignSystem.Colors.tertiaryText)
                     .frame(width: 32, height: 32)
             }
@@ -119,7 +119,7 @@ struct WeekDayStrip: View {
         } label: {
             VStack(spacing: 6) {
                 Text(dayOfWeekLetter(day))
-                    .font(.system(size: 11, weight: .medium))
+                    .font(DesignSystem.Typography.metadata)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
 
                 ZStack {
@@ -134,7 +134,7 @@ struct WeekDayStrip: View {
                     }
 
                     Text(dayNumber(day))
-                        .font(.system(size: 16, weight: isSelected ? .bold : .medium))
+                        .font(DesignSystem.Typography.headlineSmall)
                         .foregroundColor(
                             isFuture ? DesignSystem.Colors.tertiaryText.opacity(0.5) :
                             isSelected ? .white :

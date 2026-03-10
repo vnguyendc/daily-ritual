@@ -142,7 +142,7 @@ struct MealLogView: View {
                             cameraImage = nil
                         } label: {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.title2)
+                                .font(DesignSystem.Typography.displaySmall)
                                 .foregroundColor(.white)
                                 .shadow(radius: 2)
                                 .padding(8)
@@ -193,7 +193,7 @@ struct MealLogView: View {
                         } label: {
                             VStack(spacing: 4) {
                                 Image(systemName: type.icon)
-                                    .font(.title3)
+                                    .font(DesignSystem.Typography.headlineLarge)
                                 Text(type.label)
                                     .font(DesignSystem.Typography.metadata)
                             }
@@ -271,7 +271,7 @@ struct MealLogView: View {
                 // Success header
                 HStack(spacing: DesignSystem.Spacing.sm) {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.title)
+                        .font(DesignSystem.Typography.displayMedium)
                         .foregroundColor(.green)
                     Text("Meal Logged!")
                         .font(DesignSystem.Typography.headlineMedium)

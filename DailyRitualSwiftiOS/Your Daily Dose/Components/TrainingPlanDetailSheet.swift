@@ -96,7 +96,7 @@ struct TrainingPlanDetailSheet: View {
             // Category badge
             HStack(spacing: DesignSystem.Spacing.xs) {
                 Image(systemName: plan.activityType.category.icon)
-                    .font(.system(size: 12))
+                    .font(DesignSystem.Typography.caption)
                 Text(plan.activityType.category.rawValue)
                     .font(DesignSystem.Typography.caption)
             }
@@ -168,7 +168,7 @@ struct TrainingPlanDetailSheet: View {
     ) -> some View {
         HStack(spacing: DesignSystem.Spacing.md) {
             Image(systemName: icon)
-                .font(.system(size: 18))
+                .font(DesignSystem.Typography.headlineMedium)
                 .foregroundColor(timeContext.primaryColor)
                 .frame(width: 28)
             
@@ -190,7 +190,7 @@ struct TrainingPlanDetailSheet: View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
             HStack(spacing: DesignSystem.Spacing.sm) {
                 Image(systemName: "note.text")
-                    .font(.system(size: 16))
+                    .font(DesignSystem.Typography.headlineSmall)
                     .foregroundColor(timeContext.primaryColor)
                 
                 Text("Notes")
