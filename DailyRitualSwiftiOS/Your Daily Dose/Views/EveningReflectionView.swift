@@ -523,6 +523,8 @@ struct CleanMoodStepView: View {
                             )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Mood: \(moodLabels[value - 1])")
+                    .accessibilityAddTraits(mood == value ? [.isSelected] : [])
                 }
             }
             

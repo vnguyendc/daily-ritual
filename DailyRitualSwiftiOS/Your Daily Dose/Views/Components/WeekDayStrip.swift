@@ -100,6 +100,7 @@ struct WeekDayStrip: View {
                     .frame(width: 32, height: 32)
             }
             .disabled(!canGoForward)
+            .accessibilityLabel("Next week")
         }
     }
 
@@ -148,6 +149,17 @@ struct WeekDayStrip: View {
         .frame(maxWidth: .infinity)
         .disabled(isFuture)
         .buttonStyle(.plain)
+        .accessibilityLabel(dayAccessibilityLabel(for: day, isSelected: isSelected, isToday: isToday))
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
+    private func dayAccessibilityLabel(for day: Date, isSelected: Bool, isToday: Bool) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, MMMM d"
+        var label = formatter.string(from: day)
+        if isToday { label += ", today" }
+        if isSelected { label += ", selected" }
+        return label
     }
 
     // MARK: - Week Navigation

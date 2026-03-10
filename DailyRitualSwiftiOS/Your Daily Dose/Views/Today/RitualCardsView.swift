@@ -213,6 +213,8 @@ struct CelebrationCard: View {
                 }
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Day complete! You've completed your full daily practice.")
     }
 }
 

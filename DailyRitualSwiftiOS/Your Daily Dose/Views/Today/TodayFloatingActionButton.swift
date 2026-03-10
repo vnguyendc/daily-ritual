@@ -72,9 +72,8 @@ struct TodayFloatingActionButton: View {
                     .font(.system(size: 22, weight: .bold))
             }
         }
-        .buttonStyle(ScaleButtonStyle())
-        .accessibilityLabel("Quick Action")
-        .accessibilityHint("Opens menu to add new entry or activity")
+        .accessibilityLabel("Add new entry, menu")
+        .accessibilityHint("Opens menu to add new entry, activity, or meal")
         .padding(.trailing, DesignSystem.Spacing.lg)
         .padding(.bottom, DesignSystem.Spacing.lg)
         .task {
