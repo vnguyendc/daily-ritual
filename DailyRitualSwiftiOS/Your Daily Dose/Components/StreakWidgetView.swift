@@ -150,3 +150,27 @@ private struct GracePeriodBadge: View {
         .accessibilityLabel("Grace period, \(hoursRemaining) hours remaining")
     }
 }
+
+// MARK: - Grace Period Progress Bar
+private struct GracePeriodProgressBar: View {
+    let hoursRemaining: Int
+
+    private var progress: CGFloat {
+        CGFloat(min(hoursRemaining, 24)) / 24.0
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .trailing) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(DesignSystem.Colors.border)
+                    .frame(height: 4)
+
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.orange.opacity(0.7))
+                    .frame(width: geo.size.width * progress, height: 4)
+            }
+        }
+        .frame(height: 4)
+    }
+}

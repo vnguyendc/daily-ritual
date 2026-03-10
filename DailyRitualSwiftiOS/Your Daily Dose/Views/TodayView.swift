@@ -286,9 +286,10 @@ extension TodayView {
                 .staggeredAppear(visible: cardsVisible, delay: 0.0)
             }
 
-            if viewModel.shouldShowEvening && !viewModel.entry.isEveningComplete {
-                IncompleteEveningCard(
-                    completedSteps: viewModel.entry.completedEveningSteps,
+            if viewModel.entry.isEveningComplete {
+                CompletedRitualCard(
+                    type: .evening,
+                    completedAt: viewModel.entry.eveningCompletedAt,
                     onTap: { showingEveningReflection = true }
                 )
                 .staggeredAppear(visible: cardsVisible, delay: 0.05)
@@ -305,7 +306,68 @@ extension TodayView {
                 .staggeredAppear(visible: cardsVisible, delay: 0.1)
             }
 
-            // Training plans
+            // Celebration card
+            if viewModel.entry.isFullyComplete {
+                CelebrationCard(timeContext: timeContext)
+                    .animation(DesignSystem.Animation.gentle, value: viewModel.entry.isFullyComplete)
+                    .staggeredAppear(visible: cardsVisible, delay: 0.15)
+            }
+        }
+    }
+
+    // MARK: - HEALTH Section
+    @ViewBuilder
+    private var healthSection: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+            PremiumSectionHeader("HEALTH", timeContext: timeContext)
+
+            StreakWidgetView(
+                streaksService: StreaksService.shared,
+                timeContext: timeContext,
+                showingHistory: $showingStreakHistory
+            )
+
+            if HealthKitService.shared.isAuthorized {
+                HealthSummaryCard(
+                    healthService: HealthKitService.shared,
+                    timeContext: timeContext
+                )
+                .transition(.opacity.combined(with: .move(edge: .top)))
+
+                if !HealthKitService.shared.todayWorkouts.isEmpty {
+                    ForEach(HealthKitService.shared.todayWorkouts) { workout in
+                        HealthKitWorkoutCard(
+                            workout: workout,
+                            timeContext: timeContext,
+                            hasReflection: false,
+                            onReflect: { data in
+                                workoutReflectionPlan = nil
+                                healthKitWorkoutData = data
+                                showingWorkoutReflection = true
+                            }
+                        )
+                    }
+                }
+            }
+
+            if WhoopService.shared.isConnected,
+               let whoopData = WhoopService.shared.dailyData {
+                WhoopRecoveryCard(
+                    data: whoopData,
+                    timeContext: timeContext,
+                    onTap: { showingSleepDetail = true }
+                )
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+
+    // MARK: - TRAINING Section
+    @ViewBuilder
+    private var trainingSection: some View {
+        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+            PremiumSectionHeader("TRAINING", timeContext: timeContext)
+
             TrainingPlansSummary(
                 plans: viewModel.sortedTrainingPlans,
                 timeContext: timeContext,
@@ -317,17 +379,8 @@ extension TodayView {
                     showingWorkoutReflection = true
                 }
             )
-            .staggeredAppear(visible: cardsVisible, delay: 0.15)
-
-            // Nutrition summary (visible when meals have been logged)
-            if let summary = nutritionSummary, summary.mealCount > 0 {
-                NutritionSummaryCard(
-                    summary: summary,
-                    timeContext: timeContext,
-                    onTap: { showingMealLog = true }
-                )
-                .staggeredAppear(visible: cardsVisible, delay: 0.2)
-            }
+        }
+    }
 
     // MARK: - NUTRITION Section
     @ViewBuilder
@@ -341,24 +394,6 @@ extension TodayView {
                 onTap: { showingMealLog = true }
             )
             .staggeredAppear(visible: cardsVisible, delay: 0.25)
-
-            // Completed rituals at bottom
-            if viewModel.entry.isMorningComplete {
-                CompletedRitualCard(type: .morning, onTap: { showingMorningRitual = true })
-                    .staggeredAppear(visible: cardsVisible, delay: 0.3)
-            }
-
-            if viewModel.entry.isEveningComplete {
-                CompletedRitualCard(type: .evening, onTap: { showingEveningReflection = true })
-                    .staggeredAppear(visible: cardsVisible, delay: 0.35)
-            }
-
-            // Celebration card
-            if viewModel.entry.isFullyComplete {
-                CelebrationCard(timeContext: timeContext)
-                    .animation(DesignSystem.Animation.gentle, value: viewModel.entry.isFullyComplete)
-                    .staggeredAppear(visible: cardsVisible, delay: 0.4)
-            }
         }
     }
 }
@@ -485,10 +520,6 @@ extension TodayView {
         }
     }
 
-    private var todayJournalEntries: [JournalEntry] {
-        journalEntries
-    }
-
     private func loadNutrition(for date: Date) async {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
@@ -498,6 +529,16 @@ extension TodayView {
         } catch {
             print("Failed to load nutrition:", error)
         }
+    }
+}
+
+// MARK: - Section Divider
+struct SectionDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(DesignSystem.Colors.border.opacity(0.5))
+            .frame(height: 1)
+            .padding(.vertical, DesignSystem.Spacing.xs)
     }
 }
 

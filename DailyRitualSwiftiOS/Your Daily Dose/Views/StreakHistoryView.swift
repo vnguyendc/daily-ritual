@@ -51,7 +51,7 @@ struct StreakHistoryView: View {
                 await loadMonth(currentMonth)
             }
             .sheet(item: $selectedDay) { day in
-                DayDetailSheet(item: day)
+                StreakDayDetailSheet(item: day)
             }
         }
     }
@@ -347,7 +347,7 @@ struct StreakHistoryView: View {
 
 // MARK: - Day Detail Sheet
 
-private struct DayDetailSheet: View {
+private struct StreakDayDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
     let item: CompletionHistoryItem
 

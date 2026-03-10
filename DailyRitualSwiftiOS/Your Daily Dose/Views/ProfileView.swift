@@ -818,7 +818,7 @@ struct ProfileView: View {
                 .font(DesignSystem.Typography.headlineLarge)
                 .foregroundColor(color)
 
-            if isLoading {
+            if isLoadingStats {
                 ProgressView()
                     .scaleEffect(0.7)
                     .frame(height: 28)
@@ -895,7 +895,7 @@ struct ProfileView: View {
             // Shake animation
             withAnimation(.linear(duration: 0.5)) { shakeAmount = 1 }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { shakeAmount = 0 }
-            hapticError()
+            HapticManager.error()
         }
 
         isSigningIn = false

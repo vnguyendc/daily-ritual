@@ -7,19 +7,11 @@
 
 import SwiftUI
 
-// MARK: - Scale Button Style (press feedback)
-struct ScaleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
-    }
-}
-
 // MARK: - Morning Ritual Card (Incomplete)
 struct IncompleteMorningCard: View {
     let completedSteps: Int
     let onTap: () -> Void
+    @State private var isPulsing = false
 
     var body: some View {
         Button(action: onTap) {
@@ -92,6 +84,7 @@ struct IncompleteMorningCard: View {
 struct IncompleteEveningCard: View {
     let completedSteps: Int
     let onTap: () -> Void
+    @State private var isPulsing = false
 
     var body: some View {
         Button(action: onTap) {

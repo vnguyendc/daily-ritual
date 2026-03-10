@@ -48,12 +48,6 @@ struct TrainingPlanView: View {
         }
     }
 
-    // MARK: - Haptics
-    private func HapticManager.tap() {
-        #if canImport(UIKit)
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        #endif
-    }
 }
 
 // MARK: - Day Detail Sheet

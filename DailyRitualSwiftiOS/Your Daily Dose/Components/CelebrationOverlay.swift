@@ -113,6 +113,11 @@ struct CelebrationOverlay: View {
         }
     }
 
+    private var shareText: String {
+        let milestoneMsg = milestone?.message ?? ""
+        return "I just hit a \(streakCount)-day streak on Daily Ritual! \(milestoneMsg) 🔥"
+    }
+
     private var overlayAccessibilityLabel: String {
         var parts = [type.message]
         if streakCount > 0 {
