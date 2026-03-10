@@ -13,6 +13,12 @@ struct StreakWidgetView: View {
     let timeContext: DesignSystem.TimeContext
     @Binding var showingHistory: Bool
 
+    private var gracePeriodInfo: (streak: UserStreak, hours: Int)? {
+        guard let grace = streaksService.gracePeriodStreak,
+              let hours = grace.gracePeriodHoursRemaining else { return nil }
+        return (grace, hours)
+    }
+
     var body: some View {
         Button { showingHistory = true } label: {
             PremiumCard(timeContext: timeContext) {
@@ -66,8 +72,20 @@ struct StreakWidgetView: View {
                             .font(DesignSystem.Typography.caption)
                             .foregroundColor(timeContext.primaryColor)
                     }
+
+                    // Grace period progress bar
+                    if let info = gracePeriodInfo {
+                        GracePeriodProgressBar(hoursRemaining: info.hours)
+                    }
                 }
             }
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                    .stroke(
+                        gracePeriodInfo != nil ? DesignSystem.Colors.alertRed.opacity(0.5) : Color.clear,
+                        lineWidth: 2
+                    )
+            )
         }
         .onTapGesture { showingHistory = true }
         .accessibilityElement(children: .ignore)
@@ -112,6 +130,7 @@ private struct StreakStat: View {
 
 private struct GracePeriodBadge: View {
     let hoursRemaining: Int
+    @State private var pulsing = false
 
     var body: some View {
         HStack(spacing: 4) {
