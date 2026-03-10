@@ -8,6 +8,24 @@
 
 import SwiftUI
 
+// MARK: - Category Color Extension
+extension TrainingActivityType {
+    /// Color associated with this activity's category for icon tinting
+    var categoryColor: Color {
+        switch category {
+        case .strength: return Color.orange
+        case .cardio: return Color.blue
+        case .combatSports: return Color.red
+        case .teamSports: return Color.indigo
+        case .racquetSports: return Color.yellow
+        case .individualSports: return Color(red: 0.3, green: 0.55, blue: 0.35)
+        case .mindBody: return Color.teal
+        case .recovery: return Color.green
+        case .other: return Color.gray
+        }
+    }
+}
+
 /// Compact training plan card for Today view
 struct TrainingPlanCard: View {
     let plan: TrainingPlan
@@ -20,15 +38,15 @@ struct TrainingPlanCard: View {
             onTap?()
         } label: {
             HStack(spacing: DesignSystem.Spacing.md) {
-                // Activity icon
+                // Activity icon with category color
                 ZStack {
                     Circle()
-                        .fill(timeContext.primaryColor.opacity(0.15))
+                        .fill(plan.activityType.categoryColor.opacity(0.15))
                         .frame(width: 44, height: 44)
 
                     Image(systemName: plan.activityType.icon)
                         .font(.system(size: 20))
-                        .foregroundColor(timeContext.primaryColor)
+                        .foregroundColor(plan.activityType.categoryColor)
                 }
 
                 // Plan details
@@ -71,7 +89,7 @@ struct TrainingPlanCard: View {
                                 .fill(DesignSystem.Colors.powerGreen.opacity(0.12))
                         )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(ScaleButtonStyle())
                 }
 
                 // Intensity indicator
@@ -92,7 +110,7 @@ struct TrainingPlanCard: View {
                     .stroke(DesignSystem.Colors.border, lineWidth: 1)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardButtonStyle())
     }
 }
 
@@ -107,15 +125,15 @@ struct MiniTrainingPlanCard: View {
             onTap?()
         } label: {
             VStack(spacing: DesignSystem.Spacing.sm) {
-                // Activity icon
+                // Activity icon with category color
                 ZStack {
                     Circle()
-                        .fill(timeContext.primaryColor.opacity(0.15))
+                        .fill(plan.activityType.categoryColor.opacity(0.15))
                         .frame(width: 40, height: 40)
-                    
+
                     Image(systemName: plan.activityType.icon)
                         .font(.system(size: 18))
-                        .foregroundColor(timeContext.primaryColor)
+                        .foregroundColor(plan.activityType.categoryColor)
                 }
                 
                 // Activity name
@@ -143,7 +161,7 @@ struct MiniTrainingPlanCard: View {
                     .stroke(DesignSystem.Colors.border, lineWidth: 1)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardButtonStyle())
     }
 }
 
@@ -213,6 +231,7 @@ struct TrainingPlansSummary: View {
                             .font(DesignSystem.Typography.caption)
                             .foregroundColor(timeContext.primaryColor)
                     }
+                    .buttonStyle(ScaleButtonStyle())
                 }
             }
             
@@ -233,6 +252,7 @@ struct TrainingPlansSummary: View {
                         .font(DesignSystem.Typography.buttonSmall)
                         .foregroundColor(timeContext.primaryColor)
                     }
+                    .buttonStyle(ScaleButtonStyle())
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, DesignSystem.Spacing.md)

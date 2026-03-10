@@ -17,6 +17,19 @@ export declare class WhoopService {
     }>;
     getUserProfile(accessToken: string): Promise<any>;
     getRecoveryData(accessToken: string, date: string): Promise<WhoopData | null>;
+    getSleepData(accessToken: string, date: string): Promise<{
+        performance: number;
+        duration_minutes: number;
+        efficiency: number;
+        stages: {
+            awake: number;
+            light: number;
+            rem: number;
+            deep: number;
+        };
+        respiratory_rate: number;
+        skin_temp_delta: number;
+    } | null>;
     getStrainData(accessToken: string, date: string): Promise<{
         strain_score: number;
     } | null>;

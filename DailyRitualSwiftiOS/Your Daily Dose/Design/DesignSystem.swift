@@ -61,7 +61,7 @@ struct DesignSystem {
         )
         static let tertiaryText = Color(
             light: Color(red: 0.35, green: 0.38, blue: 0.42),              // Darker for higher contrast (approx #5C636A)
-            dark: Color(red: 0.42, green: 0.45, blue: 0.50)                // #6B7280 (dark)
+            dark: Color(red: 0.518, green: 0.549, blue: 0.60)              // #848C99 — improved WCAG AA contrast on dark cardBackground (~5.6:1)
         )
         static let invertedText = Color(
             light: Color.white,                                              // White (light)
@@ -112,7 +112,7 @@ struct DesignSystem {
         
         static let performanceTertiaryText = Color(
             light: Color(red: 0.42, green: 0.46, blue: 0.49),              // #6C757D (light mode)
-            dark: Color(red: 0.42, green: 0.45, blue: 0.50)                // #6B7280 (dark mode)
+            dark: Color(red: 0.518, green: 0.549, blue: 0.60)              // #848C99 — improved WCAG AA contrast (dark mode)
         )
         
         // MARK: - Legacy Support (for backward compatibility)
@@ -590,6 +590,7 @@ struct PremiumPrimaryButton: View {
                 y: isDisabled ? 0 : DesignSystem.Shadow.card.y
             )
         }
+        .buttonStyle(ScaleButtonStyle())
         .disabled(isDisabled || isLoading)
         .animation(DesignSystem.Animation.quick, value: isDisabled)
         .animation(DesignSystem.Animation.quick, value: isLoading)
@@ -669,6 +670,28 @@ struct PremiumQuoteDisplay: View {
             x: DesignSystem.Shadow.subtle.x,
             y: DesignSystem.Shadow.subtle.y
         )
+    }
+}
+
+// MARK: - Button Styles
+
+/// Scale + opacity press feedback for action buttons (Save, Next, Done, FAB, filter chips)
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .opacity(configuration.isPressed ? 0.85 : 1.0)
+            .animation(.spring(response: 0.2, dampingFraction: 0.7), value: configuration.isPressed)
+    }
+}
+
+/// Subtle scale + brightness press feedback for tappable cards
+struct CardButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .brightness(configuration.isPressed ? -0.03 : 0)
+            .animation(.spring(response: 0.15, dampingFraction: 0.8), value: configuration.isPressed)
     }
 }
 

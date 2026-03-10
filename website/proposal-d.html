@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Ritual — Proposal D: Refined Momentum</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f100f;
+            --bg-warm: #141312;
+            --bg-card: #191816;
+            --bg-elevated: #1e1d1a;
+            --bg-glass: rgba(20, 19, 18, 0.85);
+            --text: #ece8e1;
+            --text-mid: #9b958c;
+            --text-dim: #5c5750;
+            --border: rgba(255, 255, 255, 0.06);
+            --border-warm: rgba(196, 178, 144, 0.12);
+            --warm: #c4b290;
+            --warm-light: #d8c9a8;
+            --warm-glow: rgba(196, 178, 144, 0.06);
+            --warm-glow-strong: rgba(196, 178, 144, 0.12);
+            --ember: #e07a4b;
+            --ember-dim: rgba(224, 122, 75, 0.08);
+            --slate-blue: #7b8fa8;
+            --slate-blue-dim: rgba(123, 143, 168, 0.08);
+            --sage: #8a9b7a;
+            --sage-dim: rgba(138, 155, 122, 0.08);
+            --font-serif: 'Instrument Serif', Georgia, serif;
+            --font-sans: 'Manrope', -apple-system, sans-serif;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Subtle grain */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.018;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+
+        /* Atmospheric glow */
+        .atmos {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .atmos::before {
+            content: '';
+            position: absolute;
+            top: -20%;
+            left: 20%;
+            width: 50%;
+            height: 50%;
+            background: radial-gradient(ellipse, rgba(196, 178, 144, 0.025) 0%, transparent 65%);
+            animation: drift 22s ease-in-out infinite alternate;
+        }
+
+        .atmos::after {
+            content: '';
+            position: absolute;
+            bottom: -10%;
+            right: 10%;
+            width: 40%;
+            height: 40%;
+            background: radial-gradient(ellipse, rgba(224, 122, 75, 0.015) 0%, transparent 60%);
+            animation: drift 28s ease-in-out infinite alternate-reverse;
+        }
+
+        @keyframes drift {
+            from { transform: translate(0, 0); }
+            to { transform: translate(2%, 3%); }
+        }
+
+        .content { position: relative; z-index: 1; }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 1.5rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, var(--bg) 50%, transparent);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+
+        .nav-brand-mark {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--warm), var(--ember));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-brand-mark svg { width: 16px; height: 16px; color: var(--bg); }
+
+        .nav-brand-text {
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text);
+            letter-spacing: -0.01em;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-links a {
+            font-family: var(--font-sans);
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--text-mid);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover { color: var(--text); }
+
+        .nav-links .nav-cta {
+            padding: 0.55rem 1.4rem;
+            background: var(--warm-glow-strong);
+            border: 1px solid var(--border-warm);
+            border-radius: 8px;
+            color: var(--warm-light) !important;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .nav-links .nav-cta:hover {
+            background: rgba(196, 178, 144, 0.18);
+            border-color: rgba(196, 178, 144, 0.25);
+        }
+
+        /* Hero */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 8rem 2rem 6rem;
+            position: relative;
+        }
+
+        .hero-label {
+            font-family: var(--font-sans);
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--warm);
+            margin-bottom: 2.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            opacity: 0;
+            animation: fadeUp 0.8s ease forwards 0.2s;
+        }
+
+        .hero-label::before,
+        .hero-label::after {
+            content: '';
+            width: 24px;
+            height: 1px;
+            background: var(--warm);
+            opacity: 0.4;
+        }
+
+        .hero h1 {
+            font-family: var(--font-serif);
+            font-size: clamp(3.5rem, 7.5vw, 7rem);
+            font-weight: 400;
+            line-height: 1.05;
+            color: var(--text);
+            max-width: 15ch;
+            margin-bottom: 2rem;
+            letter-spacing: -0.02em;
+            opacity: 0;
+            animation: fadeUp 0.8s ease forwards 0.4s;
+        }
+
+        .hero h1 em {
+            font-style: italic;
+            color: var(--warm-light);
+        }
+
+        .hero-sub {
+            font-family: var(--font-sans);
+            font-size: 1.05rem;
+            font-weight: 400;
+            line-height: 1.75;
+            color: var(--text-mid);
+            max-width: 48ch;
+            margin-bottom: 3.5rem;
+            opacity: 0;
+            animation: fadeUp 0.8s ease forwards 0.6s;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            opacity: 0;
+            animation: fadeUp 0.8s ease forwards 0.8s;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.95rem 2.25rem;
+            background: linear-gradient(135deg, var(--warm), var(--ember));
+            color: var(--bg);
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(196, 178, 144, 0.15);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(196, 178, 144, 0.22);
+        }
+
+        .btn-primary svg {
+            width: 15px;
+            height: 15px;
+            transition: transform 0.3s;
+        }
+
+        .btn-primary:hover svg { transform: translateX(2px); }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.95rem 1.75rem;
+            background: transparent;
+            color: var(--text-mid);
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-decoration: none;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            border-color: rgba(255,255,255,0.12);
+            color: var(--text);
+        }
+
+        /* Scroll indicator */
+        .scroll-hint {
+            position: absolute;
+            bottom: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.6rem;
+            opacity: 0;
+            animation: fadeUp 0.8s ease forwards 1.2s;
+        }
+
+        .scroll-hint span {
+            font-size: 0.6rem;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+        }
+
+        .scroll-bar {
+            width: 1px;
+            height: 36px;
+            background: linear-gradient(to bottom, var(--warm), transparent);
+            position: relative;
+        }
+
+        .scroll-bar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -1.5px;
+            width: 4px;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--warm);
+            animation: scrollPulse 2.2s ease-in-out infinite;
+        }
+
+        @keyframes scrollPulse {
+            0%, 100% { top: 0; opacity: 1; }
+            75% { top: 30px; opacity: 0; }
+        }
+
+        /* Divider */
+        .divider {
+            max-width: 1200px;
+            margin: 0 auto;
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--border), var(--border-warm), var(--border), transparent);
+        }
+
+        /* Section label */
+        .section-label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .section-label::before {
+            content: '';
+            width: 16px;
+            height: 2px;
+            background: var(--warm);
+            border-radius: 1px;
+        }
+
+        .section-label span {
+            font-family: var(--font-sans);
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--warm);
+        }
+
+        /* Features */
+        .features {
+            padding: 7rem 3rem 8rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .features h2 {
+            font-family: var(--font-serif);
+            font-size: clamp(2rem, 4vw, 3.2rem);
+            font-weight: 400;
+            color: var(--text);
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.01em;
+        }
+
+        .features > p {
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--text-mid);
+            max-width: 50ch;
+            margin-bottom: 4rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+        }
+
+        .f-card {
+            padding: 2.25rem 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+        }
+
+        .f-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 1.5rem;
+            right: 1.5rem;
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--warm), transparent);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .f-card:hover {
+            border-color: var(--border-warm);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .f-card:hover::before { opacity: 0.4; }
+
+        .f-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .f-icon.ember { background: var(--ember-dim); color: var(--ember); }
+        .f-icon.blue { background: var(--slate-blue-dim); color: var(--slate-blue); }
+        .f-icon.sage { background: var(--sage-dim); color: var(--sage); }
+        .f-icon.warm { background: var(--warm-glow); color: var(--warm); }
+
+        .f-card h3 {
+            font-family: var(--font-serif);
+            font-size: 1.2rem;
+            font-weight: 400;
+            color: var(--text);
+            margin-bottom: 0.6rem;
+        }
+
+        .f-card p {
+            font-size: 0.85rem;
+            font-weight: 400;
+            line-height: 1.7;
+            color: var(--text-mid);
+        }
+
+        /* ─── Flow Section (borrowed from C, refined) ─── */
+        .flow {
+            padding: 7rem 3rem 8rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .flow h2 {
+            font-family: var(--font-serif);
+            font-size: clamp(2rem, 4vw, 3.2rem);
+            font-weight: 400;
+            color: var(--text);
+            margin-bottom: 4rem;
+            letter-spacing: -0.01em;
+        }
+
+        .flow-track {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0;
+            position: relative;
+        }
+
+        /* Connecting line */
+        .flow-track::before {
+            content: '';
+            position: absolute;
+            top: 32px;
+            left: 40px;
+            right: 40px;
+            height: 2px;
+            background: linear-gradient(to right, var(--ember), var(--sage), var(--slate-blue), var(--warm));
+            opacity: 0.25;
+            border-radius: 1px;
+        }
+
+        .flow-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 0 0.75rem;
+            position: relative;
+        }
+
+        .flow-node {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.75rem;
+            position: relative;
+            z-index: 1;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .flow-step:hover .flow-node {
+            transform: scale(1.08) translateY(-2px);
+        }
+
+        .flow-node svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .flow-node.morning {
+            background: var(--ember-dim);
+            border: 1px solid rgba(224, 122, 75, 0.15);
+            color: var(--ember);
+        }
+
+        .flow-node.workout {
+            background: var(--sage-dim);
+            border: 1px solid rgba(138, 155, 122, 0.15);
+            color: var(--sage);
+        }
+
+        .flow-node.evening {
+            background: var(--slate-blue-dim);
+            border: 1px solid rgba(123, 143, 168, 0.15);
+            color: var(--slate-blue);
+        }
+
+        .flow-node.ai {
+            background: var(--warm-glow);
+            border: 1px solid var(--border-warm);
+            color: var(--warm);
+        }
+
+        .flow-time {
+            font-family: var(--font-sans);
+            font-size: 0.6rem;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+        }
+
+        .flow-time.t-morning { color: var(--ember); }
+        .flow-time.t-workout { color: var(--sage); }
+        .flow-time.t-evening { color: var(--slate-blue); }
+        .flow-time.t-ai { color: var(--warm); }
+
+        .flow-step h4 {
+            font-family: var(--font-serif);
+            font-size: 1.05rem;
+            font-weight: 400;
+            color: var(--text);
+            margin-bottom: 0.6rem;
+        }
+
+        .flow-step p {
+            font-size: 0.82rem;
+            font-weight: 400;
+            line-height: 1.65;
+            color: var(--text-mid);
+        }
+
+        /* Connector arrows between nodes */
+        .flow-step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 32px;
+            right: -4px;
+            width: 8px;
+            height: 8px;
+            border-right: 2px solid var(--warm);
+            border-bottom: 2px solid var(--warm);
+            transform: rotate(-45deg);
+            opacity: 0.25;
+            z-index: 2;
+        }
+
+        /* Integrations */
+        .integrations {
+            padding: 5rem 3rem;
+            text-align: center;
+        }
+
+        .integrations h3 {
+            font-family: var(--font-serif);
+            font-size: 1.2rem;
+            font-weight: 400;
+            font-style: italic;
+            color: var(--text-mid);
+            margin-bottom: 2rem;
+        }
+
+        .int-row {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .int-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.25rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            transition: all 0.3s;
+            cursor: default;
+        }
+
+        .int-chip:hover {
+            border-color: var(--border-warm);
+            background: var(--bg-elevated);
+        }
+
+        .int-chip svg {
+            width: 16px;
+            height: 16px;
+            color: var(--warm);
+        }
+
+        .int-chip span {
+            font-family: var(--font-sans);
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-mid);
+        }
+
+        /* Waitlist */
+        .waitlist {
+            padding: 8rem 2rem;
+            max-width: 560px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .waitlist h2 {
+            font-family: var(--font-serif);
+            font-size: clamp(2.2rem, 4.5vw, 3.5rem);
+            font-weight: 400;
+            color: var(--text);
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.01em;
+        }
+
+        .waitlist h2 em {
+            font-style: italic;
+            color: var(--warm-light);
+        }
+
+        .waitlist > p {
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--text-mid);
+            margin-bottom: 2.5rem;
+        }
+
+        .waitlist-form {
+            display: flex;
+            gap: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: border-color 0.3s;
+        }
+
+        .waitlist-form:focus-within {
+            border-color: var(--border-warm);
+        }
+
+        .waitlist-form input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .waitlist-form input::placeholder { color: var(--text-dim); }
+
+        .waitlist-form button {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, var(--warm), var(--ember));
+            color: var(--bg);
+            font-family: var(--font-sans);
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .waitlist-form button:hover:not(:disabled) {
+            filter: brightness(1.1);
+        }
+
+        .waitlist-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .waitlist-message {
+            margin-top: 1rem;
+            font-size: 0.88rem;
+            min-height: 1.4em;
+        }
+
+        .waitlist-message.success { color: var(--sage); }
+        .waitlist-message.error { color: var(--ember); }
+
+        /* Footer */
+        footer {
+            padding: 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer-left {
+            font-family: var(--font-sans);
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: var(--text-dim);
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .footer-links a {
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--text-mid);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover { color: var(--warm); }
+
+        /* Animations */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: all 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .features-grid { grid-template-columns: 1fr 1fr; }
+            .flow-track {
+                grid-template-columns: 1fr 1fr;
+                gap: 2.5rem 0;
+            }
+            .flow-track::before { display: none; }
+            .flow-step::after { display: none !important; }
+        }
+
+        @media (max-width: 600px) {
+            nav { padding: 1.25rem 1.5rem; }
+            .nav-links li:not(:last-child) { display: none; }
+            .hero { padding: 7rem 1.5rem 4rem; }
+            .features { padding: 5rem 1.5rem; }
+            .features-grid { grid-template-columns: 1fr; }
+            .flow { padding: 5rem 1.5rem; }
+            .flow-track { grid-template-columns: 1fr; gap: 2rem; }
+            .hero-actions { flex-direction: column; }
+            .waitlist { padding: 6rem 1.5rem; }
+            .waitlist-form { flex-direction: column; }
+            .waitlist-form button { padding: 1rem; }
+            .int-row { flex-direction: column; align-items: center; }
+            footer { flex-direction: column; gap: 1rem; text-align: center; padding: 2rem 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="atmos"></div>
+
+    <div class="content">
+        <nav>
+            <a href="/" class="nav-brand">
+                <div class="nav-brand-mark">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
+                </div>
+                <span class="nav-brand-text">Daily Ritual</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#flow">How it works</a></li>
+                <li><a href="privacy.html">Privacy</a></li>
+                <li><a href="#waitlist" class="nav-cta">Get early access</a></li>
+            </ul>
+        </nav>
+
+        <section class="hero">
+            <div class="hero-label">Performance journaling for athletes</div>
+            <h1>Train your <em>mind</em> like you train your body</h1>
+            <p class="hero-sub">
+                A structured daily practice that turns mental training into a habit
+                as automatic as your physical training. Morning intentions, workout reflections,
+                evening insights — all connected.
+            </p>
+            <div class="hero-actions">
+                <a href="#waitlist" class="btn-primary">
+                    Join the waitlist
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+                </a>
+                <a href="#features" class="btn-secondary">See features</a>
+            </div>
+            <div class="scroll-hint">
+                <span>Scroll</span>
+                <div class="scroll-bar"></div>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <section class="features" id="features">
+            <div class="section-label reveal"><span>Features</span></div>
+            <h2 class="reveal">Built for the athlete's rhythm</h2>
+            <p class="reveal">Not another generic journal. Every feature is designed around how athletes actually train, recover, and compete.</p>
+
+            <div class="features-grid">
+                <div class="f-card reveal">
+                    <div class="f-icon ember">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/></svg>
+                    </div>
+                    <h3>Morning Ritual</h3>
+                    <p>Set your intention before the day begins. Goals, gratitude, affirmations, and a curated quote to anchor your mindset.</p>
+                </div>
+
+                <div class="f-card reveal">
+                    <div class="f-icon sage">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                    </div>
+                    <h3>Workout Reflections</h3>
+                    <p>Capture what went well and what to improve while the session is fresh. Rate your energy, focus, and training feeling.</p>
+                </div>
+
+                <div class="f-card reveal">
+                    <div class="f-icon blue">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                    </div>
+                    <h3>Evening Reflection</h3>
+                    <p>Close the day with structured reflection. Mood tracking, wins, and areas for growth that build over time.</p>
+                </div>
+
+                <div class="f-card reveal">
+                    <div class="f-icon warm">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2zM22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+                    </div>
+                    <h3>AI Performance Insights</h3>
+                    <p>Surfaces patterns you can't see — mood-performance links and recovery blind spots revealed over time.</p>
+                </div>
+
+                <div class="f-card reveal">
+                    <div class="f-icon sage">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    </div>
+                    <h3>Device Sync</h3>
+                    <p>Pulls recovery, strain, and workout data from Whoop, Strava, and Apple Health automatically.</p>
+                </div>
+
+                <div class="f-card reveal">
+                    <div class="f-icon ember">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+                    </div>
+                    <h3>Streaks & Consistency</h3>
+                    <p>Track daily practice streaks. Small deposits, compounding returns. Build momentum that sticks.</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <section class="flow" id="flow">
+            <div class="section-label reveal"><span>How it works</span></div>
+            <h2 class="reveal">Your daily practice</h2>
+
+            <div class="flow-track">
+                <div class="flow-step reveal">
+                    <div class="flow-node morning">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/></svg>
+                    </div>
+                    <div class="flow-time t-morning">Morning</div>
+                    <h4>Set Your Intention</h4>
+                    <p>Goals, gratitudes, affirmation, and an athlete-curated quote. Five minutes that frame your entire day.</p>
+                </div>
+                <div class="flow-step reveal">
+                    <div class="flow-node workout">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                    </div>
+                    <div class="flow-time t-workout">Post-Workout</div>
+                    <h4>Reflect on the Session</h4>
+                    <p>Rate your feeling, energy, focus. Note what clicked. The freshest insights come right after training.</p>
+                </div>
+                <div class="flow-step reveal">
+                    <div class="flow-node evening">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                    </div>
+                    <div class="flow-time t-evening">Evening</div>
+                    <h4>Close the Day</h4>
+                    <p>Overall mood and honest self-assessment. The loop closes, the data builds, patterns emerge.</p>
+                </div>
+                <div class="flow-step reveal">
+                    <div class="flow-node ai">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2zM22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+                    </div>
+                    <div class="flow-time t-ai">Continuous</div>
+                    <h4>AI Connects the Dots</h4>
+                    <p>Reveals relationships between mental state and physical performance no single entry could show.</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <section class="integrations reveal">
+            <h3>Connects with your stack</h3>
+            <div class="int-row">
+                <div class="int-chip">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    <span>Whoop</span>
+                </div>
+                <div class="int-chip">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    <span>Strava</span>
+                </div>
+                <div class="int-chip">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                    <span>Apple Health</span>
+                </div>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <section class="waitlist" id="waitlist">
+            <h2 class="reveal">Begin your <em>ritual</em></h2>
+            <p class="reveal">Be first in line. One email when we launch. No spam.</p>
+            <form class="waitlist-form reveal" id="waitlist-form" action="https://formspree.io/f/xaqdqapz" method="POST">
+                <input type="email" name="email" placeholder="Enter your email" required autocomplete="email">
+                <button type="submit" id="waitlist-submit">Join waitlist</button>
+            </form>
+            <p class="waitlist-message" id="waitlist-message" aria-live="polite"></p>
+        </section>
+
+        <footer>
+            <div class="footer-left">&copy; 2025 Daily Ritual</div>
+            <div class="footer-links">
+                <a href="privacy.html">Privacy</a>
+                <a href="mailto:support@dailyritual.app">Support</a>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const reveals = document.querySelectorAll('.reveal');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry, i) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => entry.target.classList.add('visible'), i * 70);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+        reveals.forEach(el => observer.observe(el));
+
+        const waitlistForm = document.getElementById('waitlist-form');
+        const waitlistSubmit = document.getElementById('waitlist-submit');
+        const waitlistMessage = document.getElementById('waitlist-message');
+        if (waitlistForm) {
+            waitlistForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                waitlistSubmit.disabled = true;
+                waitlistMessage.textContent = '';
+                waitlistMessage.className = 'waitlist-message';
+                try {
+                    const res = await fetch(waitlistForm.action, {
+                        method: 'POST', body: new FormData(waitlistForm),
+                        headers: { Accept: 'application/json' }
+                    });
+                    const data = await res.json();
+                    if (data.ok) {
+                        waitlistMessage.textContent = "You're on the list. We'll be in touch.";
+                        waitlistMessage.className = 'waitlist-message success';
+                        waitlistForm.reset();
+                    } else {
+                        waitlistMessage.textContent = 'Something went wrong. Please try again.';
+                        waitlistMessage.className = 'waitlist-message error';
+                    }
+                } catch {
+                    waitlistMessage.textContent = 'Something went wrong. Please try again.';
+                    waitlistMessage.className = 'waitlist-message error';
+                }
+                waitlistSubmit.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>

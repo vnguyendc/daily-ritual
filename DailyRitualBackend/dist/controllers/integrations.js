@@ -164,6 +164,87 @@ export class IntegrationsController {
             res.redirect(deepLink);
         }
     }
+    static async getWhoopData(req, res) {
+        try {
+            const token = req.headers.authorization?.replace('Bearer ', '');
+            if (!token)
+                return res.status(401).json({ error: 'Authorization token required' });
+            const user = await getUserFromToken(token);
+            const date = req.query.date || new Date().toISOString().split('T')[0];
+            const { data: integration, error: fetchError } = await supabaseServiceClient
+                .from('user_integrations')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('service', 'whoop')
+                .single();
+            if (fetchError || !integration) {
+                return res.status(400).json({
+                    success: false,
+                    error: { error: 'Not connected', message: 'Whoop is not connected' }
+                });
+            }
+            const { data: cached } = await supabaseServiceClient
+                .from('whoop_daily_data')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('date', date)
+                .single();
+            const cacheAge = cached?.fetched_at
+                ? Date.now() - new Date(cached.fetched_at).getTime()
+                : Infinity;
+            const CACHE_TTL = 15 * 60 * 1000;
+            if (cached && cacheAge < CACHE_TTL) {
+                return res.json({ success: true, data: formatWhoopResponse(cached) });
+            }
+            let accessToken = integration.access_token;
+            if (integration.token_expires_at && new Date(integration.token_expires_at) < new Date()) {
+                const refreshed = await whoopService.refreshAccessToken(integration.refresh_token);
+                accessToken = refreshed.access_token;
+                await supabaseServiceClient
+                    .from('user_integrations')
+                    .update({
+                    access_token: refreshed.access_token,
+                    refresh_token: refreshed.refresh_token,
+                    token_expires_at: new Date(Date.now() + refreshed.expires_in * 1000).toISOString()
+                })
+                    .eq('id', integration.id);
+            }
+            const [recoveryData, sleepData, strainData] = await Promise.all([
+                whoopService.getRecoveryData(accessToken, date),
+                whoopService.getSleepData(accessToken, date),
+                whoopService.getStrainData(accessToken, date)
+            ]);
+            if (!recoveryData && !sleepData && !strainData) {
+                return res.json({ success: true, data: null, message: 'No Whoop data available for this date' });
+            }
+            const recoveryScore = recoveryData?.recovery_score ?? 0;
+            const recoveryZone = recoveryScore >= 67 ? 'green' : recoveryScore >= 34 ? 'yellow' : 'red';
+            const cacheRow = {
+                user_id: user.id,
+                date,
+                recovery_score: recoveryData?.recovery_score ?? null,
+                recovery_zone: recoveryData ? recoveryZone : null,
+                sleep_performance: sleepData?.performance ?? recoveryData?.sleep_performance ?? null,
+                sleep_duration_minutes: sleepData?.duration_minutes ?? null,
+                sleep_efficiency: sleepData?.efficiency ?? null,
+                sleep_stages: sleepData?.stages ?? null,
+                respiratory_rate: sleepData?.respiratory_rate ?? null,
+                skin_temp_delta: sleepData?.skin_temp_delta ?? null,
+                hrv: recoveryData?.hrv ?? null,
+                resting_hr: recoveryData?.resting_hr ?? null,
+                strain_score: strainData?.strain_score ?? null,
+                fetched_at: new Date().toISOString()
+            };
+            await supabaseServiceClient
+                .from('whoop_daily_data')
+                .upsert(cacheRow, { onConflict: 'user_id,date' });
+            res.json({ success: true, data: formatWhoopResponse(cacheRow) });
+        }
+        catch (error) {
+            console.error('Error fetching Whoop data:', error);
+            res.status(500).json({ success: false, error: { error: 'Internal server error', message: error.message } });
+        }
+    }
     static async syncWhoop(req, res) {
         try {
             const token = req.headers.authorization?.replace('Bearer ', '');
@@ -226,5 +307,27 @@ export class IntegrationsController {
             res.status(500).json({ success: false, error: { error: 'Internal server error', message: error.message } });
         }
     }
+}
+function formatWhoopResponse(row) {
+    return {
+        recovery: {
+            score: row.recovery_score,
+            zone: row.recovery_zone,
+            hrv: row.hrv,
+            resting_hr: row.resting_hr
+        },
+        sleep: {
+            performance: row.sleep_performance,
+            duration_minutes: row.sleep_duration_minutes,
+            efficiency: row.sleep_efficiency,
+            stages: row.sleep_stages,
+            respiratory_rate: row.respiratory_rate,
+            skin_temp_delta: row.skin_temp_delta
+        },
+        strain: {
+            score: row.strain_score
+        },
+        fetched_at: row.fetched_at
+    };
 }
 //# sourceMappingURL=integrations.js.map

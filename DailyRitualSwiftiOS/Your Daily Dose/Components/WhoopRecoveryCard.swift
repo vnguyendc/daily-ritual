@@ -78,6 +78,28 @@ struct WhoopRecoveryCard: View {
             }
         }
         .onTapGesture { onTap() }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(recoveryAccessibilityLabel)
+        .accessibilityHint("Tap for sleep details")
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private var recoveryAccessibilityLabel: String {
+        var parts: [String] = []
+        if let score = data.recoveryScore {
+            let zone = data.recoveryZone ?? .init(score: score)
+            parts.append("Whoop recovery \(Int(score)) percent, \(zone.displayName)")
+        }
+        if let sleep = data.sleepPerformance {
+            parts.append("Sleep \(Int(sleep)) percent")
+        }
+        if let hrv = data.hrv {
+            parts.append("HRV \(Int(hrv)) milliseconds")
+        }
+        if let hr = data.restingHr {
+            parts.append("Resting heart rate \(hr) beats per minute")
+        }
+        return parts.joined(separator: ". ")
     }
 }
 
@@ -88,6 +110,7 @@ struct RecoveryCircle: View {
     let zone: WhoopDailyData.RecoveryZone
 
     @State private var animatedProgress: Double = 0
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var body: some View {
         ZStack {
@@ -100,10 +123,16 @@ struct RecoveryCircle: View {
             Text("\(Int(score))%")
                 .font(.system(size: 20, weight: .bold, design: .rounded))
                 .foregroundColor(zone.color)
+                .minimumScaleFactor(0.8)
+                .lineLimit(1)
         }
         .onAppear {
-            withAnimation(.easeOut(duration: 0.8)) {
+            if reduceMotion {
                 animatedProgress = score / 100
+            } else {
+                withAnimation(.easeOut(duration: 0.8)) {
+                    animatedProgress = score / 100
+                }
             }
         }
     }
@@ -124,9 +153,15 @@ struct MetricBadge: View {
             Text(value)
                 .font(.system(size: 14, weight: .semibold, design: .rounded))
                 .foregroundColor(DesignSystem.Colors.primaryText)
+                .minimumScaleFactor(0.8)
+                .lineLimit(1)
             Text(label)
                 .font(.system(size: 10))
                 .foregroundColor(DesignSystem.Colors.tertiaryText)
+                .minimumScaleFactor(0.8)
+                .lineLimit(1)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(label): \(value)")
     }
 }

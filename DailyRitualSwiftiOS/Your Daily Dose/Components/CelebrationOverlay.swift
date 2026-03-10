@@ -21,6 +21,7 @@ struct CelebrationOverlay: View {
     @State private var backgroundOpacity: Double = 0
     @State private var confettiParticles: [ConfettiParticle] = []
     @State private var dismissed = false
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     private var milestone: CelebrationMilestone? {
         CelebrationMilestone.milestone(for: streakCount)
@@ -32,8 +33,8 @@ struct CelebrationOverlay: View {
             Color.black.opacity(backgroundOpacity * 0.5)
                 .ignoresSafeArea()
 
-            // Confetti layer
-            if let milestone = milestone {
+            // Confetti layer (disabled when reduceMotion is on)
+            if !reduceMotion, milestone != nil {
                 ForEach(confettiParticles) { particle in
                     ConfettiPiece(particle: particle)
                 }
@@ -76,6 +77,10 @@ struct CelebrationOverlay: View {
             }
             .padding(DesignSystem.Spacing.xl)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(overlayAccessibilityLabel)
+        .accessibilityHint("Tap to dismiss")
+        .accessibilityAddTraits(.isButton)
         .onAppear {
             animate()
         }
@@ -86,11 +91,37 @@ struct CelebrationOverlay: View {
         }
     }
 
+    private var overlayAccessibilityLabel: String {
+        var parts = [type.message]
+        if streakCount > 0 {
+            parts.append("\(streakCount) day streak")
+        }
+        if let milestone = milestone {
+            parts.append(milestone.message)
+        }
+        return parts.joined(separator: ". ")
+    }
+
     private func animate() {
         // Haptic
         #if canImport(UIKit)
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         #endif
+
+        if reduceMotion {
+            // Skip animations — jump to final state immediately
+            backgroundOpacity = 1
+            iconScale = 1.0
+            textOpacity = 1
+            // Auto-dismiss
+            let duration = milestone?.intensity.duration ?? 2.0
+            DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+                guard !dismissed else { return }
+                dismissed = true
+                onDismiss()
+            }
+            return
+        }
 
         // Background fade in
         withAnimation(.easeIn(duration: 0.2)) {
