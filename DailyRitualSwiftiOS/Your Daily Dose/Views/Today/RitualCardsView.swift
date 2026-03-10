@@ -7,11 +7,20 @@
 
 import SwiftUI
 
+// MARK: - Scale Button Style (press feedback)
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
+    }
+}
+
 // MARK: - Morning Ritual Card (Incomplete)
 struct IncompleteMorningCard: View {
     let completedSteps: Int
     let onTap: () -> Void
-    
+
     var body: some View {
         Button(action: onTap) {
             PremiumCard(timeContext: .morning) {
@@ -20,31 +29,31 @@ struct IncompleteMorningCard: View {
                         Image(systemName: "sun.max.fill")
                             .foregroundColor(DesignSystem.Colors.morningAccent)
                             .font(DesignSystem.Typography.headlineLargeSafe)
-                        
+
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                             Text("Morning Ritual")
                                 .font(DesignSystem.Typography.journalTitleSafe)
                                 .foregroundColor(DesignSystem.Colors.primaryText)
-                            
+
                             Text("Start your day with intention")
                                 .font(DesignSystem.Typography.bodyMedium)
                                 .foregroundColor(DesignSystem.Colors.secondaryText)
                         }
-                        
+
                         Spacer()
-                        
+
                         Image(systemName: "arrow.right.circle.fill")
                             .foregroundColor(DesignSystem.Colors.morningAccent)
                             .font(DesignSystem.Typography.headlineMedium)
                     }
-                    
+
                     HStack {
                         Text("\(completedSteps)/4 steps completed")
                             .font(DesignSystem.Typography.metadata)
                             .foregroundColor(DesignSystem.Colors.tertiaryText)
-                        
+
                         Spacer()
-                        
+
                         PremiumProgressRing(
                             progress: Double(completedSteps) / 4.0,
                             size: 32,
@@ -55,7 +64,7 @@ struct IncompleteMorningCard: View {
                 }
             }
         }
-        .buttonStyle(CardButtonStyle())
+        .buttonStyle(ScaleButtonStyle())
         .animation(DesignSystem.Animation.gentle, value: completedSteps)
     }
 }
@@ -64,7 +73,7 @@ struct IncompleteMorningCard: View {
 struct IncompleteEveningCard: View {
     let completedSteps: Int
     let onTap: () -> Void
-    
+
     var body: some View {
         Button(action: onTap) {
             PremiumCard(timeContext: .evening) {
@@ -73,31 +82,31 @@ struct IncompleteEveningCard: View {
                         Image(systemName: "moon.fill")
                             .foregroundColor(DesignSystem.Colors.eveningAccent)
                             .font(DesignSystem.Typography.headlineLargeSafe)
-                        
+
                         VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                             Text("Evening Reflection")
                                 .font(DesignSystem.Typography.journalTitleSafe)
                                 .foregroundColor(DesignSystem.Colors.primaryText)
-                            
+
                             Text("Reflect on your day")
                                 .font(DesignSystem.Typography.bodyMedium)
                                 .foregroundColor(DesignSystem.Colors.secondaryText)
                         }
-                        
+
                         Spacer()
-                        
+
                         Image(systemName: "arrow.right.circle.fill")
                             .foregroundColor(DesignSystem.Colors.eveningAccent)
                             .font(DesignSystem.Typography.headlineMedium)
                     }
-                    
+
                     HStack {
                         Text("\(completedSteps)/3 steps completed")
                             .font(DesignSystem.Typography.metadata)
                             .foregroundColor(DesignSystem.Colors.tertiaryText)
-                        
+
                         Spacer()
-                        
+
                         PremiumProgressRing(
                             progress: Double(completedSteps) / 3.0,
                             size: 32,
@@ -108,7 +117,7 @@ struct IncompleteEveningCard: View {
                 }
             }
         }
-        .buttonStyle(CardButtonStyle())
+        .buttonStyle(ScaleButtonStyle())
         .animation(DesignSystem.Animation.gentle, value: completedSteps)
     }
 }
@@ -118,7 +127,7 @@ struct CompletedRitualCard: View {
     enum RitualType {
         case morning
         case evening
-        
+
         var title: String {
             switch self {
             case .morning: return "Morning Complete"
@@ -126,27 +135,31 @@ struct CompletedRitualCard: View {
             }
         }
     }
-    
+
     let type: RitualType
     let onTap: () -> Void
-    
+
+    @State private var checkmarkScale: CGFloat = 0
+    @State private var backgroundFlash = false
+
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: DesignSystem.Spacing.md) {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundColor(DesignSystem.Colors.success)
                     .font(.system(size: 18))
-                
+                    .scaleEffect(checkmarkScale)
+
                 Text(type.title)
                     .font(DesignSystem.Typography.bodySmall)
                     .foregroundColor(DesignSystem.Colors.secondaryText)
-                
+
                 Spacer()
-                
+
                 Text("Edit")
                     .font(DesignSystem.Typography.caption)
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
-                
+
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
@@ -155,10 +168,25 @@ struct CompletedRitualCard: View {
             .padding(.vertical, DesignSystem.Spacing.sm)
             .background(
                 RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
-                    .fill(DesignSystem.Colors.cardBackground.opacity(0.5))
+                    .fill(backgroundFlash
+                          ? DesignSystem.Colors.success.opacity(0.12)
+                          : DesignSystem.Colors.cardBackground.opacity(0.5))
             )
         }
-        .buttonStyle(CardButtonStyle())
+        .buttonStyle(ScaleButtonStyle())
+        .onAppear {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.6)) {
+                checkmarkScale = 1.0
+            }
+            withAnimation(.easeOut(duration: 0.25)) {
+                backgroundFlash = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    backgroundFlash = false
+                }
+            }
+        }
     }
 }
 

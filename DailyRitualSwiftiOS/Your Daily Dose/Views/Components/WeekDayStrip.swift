@@ -110,7 +110,7 @@ struct WeekDayStrip: View {
         
         return Button {
             guard !isFuture else { return }
-            withAnimation(.easeInOut(duration: 0.15)) {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 selectedDate = day
                 hapticLight()
             }
@@ -119,7 +119,7 @@ struct WeekDayStrip: View {
                 Text(dayOfWeekLetter(day))
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(DesignSystem.Colors.tertiaryText)
-                
+
                 ZStack {
                     if isSelected {
                         Circle()
@@ -130,7 +130,7 @@ struct WeekDayStrip: View {
                             .stroke(timeContext.primaryColor, lineWidth: 1.5)
                             .frame(width: 36, height: 36)
                     }
-                    
+
                     Text(dayNumber(day))
                         .font(.system(size: 16, weight: isSelected ? .bold : .medium))
                         .foregroundColor(
@@ -140,6 +140,8 @@ struct WeekDayStrip: View {
                             DesignSystem.Colors.primaryText
                         )
                 }
+                .scaleEffect(isSelected ? 1.0 : 0.95)
+                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
             }
         }
         .frame(maxWidth: .infinity)
