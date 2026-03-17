@@ -6,8 +6,38 @@ on:
   workflow_dispatch:
 
 jobs:
-  work-on-issues:
+  get-issues:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.issues.outputs.matrix }}
+      found: ${{ steps.issues.outputs.found }}
+    steps:
+      - name: Get claude-ready issues
+        id: issues
+        run: |
+          ISSUES=$(gh issue list --repo ${{ github.repository }} --label "claude-ready" --state open --limit 5 --json number,title)
+          COUNT=$(echo "$ISSUES" | jq length)
+          if [ "$COUNT" -eq 0 ]; then
+            echo "No claude-ready issues found"
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo 'matrix={"include":[]}' >> "$GITHUB_OUTPUT"
+          else
+            echo "Found $COUNT claude-ready issues"
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            MATRIX=$(echo "$ISSUES" | jq -c '{include: [.[] | {number: .number, title: .title}]}')
+            echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  work-on-issue:
+    needs: get-issues
+    if: needs.get-issues.outputs.found == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.get-issues.outputs.matrix) }}
+      fail-fast: false
+      max-parallel: 3
     permissions:
       contents: write
       pull-requests: write
@@ -20,29 +50,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get next claude-ready issue
-        id: issue
-        run: |
-          ISSUE=$(gh issue list --label "claude-ready" --state open --limit 1 --json number,title --jq '.[0]')
-          if [ "$ISSUE" = "" ] || [ "$ISSUE" = "null" ]; then
-            echo "No claude-ready issues found"
-            echo "found=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=true" >> "$GITHUB_OUTPUT"
-            echo "number=$(echo $ISSUE | jq -r '.number')" >> "$GITHUB_OUTPUT"
-            echo "title=$(echo $ISSUE | jq -r '.title')" >> "$GITHUB_OUTPUT"
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Work on issue
-        if: steps.issue.outputs.found == 'true'
+      - name: Work on issue #${{ matrix.number }}
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: "--max-turns 75 --model claude-opus-4-6"
           prompt: |
-            Work on GitHub issue #${{ steps.issue.outputs.number }}: ${{ steps.issue.outputs.title }}
+            Work on GitHub issue #${{ matrix.number }}: ${{ matrix.title }}
 
             Read the issue description carefully. Implement the requested changes, write tests,
             and create a PR. Follow the conventions in CLAUDE.md.
