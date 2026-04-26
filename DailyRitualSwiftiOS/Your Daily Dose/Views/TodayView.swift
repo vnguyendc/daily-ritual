@@ -51,6 +51,11 @@ struct TodayView: View {
     private let plansService: TrainingPlansServiceProtocol = TrainingPlansService()
     private let journalService: JournalEntriesServiceProtocol = JournalEntriesService()
     private let mealsService: MealsServiceProtocol = MealsService()
+    private let onLogTap: () -> Void
+
+    init(onLogTap: @escaping () -> Void = {}) {
+        self.onLogTap = onLogTap
+    }
 
     private var timeContext: DesignSystem.TimeContext {
         DesignSystem.TimeContext.current()

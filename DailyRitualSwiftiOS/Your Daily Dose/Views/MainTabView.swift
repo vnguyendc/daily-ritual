@@ -11,35 +11,33 @@ import SwiftUI
 // MARK: - Tab Enum
 enum AppTab: Int, CaseIterable {
     case today = 0
-    case training = 1
-    case insights = 2
+    case plan = 1
+    case coach = 2
     case profile = 3
 
     var title: String {
         switch self {
         case .today: return "Today"
-        case .training: return "Training"
-        case .insights: return "Insights"
+        case .plan: return "Plan"
+        case .coach: return "Coach"
         case .profile: return "Profile"
         }
     }
 
-    // Outline icons for unselected state
     var icon: String {
         switch self {
         case .today: return "sun.horizon"
-        case .training: return "figure.run"
-        case .insights: return "brain.head.profile"
+        case .plan: return "calendar"
+        case .coach: return "message"
         case .profile: return "person"
         }
     }
 
-    // Filled icons for selected state
     var selectedIcon: String {
         switch self {
         case .today: return "sun.horizon.fill"
-        case .training: return "figure.run"
-        case .insights: return "brain.head.profile"
+        case .plan: return "calendar"
+        case .coach: return "message.fill"
         case .profile: return "person.fill"
         }
     }
@@ -48,12 +46,11 @@ enum AppTab: Int, CaseIterable {
 struct MainTabView: View {
     @State private var selectedTab: AppTab = .today
     @ObservedObject private var notificationService = NotificationService.shared
-    @State private var unreadInsightsCount: Int = 0
-    private let insightsService = InsightsService()
-
-    private var timeContext: DesignSystem.TimeContext {
-        DesignSystem.TimeContext.current()
-    }
+    @State private var showingCentralLog = false
+    @State private var showingMealLog = false
+    @State private var showingVoiceEntry = false
+    @State private var showingWorkoutReflection = false
+    @State private var showingCheckIn = false
 
     init(initialTab: Int = 0) {
         _selectedTab = State(initialValue: AppTab(rawValue: initialTab) ?? .today)
@@ -61,17 +58,17 @@ struct MainTabView: View {
 
     var body: some View {
         ZStack {
-            TodayView()
+            TodayView(onLogTap: { showingCentralLog = true })
                 .opacity(selectedTab == .today ? 1 : 0)
                 .allowsHitTesting(selectedTab == .today)
 
             TrainingPlanView()
-                .opacity(selectedTab == .training ? 1 : 0)
-                .allowsHitTesting(selectedTab == .training)
+                .opacity(selectedTab == .plan ? 1 : 0)
+                .allowsHitTesting(selectedTab == .plan)
 
-            InsightsListView()
-                .opacity(selectedTab == .insights ? 1 : 0)
-                .allowsHitTesting(selectedTab == .insights)
+            CoachView()
+                .opacity(selectedTab == .coach ? 1 : 0)
+                .allowsHitTesting(selectedTab == .coach)
 
             ProfileView()
                 .opacity(selectedTab == .profile ? 1 : 0)
@@ -86,8 +83,27 @@ struct MainTabView: View {
             selectedTab = .today
             notificationService.pendingAction = nil
         }
-        .task {
-            await fetchInsightStats()
+        .sheet(isPresented: $showingCentralLog) {
+            CentralLogSheetView(
+                onMeal: { openLogFlow(.meal) },
+                onVoice: { openLogFlow(.voice) },
+                onWorkout: { openLogFlow(.workout) },
+                onCheckIn: { openLogFlow(.checkIn) }
+            )
+            .presentationDetents([.height(360), .medium])
+            .presentationDragIndicator(.hidden)
+        }
+        .sheet(isPresented: $showingMealLog) {
+            MealLogView(date: Date())
+        }
+        .sheet(isPresented: $showingVoiceEntry) {
+            QuickEntryView(date: Date())
+        }
+        .sheet(isPresented: $showingWorkoutReflection) {
+            WorkoutReflectionView(linkedPlan: nil, healthKitData: nil)
+        }
+        .sheet(isPresented: $showingCheckIn) {
+            QuickEntryView(date: Date())
         }
     }
 
@@ -101,9 +117,11 @@ struct MainTabView: View {
                 .frame(height: 1)
 
             HStack(spacing: 0) {
-                ForEach(AppTab.allCases, id: \.rawValue) { tab in
-                    tabButton(for: tab)
-                }
+                tabButton(for: .today)
+                tabButton(for: .plan)
+                logButton
+                tabButton(for: .coach)
+                tabButton(for: .profile)
             }
             .padding(.top, 8)
             .padding(.bottom, 8)
@@ -120,44 +138,73 @@ struct MainTabView: View {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.65)) {
                 selectedTab = tab
             }
-            if tab == .insights {
-                Task { await fetchInsightStats() }
-            }
         } label: {
             VStack(spacing: 4) {
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: isSelected ? tab.selectedIcon : tab.icon)
-                        .font(.system(size: 22))
-                        .scaleEffect(isSelected ? 1.0 : 0.85)
-                        .animation(.spring(response: 0.3, dampingFraction: 0.65), value: isSelected)
-
-                    // Animated badge dot for unread insights
-                    if tab == .insights && unreadInsightsCount > 0 {
-                        Circle()
-                            .fill(Color.orange)
-                            .frame(width: 8, height: 8)
-                            .offset(x: 6, y: -2)
-                            .transition(.scale.combined(with: .opacity))
-                    }
-                }
+                Image(systemName: isSelected ? tab.selectedIcon : tab.icon)
+                    .font(.system(size: 22))
+                    .scaleEffect(isSelected ? 1.0 : 0.85)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.65), value: isSelected)
 
                 Text(tab.title)
                     .font(.system(size: 10, weight: .medium))
             }
-            .foregroundColor(isSelected ? timeContext.primaryColor : DesignSystem.Colors.tertiaryText)
+            .foregroundColor(isSelected ? DesignSystem.Colors.primaryText : DesignSystem.Colors.tertiaryText)
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(tab.title)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-        .accessibilityHint(tab == .insights && unreadInsightsCount > 0 ? "Has unread insights" : "")
     }
 
-    private func fetchInsightStats() async {
-        guard let stats = try? await insightsService.stats() else { return }
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-            unreadInsightsCount = stats.unreadCount
+    private var logButton: some View {
+        Button {
+            HapticManager.tap()
+            showingCentralLog = true
+        } label: {
+            VStack(spacing: 4) {
+                ZStack {
+                    Circle()
+                        .fill(DesignSystem.Colors.primaryText)
+                        .frame(width: 52, height: 52)
+
+                    Image(systemName: "plus")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundColor(DesignSystem.Colors.background)
+                }
+
+                Text("Log")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(DesignSystem.Colors.primaryText)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Log")
+        .accessibilityHint("Open meal, voice, workout, and check-in capture")
+    }
+
+    private enum LogFlow {
+        case meal
+        case voice
+        case workout
+        case checkIn
+    }
+
+    private func openLogFlow(_ flow: LogFlow) {
+        showingCentralLog = false
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            switch flow {
+            case .meal:
+                showingMealLog = true
+            case .voice:
+                showingVoiceEntry = true
+            case .workout:
+                showingWorkoutReflection = true
+            case .checkIn:
+                showingCheckIn = true
+            }
         }
     }
 }
