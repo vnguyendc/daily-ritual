@@ -52,9 +52,11 @@ struct TodayView: View {
     private let journalService: JournalEntriesServiceProtocol = JournalEntriesService()
     private let mealsService: MealsServiceProtocol = MealsService()
     private let onLogTap: () -> Void
+    private let onCoachTap: () -> Void
 
-    init(onLogTap: @escaping () -> Void = {}) {
+    init(onLogTap: @escaping () -> Void = {}, onCoachTap: @escaping () -> Void = {}) {
         self.onLogTap = onLogTap
+        self.onCoachTap = onCoachTap
     }
 
     private var timeContext: DesignSystem.TimeContext {
@@ -94,21 +96,11 @@ struct TodayView: View {
             .edgesIgnoringSafeArea(.all)
             .navigationTitle("")
             .navigationBarHidden(true)
-            .overlay(alignment: .bottomTrailing) {
-                if !viewModel.isLoading {
-                    TodayFloatingActionButton(
-                        timeContext: timeContext,
-                        onNewEntry: { showingQuickEntry = true },
-                        onAddActivity: { showingAddActivity = true },
-                        onWorkoutReflection: { showingWorkoutReflection = true },
-                        onLogMeal: { showingMealLog = true }
-                    )
-                }
-            }
             .refreshable {
                 await SupabaseManager.shared.replayPendingOpsWithBackoff()
                 await viewModel.refresh(for: selectedDate)
                 await loadJournalEntries()
+                await loadNutrition(for: selectedDate)
             }
             .task {
                 await viewModel.load(date: selectedDate)
@@ -195,12 +187,116 @@ struct TodayView: View {
 
 // MARK: - Content Views
 extension TodayView {
+    private var timelineItems: [TodayTimelineItem] {
+        TodayTimelineBuilder.makeItems(
+            plans: viewModel.sortedTrainingPlans,
+            nutritionSummary: nutritionSummary,
+            journalEntries: journalEntries,
+            morningCompletedAt: viewModel.entry.morningCompletedAt,
+            eveningCompletedAt: viewModel.entry.eveningCompletedAt
+        )
+    }
+
+    private var roundedRecoveryScore: Int? {
+        WhoopService.shared.dailyData?.recoveryScore.map { Int($0.rounded()) }
+    }
+
+    private var sleepSummaryText: String {
+        guard let data = WhoopService.shared.dailyData else { return "--" }
+
+        if let minutes = data.sleepDurationMinutes {
+            return formatMinutes(minutes)
+        }
+
+        if let performance = data.sleepPerformance {
+            return "\(Int(performance.rounded()))%"
+        }
+
+        return "--"
+    }
+
+    private var fuelSummaryText: String {
+        guard let summary = nutritionSummary else { return "No meals" }
+        if summary.mealCount == 0 { return "No meals" }
+        return "\(summary.totalCalories) cal"
+    }
+
+    private var loadSummaryText: String {
+        if let strain = WhoopService.shared.dailyData?.strainScore {
+            return String(format: "%.1f strain", strain)
+        }
+
+        let workoutCount = HealthKitService.shared.todayWorkouts.count
+        if workoutCount > 0 {
+            return "\(workoutCount) workout\(workoutCount == 1 ? "" : "s")"
+        }
+
+        return "Open"
+    }
+
+    private var planSummaryText: String {
+        let plans = viewModel.sortedTrainingPlans
+        guard let firstPlan = plans.first else {
+            return "No training plan yet. Add the key session, meals, and recovery block for the day."
+        }
+
+        let time = firstPlan.formattedStartTime ?? "Planned"
+        let remaining = plans.count - 1
+        if remaining > 0 {
+            return "\(firstPlan.activityType.displayName) at \(time), plus \(remaining) more item\(remaining == 1 ? "" : "s")."
+        }
+
+        return "\(firstPlan.activityType.displayName) at \(time)."
+    }
+
+    private var nextActionText: String {
+        if !viewModel.entry.isMorningComplete {
+            return "Start with a quick check-in."
+        }
+
+        if nutritionSummary?.mealCount ?? 0 == 0 {
+            return "Log your first meal."
+        }
+
+        if let recovery = roundedRecoveryScore, recovery < 50 {
+            return "Keep training controlled."
+        }
+
+        if viewModel.sortedTrainingPlans.isEmpty {
+            return "Set today's training anchor."
+        }
+
+        return "Stay on the plan."
+    }
+
+    private var nextActionRationale: String {
+        if !viewModel.entry.isMorningComplete {
+            return "Argo needs a fast read on energy, stress, and the shape of the day before suggesting changes."
+        }
+
+        if nutritionSummary?.mealCount ?? 0 == 0 {
+            return "Food context makes the coach more useful for training load, recovery, and evening choices."
+        }
+
+        if let recovery = roundedRecoveryScore, recovery < 50 {
+            return "Recovery is below the green zone, so today's structure should protect tomorrow."
+        }
+
+        if viewModel.sortedTrainingPlans.isEmpty {
+            return "A simple time block is enough. The app can help you protect the session around work and meals."
+        }
+
+        return "Use the timeline to keep meals, workouts, notes, and recovery decisions in one place."
+    }
+
     @ViewBuilder
     private var weekDayStripView: some View {
         WeekDayStrip(selectedDate: $selectedDate)
             .onChange(of: selectedDate) { _, newDate in
                 Task {
                     await viewModel.load(date: newDate)
+                    await loadJournalEntries()
+                    await loadNutrition(for: newDate)
                     completedGoals = loadCompletedGoals(for: newDate)
                 }
             }
@@ -220,31 +316,19 @@ extension TodayView {
     @ViewBuilder
     private var mainContentView: some View {
         if !viewModel.isLoading {
-            // First-time welcome card
-            WelcomeRitualCard()
+            ArgoTodayBriefView(
+                recoveryScore: roundedRecoveryScore,
+                sleepSummary: sleepSummaryText,
+                fuelSummary: fuelSummaryText,
+                loadSummary: loadSummaryText,
+                planSummary: planSummaryText,
+                nextActionTitle: nextActionText,
+                nextActionBody: nextActionRationale,
+                onLogTap: onLogTap,
+                onCoachTap: onCoachTap
+            )
 
-            ritualSection
-
-            SectionDivider()
-
-            healthSection
-
-            SectionDivider()
-
-            trainingSection
-
-            if let summary = nutritionSummary {
-                if summary.mealCount > 0 {
-                    SectionDivider()
-                    nutritionSection(summary: summary)
-                } else {
-                    SectionDivider()
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                        PremiumSectionHeader("NUTRITION", timeContext: timeContext)
-                        MealsEmptyStateView(onLogTap: { showingMealLog = true })
-                    }
-                }
-            }
+            TodayTimelineView(items: timelineItems)
         }
     }
 
@@ -486,6 +570,8 @@ extension TodayView {
     private func refreshData() {
         Task {
             await viewModel.load(date: selectedDate)
+            await loadJournalEntries()
+            await loadNutrition(for: selectedDate)
             await StreaksService.shared.fetchStreaks(force: true)
         }
     }
@@ -499,6 +585,7 @@ extension TodayView {
         Task {
             await viewModel.load(date: newDay)
             await loadJournalEntries()
+            await loadNutrition(for: newDay)
             completedGoals = loadCompletedGoals(for: newDay)
         }
     }
@@ -534,6 +621,12 @@ extension TodayView {
         } catch {
             print("Failed to load nutrition:", error)
         }
+    }
+
+    private func formatMinutes(_ minutes: Int) -> String {
+        let hours = minutes / 60
+        let remainingMinutes = minutes % 60
+        return "\(hours)h \(remainingMinutes)m"
     }
 }
 

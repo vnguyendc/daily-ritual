@@ -54,7 +54,7 @@ struct TodayHeaderView: View {
                             }
                         }
                 } else {
-                    Text("Daily Ritual")
+                    Text("Argo")
                         .font(DesignSystem.Typography.displayMediumSafe)
                         .foregroundColor(DesignSystem.Colors.primaryText)
                 }

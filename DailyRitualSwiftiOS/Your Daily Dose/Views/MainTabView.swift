@@ -58,7 +58,10 @@ struct MainTabView: View {
 
     var body: some View {
         ZStack {
-            TodayView(onLogTap: { showingCentralLog = true })
+            TodayView(
+                onLogTap: { showingCentralLog = true },
+                onCoachTap: { selectedTab = .coach }
+            )
                 .opacity(selectedTab == .today ? 1 : 0)
                 .allowsHitTesting(selectedTab == .today)
 
