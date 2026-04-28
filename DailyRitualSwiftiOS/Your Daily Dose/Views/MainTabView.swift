@@ -96,16 +96,16 @@ struct MainTabView: View {
             .presentationDetents([.height(360), .medium])
             .presentationDragIndicator(.hidden)
         }
-        .sheet(isPresented: $showingMealLog) {
+        .sheet(isPresented: $showingMealLog, onDismiss: notifyDailyContextChanged) {
             MealLogView(date: Date())
         }
-        .sheet(isPresented: $showingVoiceEntry) {
+        .sheet(isPresented: $showingVoiceEntry, onDismiss: notifyDailyContextChanged) {
             QuickEntryView(date: Date())
         }
-        .sheet(isPresented: $showingWorkoutReflection) {
+        .sheet(isPresented: $showingWorkoutReflection, onDismiss: notifyDailyContextChanged) {
             WorkoutReflectionView(linkedPlan: nil, healthKitData: nil)
         }
-        .sheet(isPresented: $showingCheckIn) {
+        .sheet(isPresented: $showingCheckIn, onDismiss: notifyDailyContextChanged) {
             QuickEntryView(date: Date())
         }
     }
@@ -209,6 +209,10 @@ struct MainTabView: View {
                 showingCheckIn = true
             }
         }
+    }
+
+    private func notifyDailyContextChanged() {
+        NotificationCenter.default.post(name: .argoDailyContextDidChange, object: nil)
     }
 }
 
