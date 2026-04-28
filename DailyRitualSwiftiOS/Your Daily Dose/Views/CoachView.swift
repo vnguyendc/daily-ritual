@@ -8,23 +8,53 @@
 import SwiftUI
 
 struct CoachView: View {
-    private let recommendations = [
-        CoachRecommendation(
-            title: "Keep today's lift moderate.",
-            body: "Recovery is trending lower than your weekly baseline. Cap hard sets and leave one rep in reserve.",
-            action: "Adjust plan"
-        ),
-        CoachRecommendation(
-            title: "Add 35g protein by dinner.",
-            body: "Your meal log is pacing below target. A simple lean protein serving closes most of the gap.",
-            action: "Plan meal"
-        ),
-        CoachRecommendation(
-            title: "Protect a quiet block tonight.",
-            body: "Two late sessions in a row usually push your next-day readiness down. Schedule 30 minutes off screens.",
-            action: "Add habit"
-        )
-    ]
+    private let contextService: DailyContextProviding
+    @State private var context: ArgoDailyContext?
+    @State private var contextRefreshID = UUID()
+
+    init(contextService: DailyContextProviding = ClientDailyContextService()) {
+        self.contextService = contextService
+    }
+
+    private var recommendations: [ArgoCoachAction] {
+        var actions: [ArgoCoachAction] = []
+
+        func appendIfUnique(_ action: ArgoCoachAction) {
+            guard !actions.contains(where: { $0.id == action.id }) else { return }
+            actions.append(action)
+        }
+
+        if let nextAction = context?.derived.nextAction {
+            appendIfUnique(nextAction)
+        }
+
+        if context?.derived.missingContext.contains(.noMeals) == true,
+           !actions.contains(where: { $0.kind == .logMeal }) {
+            appendIfUnique(
+                ArgoCoachAction(
+                    id: "coach-log-meal",
+                    title: "Add food context.",
+                    body: "A quick meal photo or text note helps Argo estimate fuel for the rest of the day.",
+                    primaryLabel: "Log meal",
+                    kind: .logMeal
+                )
+            )
+        }
+
+        if context?.derived.missingContext.contains(.missingWearableData) == true {
+            appendIfUnique(
+                ArgoCoachAction(
+                    id: "coach-connect-wearable",
+                    title: "Wearable data is missing.",
+                    body: "Recovery and strain recommendations improve when Whoop, Garmin, or Apple Health data is current.",
+                    primaryLabel: "Review",
+                    kind: .recoveryHabit
+                )
+            )
+        }
+
+        return Array(actions.prefix(3))
+    }
 
     var body: some View {
         NavigationStack {
@@ -40,6 +70,10 @@ struct CoachView: View {
             .background(DesignSystem.Colors.background.ignoresSafeArea())
             .navigationBarHidden(true)
         }
+        .task { await loadContext() }
+        .onReceive(NotificationCenter.default.publisher(for: .argoDailyContextDidChange)) { _ in
+            Task { await loadContext() }
+        }
     }
 
     private var header: some View {
@@ -48,7 +82,7 @@ struct CoachView: View {
                 .font(DesignSystem.Typography.displayLargeSafe)
                 .foregroundColor(DesignSystem.Colors.primaryText)
 
-            Text("Ask about training, food, recovery, and how to structure the week.")
+            Text(context?.derived.summaryText ?? "Ask about training, food, recovery, and how to structure the week.")
                 .font(DesignSystem.Typography.bodyMedium)
                 .foregroundColor(DesignSystem.Colors.secondaryText)
         }
@@ -99,7 +133,7 @@ struct CoachView: View {
         }
     }
 
-    private func recommendationCard(_ recommendation: CoachRecommendation) -> some View {
+    private func recommendationCard(_ recommendation: ArgoCoachAction) -> some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 Text(recommendation.title)
@@ -112,7 +146,7 @@ struct CoachView: View {
             }
 
             HStack(spacing: DesignSystem.Spacing.sm) {
-                actionButton(recommendation.action, filled: true)
+                actionButton(recommendation.primaryLabel, filled: true)
                 actionButton("Edit", filled: false)
                 actionButton("Skip", filled: false)
             }
@@ -144,13 +178,14 @@ struct CoachView: View {
         }
         .buttonStyle(.plain)
     }
-}
 
-private struct CoachRecommendation: Identifiable {
-    let id = UUID()
-    let title: String
-    let body: String
-    let action: String
+    private func loadContext() async {
+        let refreshID = UUID()
+        contextRefreshID = refreshID
+        let nextContext = await contextService.refresh(for: Date())
+        guard contextRefreshID == refreshID else { return }
+        context = nextContext
+    }
 }
 
 #Preview {
