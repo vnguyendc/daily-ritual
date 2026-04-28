@@ -464,23 +464,19 @@ extension TodayView {
     @ViewBuilder
     private var quickEntrySheet: some View {
         QuickEntryView(date: Date()) { title, content in
-            do {
-                let titleParam: String? = title.isEmpty ? nil : title
-                let moodParam: Int? = nil
-                let energyParam: Int? = nil
-                let tagsParam: [String]? = nil
-                _ = try await journalService.createEntry(
-                    title: titleParam,
-                    content: content,
-                    mood: moodParam,
-                    energy: energyParam,
-                    tags: tagsParam
-                )
-                await loadJournalEntries()
-                await loadDailyContext(for: selectedDate)
-            } catch {
-                print("Failed to save journal entry:", error)
-            }
+            let titleParam: String? = title.isEmpty ? nil : title
+            let moodParam: Int? = nil
+            let energyParam: Int? = nil
+            let tagsParam: [String]? = nil
+            _ = try await journalService.createEntry(
+                title: titleParam,
+                content: content,
+                mood: moodParam,
+                energy: energyParam,
+                tags: tagsParam
+            )
+            await loadJournalEntries()
+            await loadDailyContext(for: selectedDate)
         }
     }
 

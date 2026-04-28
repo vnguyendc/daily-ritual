@@ -101,7 +101,7 @@ struct MainTabView: View {
         }
         .sheet(isPresented: $showingVoiceEntry) {
             QuickEntryView(date: Date()) { title, content in
-                await saveContextEntry(title: title, content: content, tags: ["voice"])
+                try await saveContextEntry(title: title, content: content, tags: ["voice"])
             }
         }
         .sheet(isPresented: $showingWorkoutReflection) {
@@ -109,7 +109,7 @@ struct MainTabView: View {
         }
         .sheet(isPresented: $showingCheckIn) {
             QuickEntryView(date: Date()) { title, content in
-                await saveContextEntry(title: title, content: content, tags: ["check-in"])
+                try await saveContextEntry(title: title, content: content, tags: ["check-in"])
             }
         }
     }
@@ -219,20 +219,16 @@ struct MainTabView: View {
         NotificationCenter.default.post(name: .argoDailyContextDidChange, object: nil)
     }
 
-    private func saveContextEntry(title: String, content: String, tags: [String]) async {
-        do {
-            let titleParam: String? = title.isEmpty ? nil : title
-            _ = try await JournalEntriesService().createEntry(
-                title: titleParam,
-                content: content,
-                mood: nil,
-                energy: nil,
-                tags: tags
-            )
-            notifyDailyContextChanged()
-        } catch {
-            print("Failed to save context entry:", error)
-        }
+    private func saveContextEntry(title: String, content: String, tags: [String]) async throws {
+        let titleParam: String? = title.isEmpty ? nil : title
+        _ = try await JournalEntriesService().createEntry(
+            title: titleParam,
+            content: content,
+            mood: nil,
+            energy: nil,
+            tags: tags
+        )
+        notifyDailyContextChanged()
     }
 }
 
