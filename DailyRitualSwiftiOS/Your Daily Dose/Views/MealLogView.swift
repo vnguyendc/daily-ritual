@@ -38,11 +38,13 @@ struct MealLogView: View {
     private let mealsService: MealsServiceProtocol = MealsService()
     private let timeContext: DesignSystem.TimeContext = .neutral
     private let dateString: String
+    private let onSaved: (() -> Void)?
 
-    init(date: Date = Date()) {
+    init(date: Date = Date(), onSaved: (() -> Void)? = nil) {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         self.dateString = formatter.string(from: date)
+        self.onSaved = onSaved
 
         // Auto-detect meal type from time of day
         let hour = Calendar.current.component(.hour, from: Date())
@@ -475,6 +477,7 @@ struct MealLogView: View {
                 editFat = String(format: "%.0f", meal.fatG)
                 isAnalyzing = false
                 HapticManager.success()
+                onSaved?()
             }
         } catch {
             await MainActor.run {
@@ -529,6 +532,7 @@ struct MealLogView: View {
                     displayedCarbs = updated.carbsG
                     displayedFat = updated.fatG
                     showEditValues = false
+                    onSaved?()
                 }
             }
         }

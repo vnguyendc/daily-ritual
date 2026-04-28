@@ -96,17 +96,21 @@ struct MainTabView: View {
             .presentationDetents([.height(360), .medium])
             .presentationDragIndicator(.hidden)
         }
-        .sheet(isPresented: $showingMealLog, onDismiss: notifyDailyContextChanged) {
-            MealLogView(date: Date())
+        .sheet(isPresented: $showingMealLog) {
+            MealLogView(date: Date(), onSaved: notifyDailyContextChanged)
         }
-        .sheet(isPresented: $showingVoiceEntry, onDismiss: notifyDailyContextChanged) {
-            QuickEntryView(date: Date())
+        .sheet(isPresented: $showingVoiceEntry) {
+            QuickEntryView(date: Date()) { title, content in
+                await saveContextEntry(title: title, content: content, tags: ["voice"])
+            }
         }
-        .sheet(isPresented: $showingWorkoutReflection, onDismiss: notifyDailyContextChanged) {
-            WorkoutReflectionView(linkedPlan: nil, healthKitData: nil)
+        .sheet(isPresented: $showingWorkoutReflection) {
+            WorkoutReflectionView(linkedPlan: nil, healthKitData: nil, onSaved: notifyDailyContextChanged)
         }
-        .sheet(isPresented: $showingCheckIn, onDismiss: notifyDailyContextChanged) {
-            QuickEntryView(date: Date())
+        .sheet(isPresented: $showingCheckIn) {
+            QuickEntryView(date: Date()) { title, content in
+                await saveContextEntry(title: title, content: content, tags: ["check-in"])
+            }
         }
     }
 
@@ -213,6 +217,22 @@ struct MainTabView: View {
 
     private func notifyDailyContextChanged() {
         NotificationCenter.default.post(name: .argoDailyContextDidChange, object: nil)
+    }
+
+    private func saveContextEntry(title: String, content: String, tags: [String]) async {
+        do {
+            let titleParam: String? = title.isEmpty ? nil : title
+            _ = try await JournalEntriesService().createEntry(
+                title: titleParam,
+                content: content,
+                mood: nil,
+                energy: nil,
+                tags: tags
+            )
+            notifyDailyContextChanged()
+        } catch {
+            print("Failed to save context entry:", error)
+        }
     }
 }
 
