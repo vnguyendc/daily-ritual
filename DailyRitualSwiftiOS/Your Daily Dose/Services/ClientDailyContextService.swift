@@ -11,16 +11,22 @@ final class ClientDailyContextService: DailyContextProviding {
     private let journalService: JournalEntriesServiceProtocol
     private let workoutReflectionsService: WorkoutReflectionsServiceProtocol
     private let dailyEntriesService: DailyEntriesServiceProtocol
-    private let whoopDataProvider: () -> WhoopDailyData?
-    private let healthKitWorkoutsProvider: () -> [HKWorkoutSummary]
+    private let whoopDataProvider: (Date) -> WhoopDailyData?
+    private let healthKitWorkoutsProvider: (Date) -> [HKWorkoutSummary]
 
     init(
         mealsService: MealsServiceProtocol = MealsService(),
         journalService: JournalEntriesServiceProtocol = JournalEntriesService(),
         workoutReflectionsService: WorkoutReflectionsServiceProtocol = WorkoutReflectionsService(),
         dailyEntriesService: DailyEntriesServiceProtocol = DailyEntriesService(),
-        whoopDataProvider: @escaping () -> WhoopDailyData? = { WhoopService.shared.dailyData },
-        healthKitWorkoutsProvider: @escaping () -> [HKWorkoutSummary] = { HealthKitService.shared.todayWorkouts }
+        whoopDataProvider: @escaping (Date) -> WhoopDailyData? = { date in
+            guard Calendar.current.isDateInToday(date) else { return nil }
+            return WhoopService.shared.dailyData
+        },
+        healthKitWorkoutsProvider: @escaping (Date) -> [HKWorkoutSummary] = { date in
+            guard Calendar.current.isDateInToday(date) else { return [] }
+            return HealthKitService.shared.todayWorkouts
+        }
     ) {
         self.mealsService = mealsService
         self.journalService = journalService
@@ -75,8 +81,8 @@ final class ClientDailyContextService: DailyContextProviding {
             sourceFailures.insert(.missingReflectionData)
         }
 
-        let whoop = whoopDataProvider()
-        let healthKitWorkouts = healthKitWorkoutsProvider()
+        let whoop = whoopDataProvider(date)
+        let healthKitWorkouts = healthKitWorkoutsProvider(date)
         let derived = ArgoDailySignalsEvaluator.evaluate(
             date: date,
             dailyEntry: dailyEntry,

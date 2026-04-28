@@ -11,8 +11,8 @@ struct ClientDailyContextServiceTests {
             journalService: EmptyJournalEntriesService(),
             workoutReflectionsService: EmptyWorkoutReflectionsService(),
             dailyEntriesService: EmptyDailyEntriesService(),
-            whoopDataProvider: { nil },
-            healthKitWorkoutsProvider: { [] }
+            whoopDataProvider: { _ in nil },
+            healthKitWorkoutsProvider: { _ in [] }
         )
 
         let context = await service.context(for: date)
@@ -21,6 +21,31 @@ struct ClientDailyContextServiceTests {
         #expect(context.nutrition == nil)
         #expect(context.derived.missingContext.contains(.missingNutritionData))
         #expect(context.derived.missingContext.contains(.noMeals))
+    }
+
+    @Test func passesRequestedDateToWearableProviders() async {
+        let requestedDate = Date(timeIntervalSince1970: 9_000)
+        var whoopDate: Date?
+        var healthDate: Date?
+        let service = ClientDailyContextService(
+            mealsService: EmptyMealsService(),
+            journalService: EmptyJournalEntriesService(),
+            workoutReflectionsService: EmptyWorkoutReflectionsService(),
+            dailyEntriesService: EmptyDailyEntriesService(),
+            whoopDataProvider: { date in
+                whoopDate = date
+                return nil
+            },
+            healthKitWorkoutsProvider: { date in
+                healthDate = date
+                return []
+            }
+        )
+
+        _ = await service.context(for: requestedDate)
+
+        #expect(whoopDate == requestedDate)
+        #expect(healthDate == requestedDate)
     }
 }
 
@@ -47,6 +72,35 @@ private struct FailingMealsService: MealsServiceProtocol {
 
     func getDailyNutrition(date: String) async throws -> DailyNutritionSummary {
         throw TestServiceError.failed
+    }
+}
+
+private struct EmptyMealsService: MealsServiceProtocol {
+    func uploadMeal(photoData: Data, mimeType: String, mealType: String, date: String) async throws -> Meal {
+        throw TestServiceError.failed
+    }
+
+    func getMeals(date: String) async throws -> [Meal] {
+        []
+    }
+
+    func updateMeal(id: UUID, updates: [String: Any]) async throws -> Meal {
+        throw TestServiceError.failed
+    }
+
+    func deleteMeal(id: UUID) async throws {}
+
+    func getDailyNutrition(date: String) async throws -> DailyNutritionSummary {
+        DailyNutritionSummary(
+            date: date,
+            mealCount: 0,
+            totalCalories: 0,
+            totalProteinG: 0,
+            totalCarbsG: 0,
+            totalFatG: 0,
+            totalFiberG: 0,
+            meals: []
+        )
     }
 }
 
