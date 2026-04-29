@@ -47,6 +47,25 @@ struct ClientDailyContextServiceTests {
         #expect(whoopDate == requestedDate)
         #expect(healthDate == requestedDate)
     }
+
+    @Test func marksDailyEntryAndPlanSourceFailuresSeparately() async {
+        let date = Date(timeIntervalSince1970: 9_500)
+        let service = ClientDailyContextService(
+            mealsService: EmptyMealsService(),
+            journalService: EmptyJournalEntriesService(),
+            workoutReflectionsService: EmptyWorkoutReflectionsService(),
+            dailyEntriesService: FailingDailyEntriesService(),
+            whoopDataProvider: { _ in nil },
+            healthKitWorkoutsProvider: { _ in [] }
+        )
+
+        let context = await service.context(for: date)
+
+        #expect(context.derived.missingContext.contains(.missingDailyEntryData))
+        #expect(context.derived.missingContext.contains(.missingTrainingPlanData))
+        #expect(!context.derived.missingContext.contains(.noMorningCheckIn))
+        #expect(!context.derived.missingContext.contains(.noPlan))
+    }
 }
 
 private enum TestServiceError: Error {
@@ -188,6 +207,38 @@ private struct EmptyDailyEntriesService: DailyEntriesServiceProtocol {
 
     func getEntriesWithPlansBatch(for dates: [Date]) async throws -> (entries: [String: DailyEntry], plans: [String: [TrainingPlan]]) {
         ([:], [:])
+    }
+
+    @MainActor func prefetchEntriesAround(date: Date, range: Int) {}
+}
+
+private struct FailingDailyEntriesService: DailyEntriesServiceProtocol {
+    func getEntry(for date: Date) async throws -> DailyEntry? {
+        throw TestServiceError.failed
+    }
+
+    func getTrainingPlans(for date: Date) async throws -> [TrainingPlan] {
+        throw TestServiceError.failed
+    }
+
+    func getQuote(for date: Date) async throws -> Quote? {
+        throw TestServiceError.failed
+    }
+
+    func completeMorning(for entry: DailyEntry) async throws -> DailyEntry {
+        throw TestServiceError.failed
+    }
+
+    func completeEvening(for entry: DailyEntry) async throws -> DailyEntry {
+        throw TestServiceError.failed
+    }
+
+    func getEntriesBatch(for dates: [Date]) async throws -> [String: DailyEntry] {
+        throw TestServiceError.failed
+    }
+
+    func getEntriesWithPlansBatch(for dates: [Date]) async throws -> (entries: [String: DailyEntry], plans: [String: [TrainingPlan]]) {
+        throw TestServiceError.failed
     }
 
     @MainActor func prefetchEntriesAround(date: Date, range: Int) {}

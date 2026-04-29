@@ -26,10 +26,6 @@ struct TodayTimelineItem: Identifiable, Hashable {
 
     static func sortedRecentFirst(_ items: [TodayTimelineItem]) -> [TodayTimelineItem] {
         items.sorted { lhs, rhs in
-            if lhs.isUpcoming != rhs.isUpcoming {
-                return !lhs.isUpcoming && rhs.isUpcoming
-            }
-
             switch (lhs.timestamp, rhs.timestamp) {
             case let (left?, right?):
                 return left > right

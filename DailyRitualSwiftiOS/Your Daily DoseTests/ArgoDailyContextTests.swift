@@ -3,7 +3,7 @@ import Testing
 @testable import Your_Daily_Dose
 
 struct ArgoDailyContextTests {
-    @Test func eventsSortLoggedItemsNewestFirstBeforeUpcomingPlans() {
+    @Test func eventsSortByMostRecentTimestampFirst() {
         let base = Date(timeIntervalSince1970: 2_000)
         let olderMeal = ArgoDailyEvent(
             id: "meal-1",
@@ -47,7 +47,7 @@ struct ArgoDailyContextTests {
 
         let sorted = ArgoDailyEvent.sortedRecentFirst([olderMeal, upcomingPlan, newerNote])
 
-        #expect(sorted.map(\.id) == ["note-1", "meal-1", "plan-1"])
+        #expect(sorted.map(\.id) == ["plan-1", "note-1", "meal-1"])
     }
 
     @Test func emptyContextHasStableDefaults() {

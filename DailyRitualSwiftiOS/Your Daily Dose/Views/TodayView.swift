@@ -56,14 +56,15 @@ struct TodayView: View {
     private let onCoachTap: () -> Void
     private let contextService: DailyContextProviding
 
+    @MainActor
     init(
         onLogTap: @escaping () -> Void = {},
         onCoachTap: @escaping () -> Void = {},
-        contextService: DailyContextProviding = ClientDailyContextService()
+        contextService: DailyContextProviding? = nil
     ) {
         self.onLogTap = onLogTap
         self.onCoachTap = onCoachTap
-        self.contextService = contextService
+        self.contextService = contextService ?? ClientDailyContextService()
     }
 
     private var timeContext: DesignSystem.TimeContext {

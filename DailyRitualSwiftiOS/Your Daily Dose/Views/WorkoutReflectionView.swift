@@ -247,6 +247,7 @@ struct WorkoutReflectionView: View {
             createdAt: nil,
             updatedAt: nil
         )
+        reflection.appleWorkoutId = appleWorkoutId
 
         if let plan = linkedPlan {
             reflection.trainingPlanId = plan.id

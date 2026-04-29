@@ -66,4 +66,26 @@ struct ArgoDailyEventMapperTests {
         #expect(event.summary.contains("Moderate"))
         #expect(event.isUpcoming)
     }
+
+    @Test func unscheduledTrainingPlanUsesPlannedDisplayWithoutMidnightTimestamp() {
+        let date = Date(timeIntervalSince1970: 86_400)
+        let plan = TrainingPlan(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000203")!,
+            userId: UUID(),
+            date: date,
+            sequence: 0,
+            trainingType: "running",
+            startTime: nil,
+            intensity: "easy",
+            durationMinutes: 30,
+            notes: nil,
+            createdAt: nil,
+            updatedAt: nil
+        )
+
+        let event = ArgoDailyEventMapper.makeTrainingPlanEvent(plan, now: Date(timeIntervalSince1970: 0))
+
+        #expect(event.timestamp == nil)
+        #expect(event.isUpcoming)
+    }
 }

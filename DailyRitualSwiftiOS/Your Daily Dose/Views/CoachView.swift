@@ -12,8 +12,9 @@ struct CoachView: View {
     @State private var context: ArgoDailyContext?
     @State private var contextRefreshID = UUID()
 
-    init(contextService: DailyContextProviding = ClientDailyContextService()) {
-        self.contextService = contextService
+    @MainActor
+    init(contextService: DailyContextProviding? = nil) {
+        self.contextService = contextService ?? ClientDailyContextService()
     }
 
     private var recommendations: [ArgoCoachAction] {

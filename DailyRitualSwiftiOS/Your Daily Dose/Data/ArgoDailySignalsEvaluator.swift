@@ -104,20 +104,12 @@ enum ArgoDailySignalsEvaluator {
         }
 
         if !healthKitWorkouts.isEmpty || !workoutReflections.isEmpty {
-            let healthKitWorkoutIds = Set(healthKitWorkouts.map(\.id))
-            let unlinkedReflections = workoutReflections.filter { reflection in
-                guard let appleWorkoutId = reflection.appleWorkoutId?.trimmingCharacters(in: .whitespacesAndNewlines),
-                      !appleWorkoutId.isEmpty else {
-                    return true
-                }
+            let totals = completedWorkoutTotals(
+                healthKitWorkouts: healthKitWorkouts,
+                workoutReflections: workoutReflections
+            )
 
-                return !healthKitWorkoutIds.contains(appleWorkoutId)
-            }
-            let completedMinutes = healthKitWorkouts.reduce(0) { $0 + $1.durationMinutes }
-                + unlinkedReflections.reduce(0) { $0 + ($1.durationMinutes ?? 0) }
-            let workoutCount = healthKitWorkouts.count + unlinkedReflections.count
-
-            if completedMinutes >= 90 || workoutCount > 1 {
+            if totals.minutes >= 90 || totals.count > 1 {
                 return .high
             }
 
@@ -147,11 +139,13 @@ enum ArgoDailySignalsEvaluator {
             flags.insert(.noMeals)
         }
 
-        if plannedWorkouts.isEmpty && !hasLegacyTrainingPlan(dailyEntry) {
+        if plannedWorkouts.isEmpty
+            && !hasLegacyTrainingPlan(dailyEntry)
+            && !sourceFailures.contains(.missingTrainingPlanData) {
             flags.insert(.noPlan)
         }
 
-        if dailyEntry?.isMorningComplete != true {
+        if dailyEntry?.isMorningComplete != true && !sourceFailures.contains(.missingDailyEntryData) {
             flags.insert(.noMorningCheckIn)
         }
 
@@ -175,6 +169,33 @@ enum ArgoDailySignalsEvaluator {
     ) -> Bool {
         let linkedAppleWorkoutIds = appleWorkoutIds(from: workoutReflections)
         return healthKitWorkouts.contains { !linkedAppleWorkoutIds.contains($0.id) }
+    }
+
+    private static func completedWorkoutTotals(
+        healthKitWorkouts: [HKWorkoutSummary],
+        workoutReflections: [WorkoutReflection]
+    ) -> (minutes: Int, count: Int) {
+        guard !healthKitWorkouts.isEmpty else {
+            return (
+                workoutReflections.reduce(0) { $0 + ($1.durationMinutes ?? 0) },
+                workoutReflections.count
+            )
+        }
+
+        let healthKitWorkoutIds = Set(healthKitWorkouts.map(\.id))
+        let unlinkedReflections = workoutReflections.filter { reflection in
+            guard let appleWorkoutId = reflection.appleWorkoutId?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !appleWorkoutId.isEmpty else {
+                return true
+            }
+
+            return !healthKitWorkoutIds.contains(appleWorkoutId)
+        }
+        let minutes = healthKitWorkouts.reduce(0) { $0 + $1.durationMinutes }
+            + unlinkedReflections.reduce(0) { $0 + ($1.durationMinutes ?? 0) }
+        let count = healthKitWorkouts.count + unlinkedReflections.count
+
+        return (minutes, count)
     }
 
     private static func appleWorkoutIds(from workoutReflections: [WorkoutReflection]) -> Set<String> {
@@ -249,6 +270,16 @@ enum ArgoDailySignalsEvaluator {
                 body: "Add a plan or mark today open so Argo can reason about load.",
                 primaryLabel: "Plan workout",
                 kind: .planWorkout
+            )
+        }
+
+        if missingContext.contains(.noMorningCheckIn) {
+            return ArgoCoachAction(
+                id: "morning-check-in",
+                title: "Add a quick check-in.",
+                body: "Capture how you feel this morning so Argo can adjust training, fuel, and recovery advice.",
+                primaryLabel: "Check in",
+                kind: .checkIn
             )
         }
 

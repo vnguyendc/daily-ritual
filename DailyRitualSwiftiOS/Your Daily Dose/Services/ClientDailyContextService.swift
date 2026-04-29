@@ -11,29 +11,29 @@ final class ClientDailyContextService: DailyContextProviding {
     private let journalService: JournalEntriesServiceProtocol
     private let workoutReflectionsService: WorkoutReflectionsServiceProtocol
     private let dailyEntriesService: DailyEntriesServiceProtocol
-    private let whoopDataProvider: (Date) -> WhoopDailyData?
-    private let healthKitWorkoutsProvider: (Date) -> [HKWorkoutSummary]
+    private let whoopDataProvider: @MainActor (Date) -> WhoopDailyData?
+    private let healthKitWorkoutsProvider: @MainActor (Date) -> [HKWorkoutSummary]
 
     init(
-        mealsService: MealsServiceProtocol = MealsService(),
-        journalService: JournalEntriesServiceProtocol = JournalEntriesService(),
-        workoutReflectionsService: WorkoutReflectionsServiceProtocol = WorkoutReflectionsService(),
-        dailyEntriesService: DailyEntriesServiceProtocol = DailyEntriesService(),
-        whoopDataProvider: @escaping (Date) -> WhoopDailyData? = { date in
+        mealsService: MealsServiceProtocol? = nil,
+        journalService: JournalEntriesServiceProtocol? = nil,
+        workoutReflectionsService: WorkoutReflectionsServiceProtocol? = nil,
+        dailyEntriesService: DailyEntriesServiceProtocol? = nil,
+        whoopDataProvider: (@MainActor (Date) -> WhoopDailyData?)? = nil,
+        healthKitWorkoutsProvider: (@MainActor (Date) -> [HKWorkoutSummary])? = nil
+    ) {
+        self.mealsService = mealsService ?? MealsService()
+        self.journalService = journalService ?? JournalEntriesService()
+        self.workoutReflectionsService = workoutReflectionsService ?? WorkoutReflectionsService()
+        self.dailyEntriesService = dailyEntriesService ?? DailyEntriesService()
+        self.whoopDataProvider = whoopDataProvider ?? { date in
             guard Calendar.current.isDateInToday(date) else { return nil }
             return WhoopService.shared.dailyData
-        },
-        healthKitWorkoutsProvider: @escaping (Date) -> [HKWorkoutSummary] = { date in
+        }
+        self.healthKitWorkoutsProvider = healthKitWorkoutsProvider ?? { date in
             guard Calendar.current.isDateInToday(date) else { return [] }
             return HealthKitService.shared.todayWorkouts
         }
-    ) {
-        self.mealsService = mealsService
-        self.journalService = journalService
-        self.workoutReflectionsService = workoutReflectionsService
-        self.dailyEntriesService = dailyEntriesService
-        self.whoopDataProvider = whoopDataProvider
-        self.healthKitWorkoutsProvider = healthKitWorkoutsProvider
     }
 
     func context(for date: Date) async -> ArgoDailyContext {
@@ -48,6 +48,7 @@ final class ClientDailyContextService: DailyContextProviding {
             dailyEntry = try await dailyEntriesService.getEntry(for: date)
         } catch {
             dailyEntry = nil
+            sourceFailures.insert(.missingDailyEntryData)
         }
 
         let plannedWorkouts: [TrainingPlan]
@@ -55,6 +56,7 @@ final class ClientDailyContextService: DailyContextProviding {
             plannedWorkouts = try await dailyEntriesService.getTrainingPlans(for: date)
         } catch {
             plannedWorkouts = []
+            sourceFailures.insert(.missingTrainingPlanData)
         }
 
         let nutrition: DailyNutritionSummary?

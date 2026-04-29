@@ -215,7 +215,7 @@ enum ArgoDailyEventMapper {
     }
 
     private static func dateForPlan(_ plan: TrainingPlan) -> Date? {
-        guard let startTime = plan.startTime else { return plan.date }
+        guard let startTime = plan.startTime else { return nil }
 
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
@@ -224,6 +224,6 @@ enum ArgoDailyEventMapper {
         let combinedFormatter = DateFormatter()
         combinedFormatter.dateFormat = startTime.count == 5 ? "yyyy-MM-dd HH:mm" : "yyyy-MM-dd HH:mm:ss"
 
-        return combinedFormatter.date(from: combined) ?? plan.date
+        return combinedFormatter.date(from: combined)
     }
 }

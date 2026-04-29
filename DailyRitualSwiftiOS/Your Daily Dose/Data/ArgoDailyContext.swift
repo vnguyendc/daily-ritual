@@ -50,10 +50,6 @@ struct ArgoDailyEvent: Identifiable {
 
     static func sortedRecentFirst(_ events: [ArgoDailyEvent]) -> [ArgoDailyEvent] {
         events.sorted { lhs, rhs in
-            if lhs.isUpcoming != rhs.isUpcoming {
-                return !lhs.isUpcoming && rhs.isUpcoming
-            }
-
             switch (lhs.timestamp, rhs.timestamp) {
             case let (left?, right?):
                 return left > right
@@ -130,6 +126,8 @@ enum MissingContextFlag: String, Hashable, Sendable {
     case missingWorkoutReflection
     case missingWearableData
     case missingNutritionData
+    case missingDailyEntryData
+    case missingTrainingPlanData
     case missingJournalData
     case missingReflectionData
 }
@@ -146,6 +144,7 @@ struct ArgoCoachAction: Identifiable, Sendable {
         case planWorkout
         case reflectWorkout
         case adjustTraining
+        case checkIn
         case recoveryHabit
     }
 }

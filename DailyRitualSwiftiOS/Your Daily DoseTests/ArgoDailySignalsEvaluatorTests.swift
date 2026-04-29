@@ -170,6 +170,73 @@ struct ArgoDailySignalsEvaluatorTests {
         #expect(!durationSignals.missingContext.contains(.noPlan))
     }
 
+    @Test func sourceFailuresSuppressUserActionGapsForUnavailableSources() {
+        let signals = ArgoDailySignalsEvaluator.evaluate(
+            date: Date(timeIntervalSince1970: 4_500),
+            dailyEntry: nil,
+            nutrition: nil,
+            journalEntries: [],
+            workoutReflections: [],
+            plannedWorkouts: [],
+            healthKitWorkouts: [],
+            whoop: nil,
+            sourceFailures: [.missingDailyEntryData, .missingTrainingPlanData]
+        )
+
+        #expect(signals.missingContext.contains(.missingDailyEntryData))
+        #expect(signals.missingContext.contains(.missingTrainingPlanData))
+        #expect(!signals.missingContext.contains(.noMorningCheckIn))
+        #expect(!signals.missingContext.contains(.noPlan))
+    }
+
+    @Test func morningCheckInGapProducesCoachActionAfterHigherPriorityGapsAreResolved() {
+        let date = Date(timeIntervalSince1970: 4_600)
+        var entry = DailyEntry(userId: UUID(), date: date)
+        entry.plannedTrainingTime = "18:00"
+        let nutrition = DailyNutritionSummary(
+            date: "1970-01-01",
+            mealCount: 1,
+            totalCalories: 700,
+            totalProteinG: 55,
+            totalCarbsG: 70,
+            totalFatG: 20,
+            totalFiberG: 8,
+            meals: []
+        )
+        let whoop = WhoopDailyData(
+            id: nil,
+            userId: nil,
+            date: date,
+            recoveryScore: 70,
+            recoveryZone: .green,
+            sleepPerformance: nil,
+            sleepDurationMinutes: nil,
+            sleepEfficiency: nil,
+            sleepStages: nil,
+            respiratoryRate: nil,
+            skinTempDelta: nil,
+            hrv: nil,
+            restingHr: nil,
+            strainScore: nil,
+            fetchedAt: date
+        )
+
+        let signals = ArgoDailySignalsEvaluator.evaluate(
+            date: date,
+            dailyEntry: entry,
+            nutrition: nutrition,
+            journalEntries: [],
+            workoutReflections: [],
+            plannedWorkouts: [],
+            healthKitWorkouts: [],
+            whoop: whoop,
+            sourceFailures: []
+        )
+
+        #expect(signals.missingContext.contains(.noMorningCheckIn))
+        #expect(signals.nextAction?.kind == .checkIn)
+    }
+
     private func makeHealthKitWorkout(
         id: String,
         date: Date,

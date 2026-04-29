@@ -28,7 +28,7 @@ struct TodayTimelineItemTests {
         #expect(item.timestamp == timestamp)
     }
 
-    @Test func recentFirstSortsDatedItemsBeforeUpcomingItems() {
+    @Test func recentFirstSortsByTimestampAcrossLoggedAndUpcomingItems() {
         let base = Date(timeIntervalSince1970: 1_000)
         let old = TodayTimelineItem(
             id: "old",
@@ -63,7 +63,7 @@ struct TodayTimelineItemTests {
 
         let sorted = TodayTimelineItem.sortedRecentFirst([old, upcoming, recent])
 
-        #expect(sorted.map(\.id) == ["recent", "old", "upcoming"])
+        #expect(sorted.map(\.id) == ["upcoming", "recent", "old"])
     }
 
     @Test func buildsMealItemsFromNutritionSummary() {
