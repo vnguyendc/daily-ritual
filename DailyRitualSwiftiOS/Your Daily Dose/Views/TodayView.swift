@@ -35,6 +35,7 @@ struct TodayView: View {
     @State private var completedGoals: Set<Int> = []
     @State private var selectedTrainingPlan: TrainingPlan?
     @State private var trainingPlanToEdit: TrainingPlan?
+    @State private var dailyContext: ArgoDailyContext?
 
     // Workout reflection
     @State private var workoutReflectionPlan: TrainingPlan?
@@ -53,10 +54,17 @@ struct TodayView: View {
     private let mealsService: MealsServiceProtocol = MealsService()
     private let onLogTap: () -> Void
     private let onCoachTap: () -> Void
+    private let contextService: DailyContextProviding
 
-    init(onLogTap: @escaping () -> Void = {}, onCoachTap: @escaping () -> Void = {}) {
+    @MainActor
+    init(
+        onLogTap: @escaping () -> Void = {},
+        onCoachTap: @escaping () -> Void = {},
+        contextService: DailyContextProviding? = nil
+    ) {
         self.onLogTap = onLogTap
         self.onCoachTap = onCoachTap
+        self.contextService = contextService ?? ClientDailyContextService()
     }
 
     private var timeContext: DesignSystem.TimeContext {
@@ -99,6 +107,7 @@ struct TodayView: View {
             .refreshable {
                 await SupabaseManager.shared.replayPendingOpsWithBackoff()
                 await viewModel.refresh(for: selectedDate)
+                await loadDailyContext(for: selectedDate)
                 await loadJournalEntries()
                 await loadNutrition(for: selectedDate)
             }
@@ -113,12 +122,16 @@ struct TodayView: View {
                 if HealthKitService.shared.isAuthorized {
                     await HealthKitService.shared.fetchTodayData()
                 }
+                await loadDailyContext(for: selectedDate)
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
                     cardsVisible = true
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
                 handlePotentialDayChange()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .argoDailyContextDidChange)) { _ in
+                Task { await loadDailyContext(for: selectedDate) }
             }
             .onChange(of: scenePhase) { phase in
                 if phase == .active {
@@ -155,6 +168,7 @@ struct TodayView: View {
             .sheet(isPresented: $showingAddActivity) {
                 TrainingPlanFormSheet(mode: .create, date: selectedDate, onSaved: {
                     await viewModel.load(date: selectedDate)
+                    await loadDailyContext(for: selectedDate)
                 })
             }
             .sheet(item: $selectedTrainingPlan) { plan in
@@ -163,6 +177,7 @@ struct TodayView: View {
             .sheet(item: $trainingPlanToEdit) { plan in
                 TrainingPlanFormSheet(mode: .edit, date: selectedDate, existingPlan: plan, onSaved: {
                     await viewModel.load(date: selectedDate)
+                    await loadDailyContext(for: selectedDate)
                 })
             }
             .sheet(item: $selectedJournalEntry) { entry in
@@ -177,7 +192,10 @@ struct TodayView: View {
                 }
             }
             .sheet(isPresented: $showingMealLog, onDismiss: {
-                Task { await loadNutrition(for: selectedDate) }
+                Task {
+                    await loadNutrition(for: selectedDate)
+                    await loadDailyContext(for: selectedDate)
+                }
             }) {
                 MealLogView(date: selectedDate)
             }
@@ -188,105 +206,59 @@ struct TodayView: View {
 // MARK: - Content Views
 extension TodayView {
     private var timelineItems: [TodayTimelineItem] {
-        TodayTimelineBuilder.makeItems(
-            plans: viewModel.sortedTrainingPlans,
-            nutritionSummary: nutritionSummary,
-            journalEntries: journalEntries,
-            morningCompletedAt: viewModel.entry.morningCompletedAt,
-            eveningCompletedAt: viewModel.entry.eveningCompletedAt
-        )
+        TodayTimelineItem.sortedRecentFirst((dailyContext?.events ?? []).map(TodayTimelineItem.init(event:)))
     }
 
     private var roundedRecoveryScore: Int? {
-        WhoopService.shared.dailyData?.recoveryScore.map { Int($0.rounded()) }
+        dailyContext?.whoop?.recoveryScore.map { Int($0.rounded()) }
     }
 
     private var sleepSummaryText: String {
-        guard let data = WhoopService.shared.dailyData else { return "--" }
-
+        guard let data = dailyContext?.whoop else { return "--" }
         if let minutes = data.sleepDurationMinutes {
             return formatMinutes(minutes)
         }
-
         if let performance = data.sleepPerformance {
             return "\(Int(performance.rounded()))%"
         }
-
         return "--"
     }
 
     private var fuelSummaryText: String {
-        guard let summary = nutritionSummary else { return "No meals" }
-        if summary.mealCount == 0 { return "No meals" }
-        return "\(summary.totalCalories) cal"
+        guard let nutrition = dailyContext?.nutrition else { return "No meals" }
+        return nutrition.mealCount == 0 ? "No meals" : "\(nutrition.totalCalories) cal"
     }
 
     private var loadSummaryText: String {
-        if let strain = WhoopService.shared.dailyData?.strainScore {
-            return String(format: "%.1f strain", strain)
+        switch dailyContext?.derived.trainingLoadStatus {
+        case .high:
+            return "High"
+        case .completed:
+            return "Complete"
+        case .planned:
+            return "Planned"
+        case .open:
+            return "Open"
+        case .unknown, .none:
+            return "--"
         }
-
-        let workoutCount = HealthKitService.shared.todayWorkouts.count
-        if workoutCount > 0 {
-            return "\(workoutCount) workout\(workoutCount == 1 ? "" : "s")"
-        }
-
-        return "Open"
     }
 
     private var planSummaryText: String {
-        let plans = viewModel.sortedTrainingPlans
+        let plans = dailyContext?.plannedWorkouts ?? []
         guard let firstPlan = plans.first else {
             return "No training plan yet. Add the key session, meals, and recovery block for the day."
         }
-
         let time = firstPlan.formattedStartTime ?? "Planned"
-        let remaining = plans.count - 1
-        if remaining > 0 {
-            return "\(firstPlan.activityType.displayName) at \(time), plus \(remaining) more item\(remaining == 1 ? "" : "s")."
-        }
-
         return "\(firstPlan.activityType.displayName) at \(time)."
     }
 
     private var nextActionText: String {
-        if !viewModel.entry.isMorningComplete {
-            return "Start with a quick check-in."
-        }
-
-        if nutritionSummary?.mealCount ?? 0 == 0 {
-            return "Log your first meal."
-        }
-
-        if let recovery = roundedRecoveryScore, recovery < 50 {
-            return "Keep training controlled."
-        }
-
-        if viewModel.sortedTrainingPlans.isEmpty {
-            return "Set today's training anchor."
-        }
-
-        return "Stay on the plan."
+        dailyContext?.derived.nextAction?.title ?? "Build today's context."
     }
 
     private var nextActionRationale: String {
-        if !viewModel.entry.isMorningComplete {
-            return "Argo needs a fast read on energy, stress, and the shape of the day before suggesting changes."
-        }
-
-        if nutritionSummary?.mealCount ?? 0 == 0 {
-            return "Food context makes the coach more useful for training load, recovery, and evening choices."
-        }
-
-        if let recovery = roundedRecoveryScore, recovery < 50 {
-            return "Recovery is below the green zone, so today's structure should protect tomorrow."
-        }
-
-        if viewModel.sortedTrainingPlans.isEmpty {
-            return "A simple time block is enough. The app can help you protect the session around work and meals."
-        }
-
-        return "Use the timeline to keep meals, workouts, notes, and recovery decisions in one place."
+        dailyContext?.derived.nextAction?.body ?? "Log meals, training, and reflections so Argo can coach from useful data."
     }
 
     @ViewBuilder
@@ -295,6 +267,7 @@ extension TodayView {
             .onChange(of: selectedDate) { _, newDate in
                 Task {
                     await viewModel.load(date: newDate)
+                    await loadDailyContext(for: newDate)
                     await loadJournalEntries()
                     await loadNutrition(for: newDate)
                     completedGoals = loadCompletedGoals(for: newDate)
@@ -492,22 +465,19 @@ extension TodayView {
     @ViewBuilder
     private var quickEntrySheet: some View {
         QuickEntryView(date: Date()) { title, content in
-            do {
-                let titleParam: String? = title.isEmpty ? nil : title
-                let moodParam: Int? = nil
-                let energyParam: Int? = nil
-                let tagsParam: [String]? = nil
-                _ = try await journalService.createEntry(
-                    title: titleParam,
-                    content: content,
-                    mood: moodParam,
-                    energy: energyParam,
-                    tags: tagsParam
-                )
-                await loadJournalEntries()
-            } catch {
-                print("Failed to save journal entry:", error)
-            }
+            let titleParam: String? = title.isEmpty ? nil : title
+            let moodParam: Int? = nil
+            let energyParam: Int? = nil
+            let tagsParam: [String]? = nil
+            _ = try await journalService.createEntry(
+                title: titleParam,
+                content: content,
+                mood: moodParam,
+                energy: energyParam,
+                tags: tagsParam
+            )
+            await loadJournalEntries()
+            await loadDailyContext(for: selectedDate)
         }
     }
 
@@ -524,6 +494,7 @@ extension TodayView {
             onDelete: {
                 try? await plansService.remove(plan.id)
                 await viewModel.load(date: selectedDate)
+                await loadDailyContext(for: selectedDate)
             },
             onDismiss: {
                 selectedTrainingPlan = nil
@@ -549,6 +520,7 @@ extension TodayView {
                         tags: tagsParam
                     )
                     await loadJournalEntries()
+                    await loadDailyContext(for: selectedDate)
                 } catch {
                     print("Failed to update journal entry:", error)
                 }
@@ -557,6 +529,7 @@ extension TodayView {
                 do {
                     try await journalService.deleteEntry(id: entry.id)
                     await loadJournalEntries()
+                    await loadDailyContext(for: selectedDate)
                 } catch {
                     print("Failed to delete journal entry:", error)
                 }
@@ -570,6 +543,7 @@ extension TodayView {
     private func refreshData() {
         Task {
             await viewModel.load(date: selectedDate)
+            await loadDailyContext(for: selectedDate)
             await loadJournalEntries()
             await loadNutrition(for: selectedDate)
             await StreaksService.shared.fetchStreaks(force: true)
@@ -584,10 +558,17 @@ extension TodayView {
         selectedDate = newDay
         Task {
             await viewModel.load(date: newDay)
+            await loadDailyContext(for: newDay)
             await loadJournalEntries()
             await loadNutrition(for: newDay)
             completedGoals = loadCompletedGoals(for: newDay)
         }
+    }
+
+    private func loadDailyContext(for date: Date) async {
+        let context = await contextService.refresh(for: date)
+        guard Calendar.current.isDate(date, inSameDayAs: selectedDate) else { return }
+        dailyContext = context
     }
 
     private func loadCompletedGoals(for date: Date) -> Set<Int> {

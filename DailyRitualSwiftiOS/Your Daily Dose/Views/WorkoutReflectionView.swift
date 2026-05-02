@@ -37,6 +37,7 @@ struct WorkoutReflectionView: View {
 
     var linkedPlan: TrainingPlan?
     var healthKitData: PartialWorkoutData?
+    var onSaved: (() -> Void)? = nil
 
     private let timeContext: DesignSystem.TimeContext = .neutral
     private let totalSteps = 4
@@ -246,6 +247,7 @@ struct WorkoutReflectionView: View {
             createdAt: nil,
             updatedAt: nil
         )
+        reflection.appleWorkoutId = appleWorkoutId
 
         if let plan = linkedPlan {
             reflection.trainingPlanId = plan.id
@@ -257,6 +259,7 @@ struct WorkoutReflectionView: View {
                 #if canImport(UIKit)
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
                 #endif
+                onSaved?()
                 showingCompletion = true
             }
             // Fetch post-workout insight after a brief delay (edge function needs time to generate)

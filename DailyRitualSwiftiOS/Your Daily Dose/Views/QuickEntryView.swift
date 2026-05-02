@@ -16,11 +16,12 @@ struct QuickEntryView: View {
     @State private var entryTitle = ""
     @State private var entryText = ""
     @State private var isSaving = false
+    @State private var saveErrorMessage: String?
     @FocusState private var isTitleFocused: Bool
     @FocusState private var isTextFieldFocused: Bool
-    
+
     let date: Date
-    var onSave: ((String, String) async -> Void)? // (title, content)
+    var onSave: ((String, String) async throws -> Void)? // (title, content)
     
     private var timeContext: DesignSystem.TimeContext { DesignSystem.TimeContext.current() }
     
@@ -127,6 +128,16 @@ struct QuickEntryView: View {
                     isTitleFocused = true
                 }
             }
+            .alert("Save Failed", isPresented: Binding(
+                get: { saveErrorMessage != nil },
+                set: { if !$0 { saveErrorMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) {
+                    saveErrorMessage = nil
+                }
+            } message: {
+                Text(saveErrorMessage ?? "")
+            }
         }
     }
     
@@ -170,20 +181,24 @@ struct QuickEntryView: View {
         
         // Use placeholder if title is empty
         let finalTitle = entryTitle.isEmpty ? "Quick Entry" : entryTitle
-        
-        // Save the entry with title
-        await onSave?(finalTitle, entryText)
-        
-        #if canImport(UIKit)
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
-        #endif
-        
-        isSaving = false
-        dismiss()
+
+        do {
+            // Save the entry with title
+            try await onSave?(finalTitle, entryText)
+
+            #if canImport(UIKit)
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            #endif
+
+            isSaving = false
+            dismiss()
+        } catch {
+            saveErrorMessage = "Couldn’t save this entry. Please try again."
+            isSaving = false
+        }
     }
 }
 
 #Preview {
     QuickEntryView(date: Date())
 }
-

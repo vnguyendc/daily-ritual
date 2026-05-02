@@ -3,7 +3,32 @@ import Testing
 @testable import Your_Daily_Dose
 
 struct TodayTimelineItemTests {
-    @Test func recentFirstSortsDatedItemsBeforeUpcomingItems() {
+    @Test func adaptsArgoEventIntoTimelineItem() {
+        let timestamp = Date(timeIntervalSince1970: 6_000)
+        let event = ArgoDailyEvent(
+            id: "meal-1",
+            source: .meal,
+            type: .mealLogged,
+            timestamp: timestamp,
+            title: "Lunch logged",
+            summary: "740 cal · 48g protein",
+            payload: [:],
+            confidence: 0.8,
+            requiresReview: false,
+            sourceRecordId: "meal-1",
+            isUpcoming: false
+        )
+
+        let item = TodayTimelineItem(event: event)
+
+        #expect(item.id == "meal-1")
+        #expect(item.kind == .meal)
+        #expect(item.title == "Lunch logged")
+        #expect(item.subtitle == "740 cal · 48g protein")
+        #expect(item.timestamp == timestamp)
+    }
+
+    @Test func recentFirstSortsByTimestampAcrossLoggedAndUpcomingItems() {
         let base = Date(timeIntervalSince1970: 1_000)
         let old = TodayTimelineItem(
             id: "old",
@@ -38,7 +63,7 @@ struct TodayTimelineItemTests {
 
         let sorted = TodayTimelineItem.sortedRecentFirst([old, upcoming, recent])
 
-        #expect(sorted.map(\.id) == ["recent", "old", "upcoming"])
+        #expect(sorted.map(\.id) == ["upcoming", "recent", "old"])
     }
 
     @Test func buildsMealItemsFromNutritionSummary() {

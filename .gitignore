@@ -92,6 +92,7 @@ Thumbs.db
 # Build products
 build/
 DerivedData/
+.worktrees/
 
 # Swift Package Manager
 .build/

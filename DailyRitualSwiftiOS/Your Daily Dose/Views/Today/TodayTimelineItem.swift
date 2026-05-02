@@ -26,10 +26,6 @@ struct TodayTimelineItem: Identifiable, Hashable {
 
     static func sortedRecentFirst(_ items: [TodayTimelineItem]) -> [TodayTimelineItem] {
         items.sorted { lhs, rhs in
-            if lhs.isUpcoming != rhs.isUpcoming {
-                return !lhs.isUpcoming && rhs.isUpcoming
-            }
-
             switch (lhs.timestamp, rhs.timestamp) {
             case let (left?, right?):
                 return left > right
@@ -41,6 +37,42 @@ struct TodayTimelineItem: Identifiable, Hashable {
                 return lhs.displayTime > rhs.displayTime
             }
         }
+    }
+}
+
+extension TodayTimelineItem {
+    init(event: ArgoDailyEvent) {
+        self.init(
+            id: event.id,
+            kind: TodayTimelineItem.kind(for: event),
+            title: event.title,
+            subtitle: event.summary,
+            timestamp: event.timestamp,
+            displayTime: event.timestamp.map(Self.formattedEventTime) ?? "Planned",
+            isUpcoming: event.isUpcoming,
+            accent: event.requiresReview ? .attention : (event.isUpcoming ? .muted : .standard)
+        )
+    }
+
+    private static func kind(for event: ArgoDailyEvent) -> Kind {
+        switch event.type {
+        case .mealLogged:
+            return .meal
+        case .workoutPlanned, .workoutCompleted, .workoutReflected:
+            return .workout
+        case .checkInLogged:
+            return .checkIn
+        case .coachRecommendation:
+            return .coach
+        case .noteLogged, .wearableRecovery, .wearableSleep, .wearableStrain:
+            return .note
+        }
+    }
+
+    private static func formattedEventTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return formatter.string(from: date)
     }
 }
 

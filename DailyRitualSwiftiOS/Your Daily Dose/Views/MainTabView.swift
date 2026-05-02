@@ -97,16 +97,20 @@ struct MainTabView: View {
             .presentationDragIndicator(.hidden)
         }
         .sheet(isPresented: $showingMealLog) {
-            MealLogView(date: Date())
+            MealLogView(date: Date(), onSaved: notifyDailyContextChanged)
         }
         .sheet(isPresented: $showingVoiceEntry) {
-            QuickEntryView(date: Date())
+            QuickEntryView(date: Date()) { title, content in
+                try await saveContextEntry(title: title, content: content, tags: ["voice"])
+            }
         }
         .sheet(isPresented: $showingWorkoutReflection) {
-            WorkoutReflectionView(linkedPlan: nil, healthKitData: nil)
+            WorkoutReflectionView(linkedPlan: nil, healthKitData: nil, onSaved: notifyDailyContextChanged)
         }
         .sheet(isPresented: $showingCheckIn) {
-            QuickEntryView(date: Date())
+            QuickEntryView(date: Date()) { title, content in
+                try await saveContextEntry(title: title, content: content, tags: ["check-in"])
+            }
         }
     }
 
@@ -209,6 +213,22 @@ struct MainTabView: View {
                 showingCheckIn = true
             }
         }
+    }
+
+    private func notifyDailyContextChanged() {
+        NotificationCenter.default.post(name: .argoDailyContextDidChange, object: nil)
+    }
+
+    private func saveContextEntry(title: String, content: String, tags: [String]) async throws {
+        let titleParam: String? = title.isEmpty ? nil : title
+        _ = try await JournalEntriesService().createEntry(
+            title: titleParam,
+            content: content,
+            mood: nil,
+            energy: nil,
+            tags: tags
+        )
+        notifyDailyContextChanged()
     }
 }
 

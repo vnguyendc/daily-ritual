@@ -31,11 +31,8 @@ struct WorkoutReflectionStats: Codable, Sendable {
     }
 }
 
-@MainActor
-struct WorkoutReflectionsService: WorkoutReflectionsServiceProtocol {
-    private var apiClient: APIClient { SupabaseManager.shared.api }
-
-    func create(_ reflection: WorkoutReflection) async throws -> WorkoutReflection {
+enum WorkoutReflectionPayloadBuilder {
+    static func createPayload(from reflection: WorkoutReflection) -> [String: Any] {
         var body: [String: Any] = [:]
         if let feeling = reflection.trainingFeeling { body["training_feeling"] = feeling }
         if let well = reflection.whatWentWell { body["what_went_well"] = well }
@@ -48,7 +45,33 @@ struct WorkoutReflectionsService: WorkoutReflectionsServiceProtocol {
         if let calories = reflection.caloriesBurned { body["calories_burned"] = calories }
         if let avgHr = reflection.averageHr { body["average_hr"] = avgHr }
         if let maxHr = reflection.maxHr { body["max_hr"] = maxHr }
+        if let stravaActivityId = reflection.stravaActivityId, !stravaActivityId.isEmpty { body["strava_activity_id"] = stravaActivityId }
+        if let appleWorkoutId = reflection.appleWorkoutId, !appleWorkoutId.isEmpty { body["apple_workout_id"] = appleWorkoutId }
+        if let whoopActivityId = reflection.whoopActivityId, !whoopActivityId.isEmpty { body["whoop_activity_id"] = whoopActivityId }
+        return body
+    }
 
+    static func updatePayload(from reflection: WorkoutReflection) -> [String: Any] {
+        var body: [String: Any] = [:]
+        if let feeling = reflection.trainingFeeling { body["training_feeling"] = feeling }
+        if let well = reflection.whatWentWell { body["what_went_well"] = well }
+        if let improve = reflection.whatToImprove { body["what_to_improve"] = improve }
+        if let energy = reflection.energyLevel { body["energy_level"] = energy }
+        if let focus = reflection.focusLevel { body["focus_level"] = focus }
+        if let type = reflection.workoutType { body["workout_type"] = type }
+        if let intensity = reflection.workoutIntensity { body["workout_intensity"] = intensity }
+        if let duration = reflection.durationMinutes { body["duration_minutes"] = duration }
+        if let appleWorkoutId = reflection.appleWorkoutId { body["apple_workout_id"] = appleWorkoutId }
+        return body
+    }
+}
+
+@MainActor
+struct WorkoutReflectionsService: WorkoutReflectionsServiceProtocol {
+    private var apiClient: APIClient { SupabaseManager.shared.api }
+
+    func create(_ reflection: WorkoutReflection) async throws -> WorkoutReflection {
+        let body = WorkoutReflectionPayloadBuilder.createPayload(from: reflection)
         let response: APIResponse<WorkoutReflection> = try await apiClient.postRaw("workout-reflections", json: body)
         if let created = response.data {
             return created
@@ -73,16 +96,7 @@ struct WorkoutReflectionsService: WorkoutReflectionsServiceProtocol {
     }
 
     func update(_ reflection: WorkoutReflection) async throws -> WorkoutReflection {
-        var body: [String: Any] = [:]
-        if let feeling = reflection.trainingFeeling { body["training_feeling"] = feeling }
-        if let well = reflection.whatWentWell { body["what_went_well"] = well }
-        if let improve = reflection.whatToImprove { body["what_to_improve"] = improve }
-        if let energy = reflection.energyLevel { body["energy_level"] = energy }
-        if let focus = reflection.focusLevel { body["focus_level"] = focus }
-        if let type = reflection.workoutType { body["workout_type"] = type }
-        if let intensity = reflection.workoutIntensity { body["workout_intensity"] = intensity }
-        if let duration = reflection.durationMinutes { body["duration_minutes"] = duration }
-
+        let body = WorkoutReflectionPayloadBuilder.updatePayload(from: reflection)
         let response: APIResponse<WorkoutReflection> = try await apiClient.putRaw("workout-reflections/\(reflection.id)", json: body)
         return response.data ?? reflection
     }
