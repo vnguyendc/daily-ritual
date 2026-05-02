@@ -9,6 +9,7 @@ enum ArgoDailyEventMapper {
         plannedWorkouts: [TrainingPlan],
         healthKitWorkouts: [HKWorkoutSummary],
         whoop: WhoopDailyData?,
+        coachProposals: [ArgoCoachProposal] = [],
         now: Date = Date()
     ) -> [ArgoDailyEvent] {
         var events: [ArgoDailyEvent] = []
@@ -18,6 +19,7 @@ enum ArgoDailyEventMapper {
         events.append(contentsOf: plannedWorkouts.map { makeTrainingPlanEvent($0, now: now) })
         events.append(contentsOf: healthKitWorkouts.map(makeHealthKitWorkoutEvent))
         events.append(contentsOf: makeWhoopEvents(whoop))
+        events.append(contentsOf: coachProposals.filter(\.isVisible).map(makeCoachProposalEvent))
 
         if let completedAt = dailyEntry?.morningCompletedAt {
             events.append(makeCheckInEvent(id: "morning-check-in", title: "Morning check-in", timestamp: completedAt))
@@ -211,6 +213,26 @@ enum ArgoDailyEventMapper {
             requiresReview: false,
             sourceRecordId: nil,
             isUpcoming: false
+        )
+    }
+
+    static func makeCoachProposalEvent(_ proposal: ArgoCoachProposal) -> ArgoDailyEvent {
+        ArgoDailyEvent(
+            id: "coach-\(proposal.id)",
+            source: .coach,
+            type: .coachRecommendation,
+            timestamp: proposal.updatedAt,
+            title: proposal.action.title,
+            summary: "\(proposal.status.displayName): \(proposal.action.body)",
+            payload: [
+                "proposal_id": AnyCodable(proposal.id),
+                "status": AnyCodable(proposal.status.rawValue),
+                "kind": AnyCodable(proposal.action.kind.rawValue)
+            ],
+            confidence: nil,
+            requiresReview: proposal.status == .pending,
+            sourceRecordId: proposal.id,
+            isUpcoming: proposal.status != .completed
         )
     }
 

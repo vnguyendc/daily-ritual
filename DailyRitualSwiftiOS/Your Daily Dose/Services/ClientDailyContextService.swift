@@ -11,6 +11,7 @@ final class ClientDailyContextService: DailyContextProviding {
     private let journalService: JournalEntriesServiceProtocol
     private let workoutReflectionsService: WorkoutReflectionsServiceProtocol
     private let dailyEntriesService: DailyEntriesServiceProtocol
+    private let proposalStore: ArgoCoachProposalStoring
     private let whoopDataProvider: @MainActor (Date) -> WhoopDailyData?
     private let healthKitWorkoutsProvider: @MainActor (Date) -> [HKWorkoutSummary]
 
@@ -19,6 +20,7 @@ final class ClientDailyContextService: DailyContextProviding {
         journalService: JournalEntriesServiceProtocol? = nil,
         workoutReflectionsService: WorkoutReflectionsServiceProtocol? = nil,
         dailyEntriesService: DailyEntriesServiceProtocol? = nil,
+        proposalStore: ArgoCoachProposalStoring? = nil,
         whoopDataProvider: (@MainActor (Date) -> WhoopDailyData?)? = nil,
         healthKitWorkoutsProvider: (@MainActor (Date) -> [HKWorkoutSummary])? = nil
     ) {
@@ -26,6 +28,7 @@ final class ClientDailyContextService: DailyContextProviding {
         self.journalService = journalService ?? JournalEntriesService()
         self.workoutReflectionsService = workoutReflectionsService ?? WorkoutReflectionsService()
         self.dailyEntriesService = dailyEntriesService ?? DailyEntriesService()
+        self.proposalStore = proposalStore ?? LocalArgoCoachProposalStore()
         self.whoopDataProvider = whoopDataProvider ?? { date in
             guard Calendar.current.isDateInToday(date) else { return nil }
             return WhoopService.shared.dailyData
@@ -96,7 +99,7 @@ final class ClientDailyContextService: DailyContextProviding {
             whoop: whoop,
             sourceFailures: sourceFailures
         )
-        let events = ArgoDailyEventMapper.makeEvents(
+        let baseEvents = ArgoDailyEventMapper.makeEvents(
             dailyEntry: dailyEntry,
             nutrition: nutrition,
             journalEntries: journalEntries,
@@ -104,6 +107,37 @@ final class ClientDailyContextService: DailyContextProviding {
             plannedWorkouts: plannedWorkouts,
             healthKitWorkouts: healthKitWorkouts,
             whoop: whoop
+        )
+        let baseContext = ArgoDailyContext(
+            date: date,
+            dailyEntry: dailyEntry,
+            events: baseEvents,
+            nutrition: nutrition,
+            journalEntries: journalEntries,
+            workoutReflections: workoutReflections,
+            plannedWorkouts: plannedWorkouts,
+            healthKitWorkouts: healthKitWorkouts,
+            whoop: whoop,
+            coachProposals: [],
+            derived: derived
+        )
+        let existingProposals = proposalStore.loadProposals(for: date)
+        let coachProposals = ArgoCoachProposalGenerator.makeProposals(
+            for: baseContext,
+            existing: existingProposals
+        )
+        for proposal in coachProposals where !existingProposals.contains(where: { $0.id == proposal.id }) {
+            proposalStore.upsert(proposal)
+        }
+        let events = ArgoDailyEventMapper.makeEvents(
+            dailyEntry: dailyEntry,
+            nutrition: nutrition,
+            journalEntries: journalEntries,
+            workoutReflections: workoutReflections,
+            plannedWorkouts: plannedWorkouts,
+            healthKitWorkouts: healthKitWorkouts,
+            whoop: whoop,
+            coachProposals: coachProposals
         )
 
         return ArgoDailyContext(
@@ -116,6 +150,7 @@ final class ClientDailyContextService: DailyContextProviding {
             plannedWorkouts: plannedWorkouts,
             healthKitWorkouts: healthKitWorkouts,
             whoop: whoop,
+            coachProposals: coachProposals,
             derived: derived
         )
     }
