@@ -9,52 +9,24 @@ import SwiftUI
 
 struct CoachView: View {
     private let contextService: DailyContextProviding
+    private let proposalStore: ArgoCoachProposalStoring
+    private let onAction: (ArgoCoachProposal) -> Void
     @State private var context: ArgoDailyContext?
     @State private var contextRefreshID = UUID()
 
     @MainActor
-    init(contextService: DailyContextProviding? = nil) {
+    init(
+        contextService: DailyContextProviding? = nil,
+        proposalStore: ArgoCoachProposalStoring? = nil,
+        onAction: @escaping (ArgoCoachProposal) -> Void = { _ in }
+    ) {
         self.contextService = contextService ?? ClientDailyContextService()
+        self.proposalStore = proposalStore ?? LocalArgoCoachProposalStore()
+        self.onAction = onAction
     }
 
-    private var recommendations: [ArgoCoachAction] {
-        var actions: [ArgoCoachAction] = []
-
-        func appendIfUnique(_ action: ArgoCoachAction) {
-            guard !actions.contains(where: { $0.id == action.id }) else { return }
-            actions.append(action)
-        }
-
-        if let nextAction = context?.derived.nextAction {
-            appendIfUnique(nextAction)
-        }
-
-        if context?.derived.missingContext.contains(.noMeals) == true,
-           !actions.contains(where: { $0.kind == .logMeal }) {
-            appendIfUnique(
-                ArgoCoachAction(
-                    id: "coach-log-meal",
-                    title: "Add food context.",
-                    body: "A quick meal photo or text note helps Argo estimate fuel for the rest of the day.",
-                    primaryLabel: "Log meal",
-                    kind: .logMeal
-                )
-            )
-        }
-
-        if context?.derived.missingContext.contains(.missingWearableData) == true {
-            appendIfUnique(
-                ArgoCoachAction(
-                    id: "coach-connect-wearable",
-                    title: "Wearable data is missing.",
-                    body: "Recovery and strain recommendations improve when Whoop, Garmin, or Apple Health data is current.",
-                    primaryLabel: "Review",
-                    kind: .recoveryHabit
-                )
-            )
-        }
-
-        return Array(actions.prefix(3))
+    private var proposals: [ArgoCoachProposal] {
+        context?.coachProposals.filter(\.isVisible) ?? []
     }
 
     var body: some View {
@@ -128,28 +100,34 @@ struct CoachView: View {
                 .font(DesignSystem.Typography.headlineMedium)
                 .foregroundColor(DesignSystem.Colors.primaryText)
 
-            ForEach(recommendations) { recommendation in
-                recommendationCard(recommendation)
+            ForEach(proposals) { proposal in
+                recommendationCard(proposal)
             }
         }
     }
 
-    private func recommendationCard(_ recommendation: ArgoCoachAction) -> some View {
+    private func recommendationCard(_ proposal: ArgoCoachProposal) -> some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                Text(recommendation.title)
+                Text(proposal.action.title)
                     .font(DesignSystem.Typography.headlineSmall)
                     .foregroundColor(DesignSystem.Colors.primaryText)
 
-                Text(recommendation.body)
+                Text(proposal.action.body)
                     .font(DesignSystem.Typography.bodyMedium)
                     .foregroundColor(DesignSystem.Colors.secondaryText)
             }
 
             HStack(spacing: DesignSystem.Spacing.sm) {
-                actionButton(recommendation.primaryLabel, filled: true)
-                actionButton("Edit", filled: false)
-                actionButton("Skip", filled: false)
+                actionButton(proposal.action.primaryLabel, filled: true) {
+                    acceptProposal(proposal)
+                }
+                actionButton("Edit", filled: false) {
+                    editProposal(proposal)
+                }
+                actionButton("Skip", filled: false) {
+                    skipProposal(proposal)
+                }
             }
         }
         .padding(DesignSystem.Spacing.md)
@@ -161,9 +139,10 @@ struct CoachView: View {
         .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card))
     }
 
-    private func actionButton(_ title: String, filled: Bool) -> some View {
+    private func actionButton(_ title: String, filled: Bool, action: @escaping () -> Void) -> some View {
         Button {
             HapticManager.tap()
+            action()
         } label: {
             Text(title)
                 .font(DesignSystem.Typography.buttonSmall)
@@ -178,6 +157,23 @@ struct CoachView: View {
                 .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button))
         }
         .buttonStyle(.plain)
+    }
+
+    private func acceptProposal(_ proposal: ArgoCoachProposal) {
+        proposalStore.updateStatus(proposalId: proposal.id, status: .accepted, at: Date())
+        onAction(proposal)
+        Task { await loadContext() }
+    }
+
+    private func editProposal(_ proposal: ArgoCoachProposal) {
+        proposalStore.updateStatus(proposalId: proposal.id, status: .edited, at: Date())
+        onAction(proposal)
+        Task { await loadContext() }
+    }
+
+    private func skipProposal(_ proposal: ArgoCoachProposal) {
+        proposalStore.updateStatus(proposalId: proposal.id, status: .rejected, at: Date())
+        Task { await loadContext() }
     }
 
     private func loadContext() async {

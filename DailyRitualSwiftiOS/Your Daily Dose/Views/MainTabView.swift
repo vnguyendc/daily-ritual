@@ -51,6 +51,9 @@ struct MainTabView: View {
     @State private var showingVoiceEntry = false
     @State private var showingWorkoutReflection = false
     @State private var showingCheckIn = false
+    @State private var showingTrainingPlanForm = false
+    @State private var activeCoachProposalID: String?
+    private let proposalStore = LocalArgoCoachProposalStore()
 
     init(initialTab: Int = 0) {
         _selectedTab = State(initialValue: AppTab(rawValue: initialTab) ?? .today)
@@ -69,7 +72,7 @@ struct MainTabView: View {
                 .opacity(selectedTab == .plan ? 1 : 0)
                 .allowsHitTesting(selectedTab == .plan)
 
-            CoachView()
+            CoachView(onAction: openCoachProposal)
                 .opacity(selectedTab == .coach ? 1 : 0)
                 .allowsHitTesting(selectedTab == .coach)
 
@@ -97,19 +100,26 @@ struct MainTabView: View {
             .presentationDragIndicator(.hidden)
         }
         .sheet(isPresented: $showingMealLog) {
-            MealLogView(date: Date(), onSaved: notifyDailyContextChanged)
+            MealLogView(date: Date(), onSaved: completeActiveCoachProposal)
         }
         .sheet(isPresented: $showingVoiceEntry) {
             QuickEntryView(date: Date()) { title, content in
                 try await saveContextEntry(title: title, content: content, tags: ["voice"])
+                completeActiveCoachProposal()
             }
         }
         .sheet(isPresented: $showingWorkoutReflection) {
-            WorkoutReflectionView(linkedPlan: nil, healthKitData: nil, onSaved: notifyDailyContextChanged)
+            WorkoutReflectionView(linkedPlan: nil, healthKitData: nil, onSaved: completeActiveCoachProposal)
         }
         .sheet(isPresented: $showingCheckIn) {
             QuickEntryView(date: Date()) { title, content in
                 try await saveContextEntry(title: title, content: content, tags: ["check-in"])
+                completeActiveCoachProposal()
+            }
+        }
+        .sheet(isPresented: $showingTrainingPlanForm) {
+            TrainingPlanFormSheet(mode: .create, date: Date()) {
+                completeActiveCoachProposal()
             }
         }
     }
@@ -219,6 +229,29 @@ struct MainTabView: View {
         NotificationCenter.default.post(name: .argoDailyContextDidChange, object: nil)
     }
 
+    private func completeActiveCoachProposal() {
+        if let proposalID = activeCoachProposalID {
+            proposalStore.updateStatus(proposalId: proposalID, status: .completed, at: Date())
+            activeCoachProposalID = nil
+        }
+        notifyDailyContextChanged()
+    }
+
+    private func openCoachProposal(_ proposal: ArgoCoachProposal) {
+        activeCoachProposalID = proposal.id
+
+        switch proposal.action.kind {
+        case .logMeal:
+            showingMealLog = true
+        case .planWorkout, .adjustTraining:
+            showingTrainingPlanForm = true
+        case .reflectWorkout:
+            showingWorkoutReflection = true
+        case .checkIn, .recoveryHabit:
+            showingCheckIn = true
+        }
+    }
+
     private func saveContextEntry(title: String, content: String, tags: [String]) async throws {
         let titleParam: String? = title.isEmpty ? nil : title
         _ = try await JournalEntriesService().createEntry(
@@ -228,7 +261,6 @@ struct MainTabView: View {
             energy: nil,
             tags: tags
         )
-        notifyDailyContextChanged()
     }
 }
 

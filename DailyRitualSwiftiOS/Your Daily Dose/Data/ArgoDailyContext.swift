@@ -10,6 +10,7 @@ struct ArgoDailyContext {
     let plannedWorkouts: [TrainingPlan]
     let healthKitWorkouts: [HKWorkoutSummary]
     let whoop: WhoopDailyData?
+    let coachProposals: [ArgoCoachProposal]
     let derived: ArgoDailySignals
 
     static func empty(date: Date, sourceFailures: Set<MissingContextFlag> = []) -> ArgoDailyContext {
@@ -23,6 +24,7 @@ struct ArgoDailyContext {
             plannedWorkouts: [],
             healthKitWorkouts: [],
             whoop: nil,
+            coachProposals: [],
             derived: ArgoDailySignals(
                 recoveryStatus: .unknown,
                 fuelStatus: .unknown,
@@ -132,14 +134,14 @@ enum MissingContextFlag: String, Hashable, Sendable {
     case missingReflectionData
 }
 
-struct ArgoCoachAction: Identifiable, Sendable {
+struct ArgoCoachAction: Identifiable, Codable, Sendable {
     let id: String
     let title: String
     let body: String
     let primaryLabel: String
     let kind: Kind
 
-    enum Kind: String, Sendable {
+    enum Kind: String, Codable, Sendable {
         case logMeal
         case planWorkout
         case reflectWorkout
