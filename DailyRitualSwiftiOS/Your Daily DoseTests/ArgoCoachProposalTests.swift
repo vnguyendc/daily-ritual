@@ -62,6 +62,41 @@ struct ArgoCoachProposalTests {
         #expect(event.sourceRecordId == proposal.id)
     }
 
+    @Test func chatPromptCreatesMealProposal() {
+        let date = Date(timeIntervalSince1970: 5_100)
+
+        let proposal = ArgoCoachProposalGenerator.makeProposal(
+            from: "I ate chicken and rice for lunch",
+            date: date,
+            now: date
+        )
+
+        #expect(proposal?.action.kind == .logMeal)
+        #expect(proposal?.status == .pending)
+        #expect(proposal?.id == "\(ArgoCoachProposal.dateKey(for: date))-chat-chat-log-meal")
+    }
+
+    @Test func chatPromptPrioritizesAdjustTrainingBeforeGenericWorkoutPlan() {
+        let date = Date(timeIntervalSince1970: 5_200)
+
+        let proposal = ArgoCoachProposalGenerator.makeProposal(
+            from: "Can you make my workout lighter today?",
+            date: date,
+            now: date
+        )
+
+        #expect(proposal?.action.kind == .adjustTraining)
+    }
+
+    @Test func unsupportedChatPromptDoesNotCreateProposal() {
+        let proposal = ArgoCoachProposalGenerator.makeProposal(
+            from: "What do you think?",
+            date: Date(timeIntervalSince1970: 5_300)
+        )
+
+        #expect(proposal == nil)
+    }
+
     private func makeAction(id: String, kind: ArgoCoachAction.Kind) -> ArgoCoachAction {
         ArgoCoachAction(
             id: id,
