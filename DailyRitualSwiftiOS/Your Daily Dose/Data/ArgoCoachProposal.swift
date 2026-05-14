@@ -137,4 +137,92 @@ enum ArgoCoachProposalGenerator {
             )
         }
     }
+
+    static func makeProposal(from prompt: String, date: Date, now: Date = Date()) -> ArgoCoachProposal? {
+        let trimmed = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, let action = action(from: trimmed) else {
+            return nil
+        }
+
+        let id = "\(ArgoCoachProposal.dateKey(for: date))-chat-\(action.id)"
+        return ArgoCoachProposal(
+            id: id,
+            dateKey: ArgoCoachProposal.dateKey(for: date),
+            action: action,
+            status: .pending,
+            payload: ["source_prompt": AnyCodable(trimmed)],
+            createdAt: now,
+            updatedAt: now
+        )
+    }
+
+    private static func action(from prompt: String) -> ArgoCoachAction? {
+        let lowercased = prompt.lowercased()
+
+        if containsAny(lowercased, ["adjust", "easier", "lighter", "deload", "back off"]) {
+            return ArgoCoachAction(
+                id: "chat-adjust-training",
+                title: "Adjust today's training.",
+                body: "Review today's session and make the load match your current recovery and schedule.",
+                primaryLabel: "Review plan",
+                kind: .adjustTraining
+            )
+        }
+
+        if containsAny(lowercased, ["meal", "food", "eat", "calorie", "macro", "protein"]) {
+            return ArgoCoachAction(
+                id: "chat-log-meal",
+                title: "Add food context.",
+                body: "Log the meal now so Argo can update today's fuel picture.",
+                primaryLabel: "Log meal",
+                kind: .logMeal
+            )
+        }
+
+        if containsAny(lowercased, ["reflect", "reflection", "workout felt", "session felt"]) {
+            return ArgoCoachAction(
+                id: "chat-reflect-workout",
+                title: "Reflect on the workout.",
+                body: "Capture how the session felt while the details are still fresh.",
+                primaryLabel: "Add reflection",
+                kind: .reflectWorkout
+            )
+        }
+
+        if containsAny(lowercased, ["plan", "workout", "training", "session", "lift", "run"]) {
+            return ArgoCoachAction(
+                id: "chat-plan-workout",
+                title: "Plan a training session.",
+                body: "Add the session so Argo can reason about load, fuel, and recovery.",
+                primaryLabel: "Plan workout",
+                kind: .planWorkout
+            )
+        }
+
+        if containsAny(lowercased, ["check in", "check-in", "feel", "energy", "mood"]) {
+            return ArgoCoachAction(
+                id: "chat-check-in",
+                title: "Add a quick check-in.",
+                body: "Capture how you feel so Argo can frame the rest of the day.",
+                primaryLabel: "Check in",
+                kind: .checkIn
+            )
+        }
+
+        if containsAny(lowercased, ["recover", "recovery", "sleep", "mobility", "read", "family", "friend", "relax", "game"]) {
+            return ArgoCoachAction(
+                id: "chat-recovery-habit",
+                title: "Anchor recovery today.",
+                body: "Turn this into a small recovery habit so it shows up in your day.",
+                primaryLabel: "Start habit",
+                kind: .recoveryHabit
+            )
+        }
+
+        return nil
+    }
+
+    private static func containsAny(_ text: String, _ needles: [String]) -> Bool {
+        needles.contains { text.contains($0) }
+    }
 }

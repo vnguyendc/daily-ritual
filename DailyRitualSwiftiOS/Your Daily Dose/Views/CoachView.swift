@@ -13,6 +13,8 @@ struct CoachView: View {
     private let onAction: (ArgoCoachProposal) -> Void
     @State private var context: ArgoDailyContext?
     @State private var contextRefreshID = UUID()
+    @State private var chatMessages: [CoachChatMessage] = CoachChatMessage.seed
+    @State private var draftMessage = ""
 
     @MainActor
     init(
@@ -34,7 +36,7 @@ struct CoachView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
                     header
-                    conversationPreview
+                    conversationSection
                     recommendationsSection
                 }
                 .padding(DesignSystem.Spacing.cardPadding)
@@ -61,37 +63,73 @@ struct CoachView: View {
         }
     }
 
-    private var conversationPreview: some View {
+    private var conversationSection: some View {
         VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-            coachBubble("You are on track for the week. The main constraint is sleep debt, not motivation.")
-
-            HStack {
-                Spacer()
-                Text("Can you make tomorrow easier?")
-                    .font(DesignSystem.Typography.bodyMedium)
-                    .foregroundColor(DesignSystem.Colors.background)
-                    .padding(.horizontal, DesignSystem.Spacing.md)
-                    .padding(.vertical, DesignSystem.Spacing.sm)
-                    .background(DesignSystem.Colors.primaryText)
-                    .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card))
+            ForEach(chatMessages) { message in
+                chatBubble(message)
             }
 
-            coachBubble("Yes. Move intervals to Thursday, keep tomorrow as Zone 2, and prep a higher-carb lunch.")
+            chatComposer
         }
     }
 
-    private func coachBubble(_ text: String) -> some View {
-        Text(text)
-            .font(DesignSystem.Typography.bodyMedium)
-            .foregroundColor(DesignSystem.Colors.primaryText)
-            .padding(DesignSystem.Spacing.md)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(DesignSystem.Colors.cardBackground)
-            .overlay(
-                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
-                    .stroke(DesignSystem.Colors.border, lineWidth: 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card))
+    private func chatBubble(_ message: CoachChatMessage) -> some View {
+        HStack {
+            if message.role == .user {
+                Spacer(minLength: 48)
+            }
+
+            Text(message.text)
+                .font(DesignSystem.Typography.bodyMedium)
+                .foregroundColor(message.role == .user ? DesignSystem.Colors.background : DesignSystem.Colors.primaryText)
+                .padding(DesignSystem.Spacing.md)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(message.role == .user ? DesignSystem.Colors.primaryText : DesignSystem.Colors.cardBackground)
+                .overlay(
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card)
+                        .stroke(DesignSystem.Colors.border, lineWidth: message.role == .user ? 0 : 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.card))
+
+            if message.role == .assistant {
+                Spacer(minLength: 48)
+            }
+        }
+    }
+
+    private var chatComposer: some View {
+        HStack(spacing: DesignSystem.Spacing.sm) {
+            TextField("Ask Argo to plan, log, reflect, or recover", text: $draftMessage, axis: .vertical)
+                .font(DesignSystem.Typography.bodyMedium)
+                .foregroundColor(DesignSystem.Colors.primaryText)
+                .lineLimit(1...3)
+                .padding(.horizontal, DesignSystem.Spacing.md)
+                .padding(.vertical, DesignSystem.Spacing.sm)
+                .background(DesignSystem.Colors.cardBackground)
+                .overlay(
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
+                        .stroke(DesignSystem.Colors.border, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button))
+                .submitLabel(.send)
+                .onSubmit(sendMessage)
+
+            Button {
+                sendMessage()
+            } label: {
+                Image(systemName: "arrow.up.circle.fill")
+                    .font(.system(size: 30, weight: .semibold))
+                    .foregroundColor(canSendMessage ? DesignSystem.Colors.primaryText : DesignSystem.Colors.tertiaryText)
+                    .frame(width: 36, height: 36)
+            }
+            .buttonStyle(.plain)
+            .disabled(!canSendMessage)
+            .accessibilityLabel("Send message")
+        }
+    }
+
+    private var canSendMessage: Bool {
+        !draftMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private var recommendationsSection: some View {
@@ -176,6 +214,29 @@ struct CoachView: View {
         Task { await loadContext() }
     }
 
+    private func sendMessage() {
+        let text = draftMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+
+        draftMessage = ""
+        chatMessages.append(CoachChatMessage(role: .user, text: text))
+
+        let date = context?.date ?? Date()
+        if let proposal = ArgoCoachProposalGenerator.makeProposal(from: text, date: date) {
+            proposalStore.upsert(proposal)
+            chatMessages.append(CoachChatMessage(
+                role: .assistant,
+                text: "I added that as a proposed action. Review it below before Argo changes anything."
+            ))
+            Task { await loadContext() }
+        } else {
+            chatMessages.append(CoachChatMessage(
+                role: .assistant,
+                text: "I can turn clear requests about training, meals, reflections, check-ins, or recovery into proposed actions."
+            ))
+        }
+    }
+
     private func loadContext() async {
         let refreshID = UUID()
         contextRefreshID = refreshID
@@ -183,6 +244,23 @@ struct CoachView: View {
         guard contextRefreshID == refreshID else { return }
         context = nextContext
     }
+}
+
+private struct CoachChatMessage: Identifiable {
+    let id = UUID()
+    let role: Role
+    let text: String
+
+    enum Role {
+        case user
+        case assistant
+    }
+
+    static let seed = [
+        CoachChatMessage(role: .assistant, text: "Tell me what changed today. I can turn training, food, recovery, and reflection requests into proposed actions."),
+        CoachChatMessage(role: .user, text: "Can you make tomorrow easier?"),
+        CoachChatMessage(role: .assistant, text: "Yes. Ask me to adjust training, log food, reflect on a workout, or anchor recovery.")
+    ]
 }
 
 #Preview {
